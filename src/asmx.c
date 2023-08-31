@@ -685,7 +685,7 @@ int isalphanum(char c)
 }
 
 
-static u_int EvalBin(const char *binStr)
+static unsigned int EvalBin(const char *binStr)
 {
     unsigned int binVal = 0;
     bool evalErr = false;
@@ -713,7 +713,7 @@ static u_int EvalBin(const char *binStr)
 }
 
 
-static u_int EvalOct(const char *octStr)
+static unsigned int EvalOct(const char *octStr)
 {
     unsigned int octVal = 0;
     bool evalErr = false;
@@ -741,7 +741,7 @@ static u_int EvalOct(const char *octStr)
 }
 
 
-static u_int EvalSplitOct(const char *octStr)
+static unsigned int EvalSplitOct(const char *octStr)
 {
     unsigned int octVal = 0;
     int len = strlen(octStr);
@@ -784,7 +784,7 @@ static u_int EvalSplitOct(const char *octStr)
 }
 
 
-static u_int EvalDec(const char *decStr)
+static unsigned int EvalDec(const char *decStr)
 {
     unsigned int decVal = 0;
     bool evalErr = false;
@@ -823,7 +823,7 @@ static int Hex2Dec(int c)
 }
 
 
-static u_int EvalHex(const char *hexStr)
+static unsigned int EvalHex(const char *hexStr)
 {
     unsigned int hexVal = 0;
     bool evalErr = false;
@@ -851,7 +851,7 @@ static u_int EvalHex(const char *hexStr)
 }
 
 
-static u_int EvalNum(char *word)
+static unsigned int EvalNum(char *word)
 {
     // handle C-style 0xnnnn hexadecimal constants
     if(word[0] == '0')
@@ -863,7 +863,7 @@ static u_int EvalNum(char *word)
         // return EvalOct(word);    // 0nnn octal constants are in less demand, though
     }
 
-    int val = strlen(word) - 1;
+    unsigned int val = strlen(word) - 1;
     switch (word[val])
     {
         case 'A': // nnnnnnA format used by Heath

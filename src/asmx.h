@@ -16,15 +16,6 @@ enum
 #include <unistd.h>
 #include <stdint.h>
 
-//MIXWORX
-#if 1 /* hrj swas 0 */
-// these should already be defined in sys/types.h (included from stdio.h)
-typedef unsigned char  u_char;
-typedef unsigned short u_short;
-typedef unsigned int   u_int;
-typedef unsigned long  u_long;
-#endif
-
 
 #if defined(__clang__) // disable unwanted warnings for xcode
 #pragma clang diagnostic ignored "-Wshorten-64-to-32"
