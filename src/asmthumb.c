@@ -3,7 +3,8 @@
 #define versionName "ARM Thumb assembler"
 #include "asmx.h"
 
-enum {
+enum
+{
     o_TwoOp,        // two-operand arithmetic/logical instructions
     o_ADD,          // ADD opcode
     o_SUB,          // SUB opcode
@@ -29,7 +30,8 @@ const char regs_0_7 [] = "R0 R1 R2 R3 R4 R5 R6 R7";
 const char regs_0_7L[] = "R0 R1 R2 R3 R4 R5 R6 R7 R14 LR"; // for PUSH/POP
 const char regs_0_15[] = "R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 SP LR PC";
 
-enum {
+enum
+{
     REG_R0 = 0,
     REG_R7 = 7,
     REG_SP = 13,
@@ -37,7 +39,8 @@ enum {
     REG_PC = 15,
 };
 
-static const struct OpcdRec Thumb_opcdTab[] = {
+static const struct OpcdRec Thumb_opcdTab[] =
+{
     {"ADC",   o_TwoOp,      0x4140},
     {"AND",   o_TwoOp,      0x4000},
     {"BIC",   o_TwoOp,      0x4380},
@@ -118,7 +121,8 @@ static const struct OpcdRec Thumb_opcdTab[] = {
 
 static void SetThumbMultiReg(int reg, uint16_t *regbits, bool *warned)
 {
-    if (!*warned && *regbits & (1 << reg)) {
+    if (!*warned && *regbits & (1 << reg))
+    {
         Warning("register specified twice");
         *warned = true;
     }
@@ -141,16 +145,19 @@ static int ThumbGetMultiRegs(bool useLR, uint16_t *regbits)
 
     char *oldLine = linePtr;
     int token = ',';
-    while (token == ',') {
+    while (token == ',')
+    {
         int reg1 = GetReg(regs_0_7L);
         if (reg1 == 9) reg1 = 8; // LR/R14 -> bit 8
 
-        if ((reg1 > 7) && !useLR) { // error if LR not allowed
+        if ((reg1 > 7) && !useLR)   // error if LR not allowed
+        {
             IllegalOperand();
             break;
         }
 
-        if (reg1 < 0) {
+        if (reg1 < 0)
+        {
             IllegalOperand();      // abort if not valid register
             break;
         }
@@ -162,33 +169,42 @@ static int ThumbGetMultiRegs(bool useLR, uint16_t *regbits)
         oldLine = linePtr;
         token = GetWord(word);
 
-        if (token == '-') {     // register range
+        if (token == '-')       // register range
+        {
             int reg2 = GetReg(regs_0_7L); // check for second register
             oldLine = linePtr;  // commit line position
             if (reg2 == 9) reg2 = 8; // LR/R14 -> bit 8
 
-            if ((reg2 > 7) && !useLR) { // error if LR not allowed
+            if ((reg2 > 7) && !useLR)   // error if LR not allowed
+            {
                 IllegalOperand();
                 break;
             }
 
-            if (reg2 < 0) {
+            if (reg2 < 0)
+            {
                 IllegalOperand();      // abort if not valid register
                 break;
             }
-            if (reg1 < reg2) {
-                for (int i = reg1 + 1; i <= reg2; i++) {
+            if (reg1 < reg2)
+            {
+                for (int i = reg1 + 1; i <= reg2; i++)
+                {
                     SetThumbMultiReg(i, regbits, &warned);
                 }
-            } else if (reg1 > reg2) {
-                for (int i = reg1 - 1; i >= reg2; i--) {
+            }
+            else if (reg1 > reg2)
+            {
+                for (int i = reg1 - 1; i >= reg2; i--)
+                {
                     SetThumbMultiReg(i, regbits, &warned);
                 }
             }
             oldLine = linePtr;  // commit line position
             token = GetWord(word);
         }
-        if (token == ',') { // is there another register?
+        if (token == ',')   // is there another register?
+        {
             oldLine = linePtr;  // commit line position
         }
     }
@@ -205,7 +221,7 @@ static uint32_t TwoRegs()
 {
     int reg1 = GetReg(regs_0_7);
     if (CheckReg(reg1)) return -1;
-    
+
     if (Comma()) return -1;
 
     int reg2 = GetReg(regs_0_7);
@@ -221,7 +237,8 @@ static int ThumbEvalBranch(int width, int instrLen) // instrLen should be 4
 
     long val = Eval();
     val = val - locPtr - instrLen;
-    if (!errFlag && ((val & 1) || val < ~limit || val > limit)) {
+    if (!errFlag && ((val & 1) || val < ~limit || val > limit))
+    {
         Error("Long branch out of range");
     }
 
@@ -237,7 +254,8 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
     int     token;
     uint16_t regbits;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_TwoOp:        // two-operand arithmetic/logical instructions
             if ((val = TwoRegs()) < 0) break;
             InstrW(parm | val);
@@ -252,17 +270,23 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#') {
+            if (token == '#')
+            {
                 // Rd,#immed8 / SP,#immed7
-                if (reg1 <= 7) {
+                if (reg1 <= 7)
+                {
                     val = EvalByte();
                     InstrW(0x3000 | (reg1 << 8) | (val & 0xFF));
-                } else {
+                }
+                else
+                {
                     val = Eval();
                     // FIXME: check immed7 range
                     InstrW(0xD000 | ((val >> 2) & 0x7F));
                 }
-            } else {
+            }
+            else
+            {
                 // Rd,Rn,#immed3 / Rd,Rn,Rm / RD,RM / Rd,PC,#immed8 / Rd,PC/SP,#immed8
                 linePtr = oldLine;
 
@@ -272,11 +296,14 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
 
                 oldLine = linePtr;
                 token = GetWord(word);
-                if (token == ',') {
+                if (token == ',')
+                {
                     token = GetWord(word);
-                    if (token == '#') {
+                    if (token == '#')
+                    {
                         val = Eval();
-                        switch (reg2) {
+                        switch (reg2)
+                        {
                             case REG_PC:
                                 // FIXME: need to check immed8 range
                                 InstrW(0xA000 | (reg1 << 8) | ((val >> 2) & 0xFF));
@@ -287,20 +314,27 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
                                 InstrW(0xA800 | (reg1 << 8) | ((val >> 2) & 0xFF));
                                 break;
                             default:
-                                if (reg2 <= REG_R7) { // Rm
+                                if (reg2 <= REG_R7)   // Rm
+                                {
                                     // FIXME: need to check immed3 range 0..7
                                     InstrW(0x1C00 | ((val & 7) << 6) | (reg2 << 3) | reg1);
-                                } else {
+                                }
+                                else
+                                {
                                     IllegalOperand();
                                 }
                         }
-                    } else {
+                    }
+                    else
+                    {
                         val = FindReg(word, regs_0_7);
                         if (CheckReg(val)) break;
 
                         InstrW(0x1800 | (val << 6) | (reg2 << 3) | reg1);
                     }
-                } else { // RD,RM
+                }
+                else     // RD,RM
+                {
                     InstrW(0x4400 | ((reg1 << 4) & 0x80) | (reg2 << 3) | (reg1 & 0x03));
                 }
             }
@@ -311,7 +345,8 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
             if (CheckReg(reg1)) break;
 
-            if (reg1 > 7 && reg1 != 13) {  // only R0-R7 and SP are allowed here
+            if (reg1 > 7 && reg1 != 13)    // only R0-R7 and SP are allowed here
+            {
                 IllegalOperand();
                 break;
             }
@@ -320,17 +355,23 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#') {
+            if (token == '#')
+            {
                 // Rd,#immed8 / SP,#immed7
-                if (reg1 <= 7) {
+                if (reg1 <= 7)
+                {
                     val = EvalByte();
                     InstrW(0x3800 | (reg1 << 8) | (val & 0xFF));
-                } else {
+                }
+                else
+                {
                     val = Eval();
                     // FIXME: check immed7 range
                     InstrW(0xB080 | ((val >> 2) & 0x7F));
                 }
-            } else {
+            }
+            else
+            {
                 // Rd,Rn,#immed3 / Rd,Rn,Rm
                 linePtr = oldLine;
                 reg2 = GetReg(regs_0_7);
@@ -339,11 +380,14 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
                 if (Comma()) break;
 
                 token = GetWord(word);
-                if (token == '#') {
+                if (token == '#')
+                {
                     val = Eval();
                     // FIXME: need to check immed3 range 0..7
                     InstrW(0x1E00 | ((val & 7) << 6) | (reg2 << 3) | reg1);
-                } else {
+                }
+                else
+                {
                     val = FindReg(word, regs_0_7);
                     if (CheckReg(val)) break;
 
@@ -363,12 +407,15 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == ',') {
+            if (token == ',')
+            {
                 if (Expect("#")) break;
                 val = EvalByte();
                 // FIXME: need to confirm that EvalByte is sufficient here for immed8
                 InstrW((parm >> 16) | ((val & 0x1F) << 6) | (reg2 << 3) | reg1);
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine;
                 InstrW((parm & 0xFFFF) | (reg2 << 3) | reg1);
             }
@@ -382,9 +429,12 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
 
         case o_Branch:       // B short=DE00 long=E000
             val = ThumbEvalBranch(11, 4);
-            if (evalKnown && (-256 <= val) && (val <= 255)) {
+            if (evalKnown && (-256 <= val) && (val <= 255))
+            {
                 InstrW(0xDE00 | ((val >> 1) & 0xFF));
-            } else {
+            }
+            else
+            {
                 InstrW(0xE000 | ((val >> 1) & 0x07FF));
             }
             break;
@@ -398,7 +448,8 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
             oldLine = linePtr;
             reg1 = GetReg(regs_0_15);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
-            if (reg1 >= 0) {
+            if (reg1 >= 0)
+            {
                 InstrW(0x4780 | (reg1 << 4));
                 break;
             }
@@ -428,24 +479,31 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#') {
-                if (reg1 > 7) {
+            if (token == '#')
+            {
+                if (reg1 > 7)
+                {
                     IllegalOperand();
                     break;
                 }
                 val = EvalByte();
                 // FIXME: need to confirm that EvalByte is sufficient here for immed8
                 InstrW(((parm >> 16) & 0xFF00) | (reg1 << 8) | (val & 0xFF));
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine;
 
                 reg2 = GetReg(regs_0_15);
                 if (reg2 > 15) reg2 = reg2 - 3; // SP LR PC -> R13 R14 R15
                 if (CheckReg(reg2)) break;
 
-                if ((reg1 < 8) && (reg2 < 8)) {
+                if ((reg1 < 8) && (reg2 < 8))
+                {
                     InstrW(((parm >> 8) & 0xFFFF) | ((reg1 << 4) & 0x80) | (reg2 << 3) | (reg1 & 0x03));
-                } else {
+                }
+                else
+                {
                     InstrW(((parm << 8) & 0xFF00) | ((reg1 << 4) & 0x80) | (reg2 << 3) | (reg1 & 0x03));
                 }
             }
@@ -478,15 +536,18 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
             if (reg2 > 15) reg2 = reg2 - 3; // SP LR PC -> R13 R14 R15
             if (CheckReg(reg2)) break;
 
-            if ((reg2 > 7) && (reg2 != 13) && (reg2 != 15)) {
+            if ((reg2 > 7) && (reg2 != 13) && (reg2 != 15))
+            {
                 IllegalOperand();
                 break;
             }
             if (Comma()) break;
 
-            switch (reg2) {
+            switch (reg2)
+            {
                 case REG_PC:
-                    if (!parm) { // can't use PC relative on STR
+                    if (!parm)   // can't use PC relative on STR
+                    {
                         IllegalOperand();
                         break;
                     }
@@ -505,12 +566,15 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
 
                 default:
                     token = GetWord(word);
-                    if (token == '#') {
+                    if (token == '#')
+                    {
                         // #immed5
                         val = Eval();
                         // FIXME: need to check immed5 range
                         InstrW(0x6000 | parm | (((val >> 2) & 0x1F) << 6) | (reg2 << 3) | reg1);
-                    } else {
+                    }
+                    else
+                    {
                         // Rm
                         val = FindReg(word, regs_0_7);
                         if (CheckReg(val)) break;
@@ -534,18 +598,24 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
             if (Comma()) break;
 
             token = GetWord(word);
-            if (token == '#') {
+            if (token == '#')
+            {
                 val = Eval();
-                if (parm & 0x80000000) {
+                if (parm & 0x80000000)
+                {
                     // halfword
                     // FIXME: need to check immed5 range
                     InstrW((parm >> 16) | (((val >> 1) & 0x1F) << 6) | (reg2 << 3) | reg1);
-                } else {
+                }
+                else
+                {
                     // byte
                     // FIXME: need to check immed5 range
                     InstrW((parm >> 16) | ((val & 0x1F) << 6) | (reg2 << 3) | reg1);
                 }
-            } else {
+            }
+            else
+            {
                 val = FindReg(word, regs_0_7);
                 if (CheckReg(val)) break;
 
@@ -586,7 +656,8 @@ static int Thumb_DoCPUOpcode(int typ, int parm)
             break;
     }
 
-    if (locPtr & 1) {
+    if (locPtr & 1)
+    {
         Error("Code at non-word-aligned address");
         // deposit an extra byte to reset alignment and prevent further errors
         InstrAddB(0);
@@ -603,7 +674,7 @@ void AsmThumbInit(void)
 {
     void *p = AddAsm(versionName, &Thumb_DoCPUOpcode, NULL, NULL);
 
-    AddCPU(p, "THUMB"   , 0, LITTLE_END, ADDR_24, LIST_24, 8, 0, Thumb_opcdTab);
+    AddCPU(p, "THUMB", 0, LITTLE_END, ADDR_24, LIST_24, 8, 0, Thumb_opcdTab);
     AddCPU(p, "THUMB_BE", 0, BIG_END,    ADDR_24, LIST_24, 8, 0, Thumb_opcdTab);
     AddCPU(p, "THUMB_LE", 0, LITTLE_END, ADDR_24, LIST_24, 8, 0, Thumb_opcdTab);
 }

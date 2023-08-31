@@ -4,14 +4,16 @@
 //#define NICE_ADD // allow ADD/ADC/SBC without "A,"
 #include "asmx.h"
 
-enum {
+enum
+{
     CPU_Z80,    // standard Z80
     CPU_GBZ80,  // Gameboy Z80 variant
     CPU_Z180,   // Z180 - not yet implemented
     CPU_Z80U    // Z80 with undocumented instructions - not yet implemented
 };
 
-enum {
+enum
+{
     o_None,     // No operands
     o_NoneNGB,  // No operands, not in GBZ80
     o_NoneGB,   // No operands, GBZ80-only
@@ -56,7 +58,8 @@ const char Z80_regs[] = "B C D E H L L A I R BC DE HL SP IX IY AF HLD HLI (";
 
 const char Z80_IN0_OUT0_regs[] = "B C D E H L F A";
 
-enum regType {  // these are keyed to Z80_regs[] above
+enum regType    // these are keyed to Z80_regs[] above
+{
     reg_B,          //  0
     reg_C,          //  1
     reg_D,          //  2
@@ -79,7 +82,8 @@ enum regType {  // these are keyed to Z80_regs[] above
     reg_Paren       // 19
 };
 
-static const struct OpcdRec Z80_opcdTab[] = {
+static const struct OpcdRec Z80_opcdTab[] =
+{
     {"NOP",  o_None,    0x00},
     {"RLCA", o_None,    0x07},
     {"RRCA", o_None,    0x0F},
@@ -194,12 +198,16 @@ static int IXOffset()
     int val = 0;
     char *oldLine = linePtr;
     int token = GetWord(word);
-    if (token == '+' || token == '-') {
+    if (token == '+' || token == '-')
+    {
         val = Eval();
-        if (token == '-') {
+        if (token == '-')
+        {
             val = -val;
         }
-    } else {
+    }
+    else
+    {
         linePtr = oldLine;
     }
 
@@ -211,11 +219,15 @@ static int IXOffset()
 
 static int DDFD(int reg)
 {
-    switch (reg) {
+    switch (reg)
+    {
         default:
-        case reg_HL: return      0;
-        case reg_IX: return 0xDD00;
-        case reg_IY: return 0xFD00;
+        case reg_HL:
+            return      0;
+        case reg_IX:
+            return 0xDD00;
+        case reg_IY:
+            return 0xFD00;
     }
 }
 
@@ -227,7 +239,8 @@ static void DoArith(int imm, int reg)
 
     char *oldLine = linePtr; // save position because of (HL) vs (expr)
 
-    switch ((reg2 = GetReg(Z80_regs))) {
+    switch ((reg2 = GetReg(Z80_regs)))
+    {
         case reg_EOL:
             break;
 
@@ -247,7 +260,8 @@ static void DoArith(int imm, int reg)
             break;
 
         case reg_Paren: // ADD A,(
-            switch ((reg2 = GetReg(Z80_regs))) {
+            switch ((reg2 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -258,7 +272,8 @@ static void DoArith(int imm, int reg)
 
                 case reg_IX:
                 case reg_IY:
-                    if (curCPU == CPU_GBZ80) {
+                    if (curCPU == CPU_GBZ80)
+                    {
                         IllegalOperand();
                         break;
                     }
@@ -274,7 +289,7 @@ static void DoArith(int imm, int reg)
             }
             break;
 
-         default:
+        default:
             IllegalOperand();
             break;
     }
@@ -288,18 +303,21 @@ static int Z80_DoCPUOpcode(int typ, int parm)
     int     token;
 
     char *oldLine = linePtr;
-    switch (typ) {
+    switch (typ)
+    {
         case o_None180:
             if (curCPU != CPU_Z180) return 0;
             FALLTHROUGH;
         case o_None:
         case o_NoneGB:
         case o_NoneNGB:
-            if (curCPU != CPU_GBZ80 || (parm & 0xFFF7) != 0xEDA0) {
+            if (curCPU != CPU_GBZ80 || (parm & 0xFFF7) != 0xEDA0)
+            {
                 // LDI/LDD 0xEDA0/0xEDA8
                 if ((typ == o_NoneGB)  && curCPU != CPU_GBZ80) return 0;
                 if ((typ == o_NoneNGB) && curCPU == CPU_GBZ80) return 0;
-                if (curCPU == CPU_GBZ80 && parm == 0xED4D) {
+                if (curCPU == CPU_GBZ80 && parm == 0xED4D)
+                {
                     parm = 0xD9; // GBZ80 RETI
                 }
                 InstrX(parm & 0xFFFF);
@@ -309,14 +327,16 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             // fall-through for GBZ80 LDI/LDD:
             parm = ((parm & 0x08) << 1) | 0x22;
 
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
                 case reg_A:     // A,(HL)
                     if (Comma()) break;
                     if (Expect("(")) break;
-                    switch ((reg1 = GetReg(Z80_regs))) {
+                    switch ((reg1 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -332,7 +352,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case reg_Paren: // (HL),A
-                    switch ((reg1 = GetReg(Z80_regs))) {
+                    switch ((reg1 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -356,7 +377,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_LD:
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -372,7 +394,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                 case reg_L:
                 case reg_A:     // LD r,?
                     if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs))) {
+                    switch ((reg2 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -387,7 +410,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                             break;
 
                         case reg_I:     // LD A,I
-                            if (reg1 != reg_A || curCPU == CPU_GBZ80) {
+                            if (reg1 != reg_A || curCPU == CPU_GBZ80)
+                            {
                                 IllegalOperand();
                                 break;
                             }
@@ -395,7 +419,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                             break;
 
                         case reg_R:     // LD A,R
-                            if (reg1 != reg_A || curCPU == CPU_GBZ80) {
+                            if (reg1 != reg_A || curCPU == CPU_GBZ80)
+                            {
                                 IllegalOperand();
                                 break;
                             }
@@ -403,57 +428,75 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                             break;
 
                         case reg_Paren:     // LD r,(?)
-                            switch ((reg2 = GetReg(Z80_regs))) {
+                            switch ((reg2 = GetReg(Z80_regs)))
+                            {
                                 case reg_EOL:
                                     break;
 
                                 case reg_BC:    // LD A,(BC)
                                 case reg_DE:    // LD A,(DE)
-                                    if (reg1 != reg_A) {
+                                    if (reg1 != reg_A)
+                                    {
                                         IllegalOperand();
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         if (RParen()) break;
                                         InstrB(0x0A + (reg2-reg_BC)*16);
                                     }
                                     break;
 
                                 case reg_C:
-                                    if (curCPU != CPU_GBZ80) {
+                                    if (curCPU != CPU_GBZ80)
+                                    {
                                         IllegalOperand();
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         if (RParen()) break;
                                         InstrB(0xF2); // LD A,(C)
                                     }
                                     break;
 
                                 case reg_HLI:
-                                    if (curCPU != CPU_GBZ80) {
+                                    if (curCPU != CPU_GBZ80)
+                                    {
                                         IllegalOperand();
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         if (RParen()) break;
                                         InstrB(0x2A); // LD A,(HLI)
                                     }
                                     break;
 
                                 case reg_HLD:
-                                    if (curCPU != CPU_GBZ80) {
+                                    if (curCPU != CPU_GBZ80)
+                                    {
                                         IllegalOperand();
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         if (RParen()) break;
                                         InstrB(0x3A); // LD A,(HLD)
                                     }
                                     break;
 
                                 case reg_HL:    // LD r,(HL)
-                                    if (curCPU == CPU_GBZ80 && *linePtr == '+') {
+                                    if (curCPU == CPU_GBZ80 && *linePtr == '+')
+                                    {
                                         linePtr++;
                                         if (RParen()) break;
                                         InstrB(0x2A); // LD A,(HL+)
-                                    } else if (curCPU == CPU_GBZ80 && *linePtr == '-') {
+                                    }
+                                    else if (curCPU == CPU_GBZ80 && *linePtr == '-')
+                                    {
                                         linePtr++;
                                         if (RParen()) break;
                                         InstrB(0x3A); // LD A,(HL-)
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         if (RParen()) break;
                                         InstrB(0x40 + reg1*8 + reg_M);
                                     }
@@ -461,7 +504,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 
                                 case reg_IX:    // LD r,(IX+d)
                                 case reg_IY:    // LD r,(IY+d)
-                                    if (curCPU == CPU_GBZ80) {
+                                    if (curCPU == CPU_GBZ80)
+                                    {
                                         IllegalOperand();
                                         break;
                                     }
@@ -470,16 +514,24 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                                     break;
 
                                 case reg_None:  // LD A,(nnnn)
-                                    if (reg1 != reg_A) {
+                                    if (reg1 != reg_A)
+                                    {
                                         IllegalOperand();
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         val = Eval();
                                         if (RParen()) break;
-                                        if (curCPU == CPU_GBZ80 && evalKnown && (val & 0xFF00) == 0xFF00) {
+                                        if (curCPU == CPU_GBZ80 && evalKnown && (val & 0xFF00) == 0xFF00)
+                                        {
                                             InstrBB(0xF0, 0xFF);
-                                        } else if (curCPU == CPU_GBZ80) {
+                                        }
+                                        else if (curCPU == CPU_GBZ80)
+                                        {
                                             InstrBW(0xFA, val);
-                                        } else {
+                                        }
+                                        else
+                                        {
                                             InstrBW(0x3A, val);
                                         }
                                     }
@@ -502,7 +554,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case reg_I:     // LD I,A
-                    if (curCPU == CPU_GBZ80) {
+                    if (curCPU == CPU_GBZ80)
+                    {
                         IllegalOperand();
                         break;
                     }
@@ -512,7 +565,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case reg_R:     // LD R,A
-                    if (curCPU == CPU_GBZ80) {
+                    if (curCPU == CPU_GBZ80)
+                    {
                         IllegalOperand();
                         break;
                     }
@@ -527,30 +581,41 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                 case reg_SP:    // LD rr,?
                     if (Comma()) break;
                     oldLine = linePtr; // save linePtr in case of backtracking
-                    switch ((reg2 = GetReg(Z80_regs))) {
+                    switch ((reg2 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
                         case reg_HL:    // LD SP,HL/IX/IY
                         case reg_IX:
                         case reg_IY:
-                            if (reg1 != reg_SP) {
+                            if (reg1 != reg_SP)
+                            {
                                 IllegalOperand();
-                            } else if (reg2 != reg_HL && curCPU == CPU_GBZ80) {
+                            }
+                            else if (reg2 != reg_HL && curCPU == CPU_GBZ80)
+                            {
                                 IllegalOperand();
-                            } else {
+                            }
+                            else
+                            {
                                 InstrX(DDFD(reg2) + 0xF9);
                             }
                             break;
 
                         case reg_Paren:
-                            if (curCPU == CPU_GBZ80) {
+                            if (curCPU == CPU_GBZ80)
+                            {
                                 IllegalOperand();
-                            } else if (reg1 == reg_HL) {
+                            }
+                            else if (reg1 == reg_HL)
+                            {
                                 val = Eval();   // LD HL,(nnnn)
                                 if (RParen()) break;
                                 InstrBW(0x2A, val);
-                            } else {
+                            }
+                            else
+                            {
                                 val = Eval();   // LD BC/DE/SP,(nnnn)
                                 if (RParen()) break;
                                 InstrXW(0xED4B + (reg1-reg_BC)*16, val);
@@ -577,7 +642,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                             break;
 
                         case reg_SP:
-                            if (curCPU == CPU_GBZ80) {
+                            if (curCPU == CPU_GBZ80)
+                            {
                                 InstrB(0xF8); // LD HL,SP
                                 break;
                             }
@@ -590,12 +656,14 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 
                 case reg_IX:    // LD IX,?
                 case reg_IY:    // LD IY,?
-                    if (curCPU == CPU_GBZ80) {
+                    if (curCPU == CPU_GBZ80)
+                    {
                         IllegalOperand();
                         break;
                     }
                     if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs))) {
+                    switch ((reg2 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -627,7 +695,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case reg_Paren:     // LD (?),?
-                    switch ((reg1 = GetReg(Z80_regs))) {
+                    switch ((reg1 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -635,24 +704,33 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                             val = Eval();
                             if (RParen()) break;
                             if (Comma()) break;
-                            switch ((reg2 = GetReg(Z80_regs))) {
+                            switch ((reg2 = GetReg(Z80_regs)))
+                            {
                                 case reg_EOL:
                                     break;
 
                                 case reg_A:
-                                    if (curCPU == CPU_GBZ80 && evalKnown && (val & 0xFF00) == 0xFF00) {
+                                    if (curCPU == CPU_GBZ80 && evalKnown && (val & 0xFF00) == 0xFF00)
+                                    {
                                         InstrBB(0xE0, val);
-                                    } else if (curCPU == CPU_GBZ80) {
+                                    }
+                                    else if (curCPU == CPU_GBZ80)
+                                    {
                                         InstrBW(0xEA, val);
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         InstrBW(0x32, val);
                                     }
                                     break;
 
                                 case reg_HL:
-                                    if (curCPU == CPU_GBZ80) {
+                                    if (curCPU == CPU_GBZ80)
+                                    {
                                         IllegalOperand();
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         InstrBW(0x22, val);
                                     }
                                     break;
@@ -660,20 +738,28 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                                 case reg_BC:
                                 case reg_DE:
                                 case reg_SP:
-                                    if (reg2 == reg_SP && curCPU == CPU_GBZ80) {
+                                    if (reg2 == reg_SP && curCPU == CPU_GBZ80)
+                                    {
                                         InstrBW(0x08, val);
-                                    } else if (curCPU == CPU_GBZ80) {
+                                    }
+                                    else if (curCPU == CPU_GBZ80)
+                                    {
                                         IllegalOperand();
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         InstrXW(0xED43 + (reg2-reg_BC)*16, val);
                                     }
                                     break;
 
                                 case reg_IX:
                                 case reg_IY:
-                                    if (curCPU == CPU_GBZ80) {
+                                    if (curCPU == CPU_GBZ80)
+                                    {
                                         IllegalOperand();
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         InstrXW(DDFD(reg2) + 0x22, val);
                                     }
                                     break;
@@ -684,127 +770,142 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                             }
                             break;
 
-                            case reg_BC:
-                            case reg_DE:
+                        case reg_BC:
+                        case reg_DE:
+                            if (RParen()) break;
+                            if (Comma()) break;
+                            if (Expect("A")) break;
+                            InstrB(0x02 + (reg1-reg_BC)*16);
+                            break;
+
+                        case reg_C:
+                            if (curCPU != CPU_GBZ80)
+                            {
+                                IllegalOperand();
+                            }
+                            else
+                            {
                                 if (RParen()) break;
                                 if (Comma()) break;
                                 if (Expect("A")) break;
-                                InstrB(0x02 + (reg1-reg_BC)*16);
-                                break;
+                                InstrB(0xE2); // LD (C),A
+                            }
+                            break;
 
-                            case reg_C:
-                                if (curCPU != CPU_GBZ80) {
-                                    IllegalOperand();
-                                } else {
-                                    if (RParen()) break;
-                                    if (Comma()) break;
-                                    if (Expect("A")) break;
-                                    InstrB(0xE2); // LD (C),A
-                                }
-                                break;
-
-                            case reg_HLI:
-                                if (curCPU != CPU_GBZ80) {
-                                    IllegalOperand();
-                                } else {
-                                    if (RParen()) break;
-                                    if (Comma()) break;
-                                    if (Expect("A")) break;
-                                    InstrB(0x22); // LD (HLI),A
-                                }
-                                break;
-
-                            case reg_HLD:
-                                if (curCPU != CPU_GBZ80) {
-                                    IllegalOperand();
-                                } else {
-                                    if (RParen()) break;
-                                    if (Comma()) break;
-                                    if (Expect("A")) break;
-                                    InstrB(0x32); // LD (HLD),A
-                                }
-                                break;
-
-                            case reg_HL: // LD (HL),?
-                                if (curCPU == CPU_GBZ80 && *linePtr == '+') {
-                                    linePtr++;
-                                    if (RParen()) break;
-                                    if (Comma()) break;
-                                    if (Expect("A")) break;
-                                    InstrB(0x22); // LD (HL+),A
-                                    break;
-                                } else if (curCPU == CPU_GBZ80 && *linePtr == '-') {
-                                    linePtr++;
-                                    if (RParen()) break;
-                                    if (Comma()) break;
-                                    if (Expect("A")) break;
-                                    InstrB(0x32); // LD (HL-),A
-                                    break;
-                                }
+                        case reg_HLI:
+                            if (curCPU != CPU_GBZ80)
+                            {
+                                IllegalOperand();
+                            }
+                            else
+                            {
                                 if (RParen()) break;
                                 if (Comma()) break;
-                                switch ((reg2 = GetReg(Z80_regs))) {
-                                    case reg_EOL:
-                                        break;
+                                if (Expect("A")) break;
+                                InstrB(0x22); // LD (HLI),A
+                            }
+                            break;
 
-                                    case reg_None:
-                                        val = Eval();
-                                        InstrBB(0x36, val);
-                                        break;
+                        case reg_HLD:
+                            if (curCPU != CPU_GBZ80)
+                            {
+                                IllegalOperand();
+                            }
+                            else
+                            {
+                                if (RParen()) break;
+                                if (Comma()) break;
+                                if (Expect("A")) break;
+                                InstrB(0x32); // LD (HLD),A
+                            }
+                            break;
 
-                                    case reg_B:
-                                    case reg_C:
-                                    case reg_D:
-                                    case reg_E:
-                                    case reg_H:
-                                    case reg_L:
-                                    case reg_A:
-                                        InstrB(0x70 + reg2);
-                                        break;
-
-                                    default:
-                                        IllegalOperand();
-                                        break;
-                                }
+                        case reg_HL: // LD (HL),?
+                            if (curCPU == CPU_GBZ80 && *linePtr == '+')
+                            {
+                                linePtr++;
+                                if (RParen()) break;
+                                if (Comma()) break;
+                                if (Expect("A")) break;
+                                InstrB(0x22); // LD (HL+),A
                                 break;
+                            }
+                            else if (curCPU == CPU_GBZ80 && *linePtr == '-')
+                            {
+                                linePtr++;
+                                if (RParen()) break;
+                                if (Comma()) break;
+                                if (Expect("A")) break;
+                                InstrB(0x32); // LD (HL-),A
+                                break;
+                            }
+                            if (RParen()) break;
+                            if (Comma()) break;
+                            switch ((reg2 = GetReg(Z80_regs)))
+                            {
+                                case reg_EOL:
+                                    break;
 
-                            case reg_IX:
-                            case reg_IY:    // LD (IX),?
-                                if (curCPU == CPU_GBZ80) {
+                                case reg_None:
+                                    val = Eval();
+                                    InstrBB(0x36, val);
+                                    break;
+
+                                case reg_B:
+                                case reg_C:
+                                case reg_D:
+                                case reg_E:
+                                case reg_H:
+                                case reg_L:
+                                case reg_A:
+                                    InstrB(0x70 + reg2);
+                                    break;
+
+                                default:
                                     IllegalOperand();
                                     break;
-                                }
-                                val = IXOffset();
-                                if (Comma()) break;
-                                switch ((reg2 = GetReg(Z80_regs))) {
-                                    case reg_EOL:
-                                        break;
+                            }
+                            break;
 
-                                    case reg_None:
-                                        reg2 = Eval();
-                                        InstrXBB(DDFD(reg1) + 0x36, val, reg2);
-                                        break;
-
-                                    case reg_B:
-                                    case reg_C:
-                                    case reg_D:
-                                    case reg_E:
-                                    case reg_H:
-                                    case reg_L:
-                                    case reg_A:
-                                        InstrXB(DDFD(reg1) + 0x70 + reg2, val);
-                                        break;
-
-                                    default:
-                                        IllegalOperand();
-                                        break;
-                                }
-                                break;
-
-                            default:
+                        case reg_IX:
+                        case reg_IY:    // LD (IX),?
+                            if (curCPU == CPU_GBZ80)
+                            {
                                 IllegalOperand();
                                 break;
-                        }
+                            }
+                            val = IXOffset();
+                            if (Comma()) break;
+                            switch ((reg2 = GetReg(Z80_regs)))
+                            {
+                                case reg_EOL:
+                                    break;
+
+                                case reg_None:
+                                    reg2 = Eval();
+                                    InstrXBB(DDFD(reg1) + 0x36, val, reg2);
+                                    break;
+
+                                case reg_B:
+                                case reg_C:
+                                case reg_D:
+                                case reg_E:
+                                case reg_H:
+                                case reg_L:
+                                case reg_A:
+                                    InstrXB(DDFD(reg1) + 0x70 + reg2, val);
+                                    break;
+
+                                default:
+                                    IllegalOperand();
+                                    break;
+                            }
+                            break;
+
+                        default:
+                            IllegalOperand();
+                            break;
+                    }
                     break;
 
                 default:
@@ -814,10 +915,12 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_EX:
-            if (curCPU == CPU_GBZ80) {
+            if (curCPU == CPU_GBZ80)
+            {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -838,7 +941,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     if (Expect("SP")) break;
                     if (RParen()) break;
                     if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs))) {
+                    switch ((reg2 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -861,7 +965,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_ADD:
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -883,7 +988,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 #ifdef NICE_ADD
                     oldLine = linePtr;
                     token = GetWord(word);
-                    if (token == 0) {
+                    if (token == 0)
+                    {
                         InstrB(0x87); // ADD A
                         break;
                     }
@@ -894,12 +1000,16 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case reg_SP:
-                    if (curCPU != CPU_GBZ80) {
+                    if (curCPU != CPU_GBZ80)
+                    {
                         IllegalOperand();
-                    } else {
+                    }
+                    else
+                    {
                         if (Comma()) break;
                         val = Eval();
-                        if (val < -128 || val > 127) {
+                        if (val < -128 || val > 127)
+                        {
                             Error("Offset out of range");
                         }
                         InstrBB(0xE8, val);
@@ -909,21 +1019,24 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 
                 case reg_IX:
                 case reg_IY:
-                    if (curCPU == CPU_GBZ80) {
+                    if (curCPU == CPU_GBZ80)
+                    {
                         IllegalOperand();
                         break;
                     }
                     FALLTHROUGH;
                 case reg_HL:
                     if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs))) {
+                    switch ((reg2 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
                         case reg_HL:
                         case reg_IX:
                         case reg_IY:
-                            if (reg1 != reg2) {
+                            if (reg1 != reg2)
+                            {
                                 IllegalOperand();
                                 break;
                             }
@@ -949,7 +1062,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_ADC_SBC:
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -971,7 +1085,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 #ifdef NICE_ADD
                     oldLine = linePtr;
                     token = GetWord(word);
-                    if (token == 0) {
+                    if (token == 0)
+                    {
                         InstrB(0x8F + parm*16); // ADD A
                         break;
                     }
@@ -982,12 +1097,14 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case reg_HL:
-                    if (curCPU == CPU_GBZ80) {
+                    if (curCPU == CPU_GBZ80)
+                    {
                         IllegalOperand();
                         break;
                     }
                     if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs))) {
+                    switch ((reg2 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -1011,7 +1128,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_INC_DEC:
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1034,15 +1152,19 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 
                 case reg_IX:
                 case reg_IY:
-                    if (curCPU == CPU_GBZ80) {
+                    if (curCPU == CPU_GBZ80)
+                    {
                         IllegalOperand();
-                    } else {
+                    }
+                    else
+                    {
                         InstrX(DDFD(reg1) + 0x23 + parm*8);
                     }
                     break;
 
                 case reg_Paren: // INC (HL)
-                    switch ((reg1 = GetReg(Z80_regs))) {
+                    switch ((reg1 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -1053,9 +1175,12 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 
                         case reg_IX:
                         case reg_IY:
-                            if (curCPU == CPU_GBZ80) {
+                            if (curCPU == CPU_GBZ80)
+                            {
                                 IllegalOperand();
-                            } else {
+                            }
+                            else
+                            {
                                 val = IXOffset();
                                 InstrXB(DDFD(reg1) + 0x34 + parm, val);
                             }
@@ -1076,14 +1201,19 @@ static int Z80_DoCPUOpcode(int typ, int parm)
         case o_JP_CALL:
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '(') {
+            if (token == '(')
+            {
                 // JP (HL/IX/IY)
-                if (parm >> 8 != 0xC3) {
+                if (parm >> 8 != 0xC3)
+                {
                     IllegalOperand();
-                } else {
+                }
+                else
+                {
                     reg1 = GetReg(Z80_regs);
                     if (RParen()) break;
-                    switch (reg1) {
+                    switch (reg1)
+                    {
                         case reg_EOL:
                             break;
 
@@ -1093,9 +1223,12 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 
                         case reg_IX:
                         case reg_IY:
-                            if (curCPU == CPU_GBZ80) {
+                            if (curCPU == CPU_GBZ80)
+                            {
                                 IllegalOperand();
-                            } else {
+                            }
+                            else
+                            {
                                 InstrX(DDFD(reg1) + 0xE9);
                             }
                             break;
@@ -1105,24 +1238,34 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                             break;
                     }
                 }
-            } else {
+            }
+            else
+            {
                 reg1 = FindReg(word, conds);
-                if (reg1 < 0) {
+                if (reg1 < 0)
+                {
                     linePtr = oldLine;
                     val = Eval();
                     InstrBW(parm >> 8, val);
-                } else {
+                }
+                else
+                {
                     if (Comma()) return 1;
                     val = Eval();
-                    if (curCPU == CPU_GBZ80 && reg1 > 3) {
+                    if (curCPU == CPU_GBZ80 && reg1 > 3)
+                    {
                         IllegalOperand();
-                    } else {
+                    }
+                    else
+                    {
                         InstrBW((parm & 255) + reg1*8, val);
                     }
                 }
-                if ((parm >> 8) == 0xC3 && reg1 <= 3) {
+                if ((parm >> 8) == 0xC3 && reg1 <= 3)
+                {
                     val = locPtr + 2 - val;
-                    if (-128 <= val && val <= 128 && !exactFlag) {
+                    if (-128 <= val && val <= 128 && !exactFlag)
+                    {
                         // max is +128 because JR will save a byte
                         Warning("JR instruction could be used here");
                     }
@@ -1131,7 +1274,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_JR:
-            switch ((reg1 = GetReg(conds))) {
+            switch ((reg1 = GetReg(conds)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1156,25 +1300,35 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_RET:
-            if (GetWord(word) == 0) {
+            if (GetWord(word) == 0)
+            {
                 InstrB(0xC9);
-            } else {
+            }
+            else
+            {
                 reg1 = FindReg(word, conds);
-                if (reg1 < 0) {
+                if (reg1 < 0)
+                {
                     IllegalOperand();
-                } else if (curCPU == CPU_GBZ80 && reg1 > 3) {
+                }
+                else if (curCPU == CPU_GBZ80 && reg1 > 3)
+                {
                     IllegalOperand();
-                } else {
+                }
+                else
+                {
                     InstrB(0xC0 + reg1*8);
                 }
             }
             break;
 
         case o_IN:
-            if (curCPU == CPU_GBZ80) {
+            if (curCPU == CPU_GBZ80)
+            {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1187,14 +1341,18 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                 case reg_A:
                     if (Comma()) break;
                     if (Expect("(")) break;
-                    switch ((reg2 = GetReg(Z80_regs))) {
+                    switch ((reg2 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
                         case reg_None:
-                            if (reg1 != reg_A) {
+                            if (reg1 != reg_A)
+                            {
                                 IllegalOperand();
-                            } else {
+                            }
+                            else
+                            {
                                 val = Eval();
                                 if (RParen()) break;
                                 InstrBB(0xDB, val);
@@ -1219,11 +1377,13 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_OUT:
-            if (curCPU == CPU_GBZ80) {
+            if (curCPU == CPU_GBZ80)
+            {
                 return 0;
             }
             if (Expect("(")) break;
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1238,7 +1398,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                 case reg_C:
                     if (RParen()) break;
                     if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs))) {
+                    switch ((reg2 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -1265,7 +1426,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_PushPop:
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1281,9 +1443,12 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 
                 case reg_IX:
                 case reg_IY:
-                    if (curCPU == CPU_GBZ80) {
+                    if (curCPU == CPU_GBZ80)
+                    {
                         IllegalOperand();
-                    } else {
+                    }
+                    else
+                    {
                         InstrX(DDFD(reg1) + 0x20 + parm);
                     }
                     break;
@@ -1299,7 +1464,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_Rotate:
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1314,7 +1480,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case reg_Paren:
-                    switch ((reg1 = GetReg(Z80_regs))) {
+                    switch ((reg1 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -1325,7 +1492,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 
                         case reg_IX:
                         case reg_IY:
-                            if (curCPU == CPU_GBZ80) {
+                            if (curCPU == CPU_GBZ80)
+                            {
                                 IllegalOperand();
                                 break;
                             }
@@ -1346,13 +1514,21 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_IM:
-            if (curCPU == CPU_GBZ80) {
+            if (curCPU == CPU_GBZ80)
+            {
                 return 0;
             }
-            switch (GetReg("0 1 2")) {
-                case 0: InstrX(0xED46); break;
-                case 1: InstrX(0xED56); break;
-                case 2: InstrX(0xED5E); break;
+            switch (GetReg("0 1 2"))
+            {
+                case 0:
+                    InstrX(0xED46);
+                    break;
+                case 1:
+                    InstrX(0xED56);
+                    break;
+                case 2:
+                    InstrX(0xED5E);
+                    break;
                 default:
                     IllegalOperand();
                     break;
@@ -1360,7 +1536,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_DJNZ:
-            if (curCPU == CPU_GBZ80) {
+            if (curCPU == CPU_GBZ80)
+            {
                 return 0;
             }
             val = EvalBranch(2);
@@ -1369,12 +1546,17 @@ static int Z80_DoCPUOpcode(int typ, int parm)
 
         case o_RST:
             val = Eval();
-            if (0 <= val && val <= 7) {
+            if (0 <= val && val <= 7)
+            {
                 InstrB(0xC7 + val*8);
-            } else if ((val & 0xC7) == 0) {
+            }
+            else if ((val & 0xC7) == 0)
+            {
                 // [$00,$08,$10,$18,$20,$28,$30,$38]
                 InstrB(0xC7 + val);
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
                 break;
             }
@@ -1383,24 +1565,29 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             // RST vectors are used this way so much
             oldLine = line;
             token = GetWord(word);
-            if (token == ',') {
-                while (token == ',' && instrLen < MAX_BYTSTR) {
+            if (token == ',')
+            {
+                while (token == ',' && instrLen < MAX_BYTSTR)
+                {
                     bytStr[instrLen++] = Eval();
                     oldLine = line;
                     token = GetWord(word);
                 }
                 instrLen = -instrLen;   // negative means we're using long DB listing format
             }
-            if (token) {
+            if (token)
+            {
                 linePtr = oldLine;  // ensure a too many operands error
             }
             break;
 
         case o_SWAP:
-            if (curCPU != CPU_GBZ80) {
+            if (curCPU != CPU_GBZ80)
+            {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1415,7 +1602,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case reg_Paren:
-                    switch ((reg1 = GetReg(Z80_regs))) {
+                    switch ((reg1 = GetReg(Z80_regs)))
+                    {
                         case reg_EOL:
                             break;
 
@@ -1437,10 +1625,12 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_LDH:
-            if (curCPU != CPU_GBZ80) {
+            if (curCPU != CPU_GBZ80)
+            {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1449,7 +1639,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     if (Expect("(")) break;
                     val = Eval();
                     if (RParen()) break;
-                    if ((val & 0xFF00) != 0 && (val & 0xFF00) != 0xFF00) {
+                    if ((val & 0xFF00) != 0 && (val & 0xFF00) != 0xFF00)
+                    {
                         Error("LDH address out of range");
                     }
                     InstrBB(0xF0, val);
@@ -1460,7 +1651,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     if (RParen()) break;
                     if (Comma()) break;
                     if (Expect("A")) break;
-                    if ((val & 0xFF00) != 0 && (val & 0xFF00) != 0xFF00) {
+                    if ((val & 0xFF00) != 0 && (val & 0xFF00) != 0xFF00)
+                    {
                         Error("LDH address out of range");
                     }
                     InstrBB(0xE0, val);
@@ -1473,10 +1665,12 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_IN0:
-            if (curCPU != CPU_Z180) {
+            if (curCPU != CPU_Z180)
+            {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_IN0_OUT0_regs))) {
+            switch ((reg1 = GetReg(Z80_IN0_OUT0_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1502,14 +1696,16 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_OUT0:
-            if (curCPU != CPU_Z180) {
+            if (curCPU != CPU_Z180)
+            {
                 return 0;
             }
             if (Expect("(")) break;
             val = Eval();
             if (RParen()) break;
             if (Comma()) break;
-            switch ((reg1 = GetReg(Z80_IN0_OUT0_regs))) {
+            switch ((reg1 = GetReg(Z80_IN0_OUT0_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1531,10 +1727,12 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_TST:
-            if (curCPU != CPU_Z180) {
+            if (curCPU != CPU_Z180)
+            {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1549,7 +1747,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case reg_Paren:
-                    switch ((reg1 = GetReg("HL C"))) {
+                    switch ((reg1 = GetReg("HL C")))
+                    {
                         case reg_EOL:
                             break;
 
@@ -1578,10 +1777,12 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_MLT:
-            if (curCPU != CPU_Z180) {
+            if (curCPU != CPU_Z180)
+            {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs))) {
+            switch ((reg1 = GetReg(Z80_regs)))
+            {
                 case reg_EOL:
                     break;
 
@@ -1599,7 +1800,8 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_TSTIO:
-            if (curCPU != CPU_Z180) {
+            if (curCPU != CPU_Z180)
+            {
                 return 0;
             }
             val = Eval();
@@ -1623,7 +1825,8 @@ static int Z80_DoCPULabelOp(int typ, int parm, char *labl)
     int     reg1;
     int     reg2;
 
-    switch (typ) {
+    switch (typ)
+    {
         // o_Bit needs to be implemented like a pseudo-op so that
         //        SET can fall back to the standard SET pseudo-op
         case o_Bit:
@@ -1631,19 +1834,25 @@ static int Z80_DoCPULabelOp(int typ, int parm, char *labl)
             reg1 = Eval();                  // get bit number
             token = GetWord(word);          // attempt to get comma
             // if end of line and SET opcode
-            if (token == 0 && parm == 0xC0) {
+            if (token == 0 && parm == 0xC0)
+            {
                 linePtr = oldLine;
-                if (!errFlag || pass < 2) { // don't double-error on second pass
+                if (!errFlag || pass < 2)   // don't double-error on second pass
+                {
                     DoLabelOp(o_EQU, 1, labl);  // fall back to SET pseudo-op
                 }
-            } else {
+            }
+            else
+            {
                 DefSym(labl, locPtr, false, false); // define label if present
                 showAddr = true;
-                if (token != ',') {         // validate that comma is present
+                if (token != ',')           // validate that comma is present
+                {
                     Error("\",\" expected");
                     break;
                 }
-                switch ((reg2 = GetReg(Z80_regs))) {
+                switch ((reg2 = GetReg(Z80_regs)))
+                {
                     case reg_EOL:
                         break;
 
@@ -1658,7 +1867,8 @@ static int Z80_DoCPULabelOp(int typ, int parm, char *labl)
                         break;
 
                     case reg_Paren:     // BIT n,(HL)
-                        switch ((reg2 = GetReg(Z80_regs))) {
+                        switch ((reg2 = GetReg(Z80_regs)))
+                        {
                             case reg_EOL:
                                 break;
 
@@ -1669,7 +1879,8 @@ static int Z80_DoCPULabelOp(int typ, int parm, char *labl)
 
                             case reg_IX:
                             case reg_IY:
-                                if (curCPU == CPU_GBZ80) {
+                                if (curCPU == CPU_GBZ80)
+                                {
                                     IllegalOperand();
                                     break;
                                 }
@@ -1702,7 +1913,8 @@ void AsmZ80Init(void)
 {
     void *p = AddAsm(versionName, &Z80_DoCPUOpcode, &Z80_DoCPULabelOp, NULL);
 
-    enum { // standard CPU options
+    enum   // standard CPU options
+    {
         OPT = (OPT_ATSYM | OPT_DOLLARSYM),
     };
 

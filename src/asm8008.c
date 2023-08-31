@@ -3,11 +3,13 @@
 #define versionName "8008 assembler"
 #include "asmx.h"
 
-enum {
+enum
+{
     CPU_8008,
 };
 
-enum instrType {
+enum instrType
+{
     o_None,         // No operands
 
     o_Immediate,    // one-byte immediate operand
@@ -27,7 +29,8 @@ enum instrType {
 const char I8008_regs1[]      = "A B C D E H L M";
 const char I8008_regs2[]      = "B D H";
 
-static const struct OpcdRec I8008_opcdTab[] = {
+static const struct OpcdRec I8008_opcdTab[] =
+{
     {"RLC", o_None, 0x02},
     {"RNC", o_None, 0x03}, // also RFC
     {"RET", o_None, 0x07},
@@ -110,7 +113,8 @@ static int I8008_DoCPUOpcode(int typ, int parm)
     char    *oldLine;
 //  int     token;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_None:
             InstrB(parm & 255);
             break;
@@ -128,19 +132,28 @@ static int I8008_DoCPUOpcode(int typ, int parm)
         case o_MOV:
             GetWord(word);
             reg1 = FindReg(word, I8008_regs1);
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 oldLine = linePtr;
-                if (GetWord(word) != ',') {
+                if (GetWord(word) != ',')
+                {
                     linePtr = oldLine;
                     Comma();
-                } else {
+                }
+                else
+                {
                     GetWord(word);
                     reg2 = FindReg(word, I8008_regs1);
-                    if (reg2 < 0 || (reg1 == 7 && reg2 == 7)) {
+                    if (reg2 < 0 || (reg1 == 7 && reg2 == 7))
+                    {
                         IllegalOperand();
-                    } else {
+                    }
+                    else
+                    {
                         InstrB(parm + (reg1 << 3) + reg2);
                     }
                 }
@@ -149,9 +162,12 @@ static int I8008_DoCPUOpcode(int typ, int parm)
 
         case o_RST:
             val = Eval();
-            if (0 <= val && val <= 7) {
+            if (0 <= val && val <= 7)
+            {
                 InstrB(parm + val*8);
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
             }
             break;
@@ -159,9 +175,12 @@ static int I8008_DoCPUOpcode(int typ, int parm)
         case o_Arith:
             GetWord(word);
             reg1 = FindReg(word, I8008_regs1);
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + reg1);
             }
             break;
@@ -169,14 +188,20 @@ static int I8008_DoCPUOpcode(int typ, int parm)
         case o_MVI:
             GetWord(word);
             reg1 = FindReg(word, I8008_regs1);
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 oldLine = linePtr;
-                if (GetWord(word) != ',') {
+                if (GetWord(word) != ',')
+                {
                     linePtr = oldLine;
                     Comma();
-                } else {
+                }
+                else
+                {
                     val = Eval();
                     InstrBB(parm + (reg1 << 3), val);
                 }
@@ -186,14 +211,20 @@ static int I8008_DoCPUOpcode(int typ, int parm)
         case o_LXI:
             GetWord(word);
             reg1 = FindReg(word, I8008_regs2);
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 oldLine = linePtr;
-                if (GetWord(word) != ',') {
+                if (GetWord(word) != ',')
+                {
                     linePtr = oldLine;
                     Comma();
-                } else {
+                }
+                else
+                {
                     val = Eval();
                     InstrBBBB(parm + (reg1 << 4), val & 0xFF, parm + (reg1 << 4) - 8, val >> 8);
                 }
@@ -203,27 +234,36 @@ static int I8008_DoCPUOpcode(int typ, int parm)
         case o_INR:
             GetWord(word);
             reg1 = FindReg(word, I8008_regs1);
-            if ((reg1 < 0) || (reg1 == 0) || (reg1 == 7)) {
+            if ((reg1 < 0) || (reg1 == 0) || (reg1 == 7))
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + (reg1 << 3));
             }
             break;
 
         case o_IN:
             val = Eval();
-            if ((val < 0) || (val > 7)) {
+            if ((val < 0) || (val > 7))
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + val*2);
             }
             break;
 
         case o_OUT:
             val = Eval();
-            if ((val < 8) || (val > 31)) {
+            if ((val < 8) || (val > 31))
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + val*2);
             }
             break;

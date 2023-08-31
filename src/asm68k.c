@@ -6,12 +6,14 @@
 // set false to allow ADD/AND/SUB/CMP #n to become ADDI etc.
 #define exactArithI true
 
-enum {
+enum
+{
     CPU_68000,
     CPU_68010
 };
 
-enum {
+enum
+{
     o_Inherent,     // implied instructions
     o_DBcc,         // DBcc instructions
     o_Branch,       // relative branch instructions
@@ -47,11 +49,13 @@ enum {
 //  o_Foo = o_LabelOp,
 };
 
-enum {
+enum
+{
     WID_B, WID_W, WID_L, WID_X // byte, word, long, or auto
 };
 
-typedef struct EArec {
+typedef struct EArec
+{
     uint16_t        mode;       // 6 bits for the opcode
     uint16_t        len;        // number of extra words
     uint16_t        extra[5];   // storage for extra words
@@ -63,7 +67,8 @@ const char   DA_regs[] = "D0 D1 D2 D3 D4 D5 D6 D7 A0 A1 A2 A3 A4 A5 A6 A7 SP";
 const char A_PC_regs[] = "A0 A1 A2 A3 A4 A5 A6 A7 SP PC";
 
 
-static const struct OpcdRec M68K_opcdTab[] = {
+static const struct OpcdRec M68K_opcdTab[] =
+{
     {"ILLEGAL", o_Inherent, 0x4AFC},
     {"NOP",     o_Inherent, 0x4E71},
     {"RESET",   o_Inherent, 0x4E70},
@@ -311,16 +316,16 @@ static const struct OpcdRec M68K_opcdTab[] = {
     {"SUB.B",   o_Arith,    0x9000 + WID_B + 0x10},
     {"SUB.W",   o_Arith,    0x9040 + WID_W + 0x10},
     {"SUB.L",   o_Arith,    0x9080 + WID_L + 0x10},
-/*
-1100 rrrm mm00 0000 -> 0000 0010 SS00 0000 AND -> ANDI
-1011 rrr1 mm00 0000 -> 0000 1010 SS00 0000 EOR -> EORI
-1000 rrrm mm00 0000 -> 0000 0000 SS00 0000 OR  -> ORI
+    /*
+    1100 rrrm mm00 0000 -> 0000 0010 SS00 0000 AND -> ANDI
+    1011 rrr1 mm00 0000 -> 0000 1010 SS00 0000 EOR -> EORI
+    1000 rrrm mm00 0000 -> 0000 0000 SS00 0000 OR  -> ORI
 
-1101 rrrm mm00 0000 -> 0000 0110 SS00 0000 ADD -> ADDI
-1011 rrr0 mm00 0000 -> 0000 1100 SS00 0000 CMP -> CMPI
-1001 rrrm mm00 0000 -> 0000 0100 SS00 0000 SUB -> SUBI
- ^^^                        ^^^
-*/
+    1101 rrrm mm00 0000 -> 0000 0110 SS00 0000 ADD -> ADDI
+    1011 rrr0 mm00 0000 -> 0000 1100 SS00 0000 CMP -> CMPI
+    1001 rrrm mm00 0000 -> 0000 0100 SS00 0000 SUB -> SUBI
+     ^^^                        ^^^
+    */
     {"ADDI",    o_ArithI,   0x0640 + WID_W},
     {"ADDI.B",  o_ArithI,   0x0600 + WID_B},
     {"ADDI.W",  o_ArithI,   0x0640 + WID_W},
@@ -451,10 +456,14 @@ static void InstrAddE(EArec *ea)
 {
     // detect longwords for proper hex spacing in listing
     if (ea->len == 2 && ((ea->mode & 0x38) == 0x28 || ea->mode == 0x39 ||
-                                  ea->mode == 0x3A || ea->mode == 0x3C)) {
+                         ea->mode == 0x3A || ea->mode == 0x3C))
+    {
         InstrAddL(ea -> extra[0] * 65536 + ea -> extra[1]);
-    } else {
-        for (int i = 0; i < ea -> len; i++) {
+    }
+    else
+    {
+        for (int i = 0; i < ea -> len; i++)
+        {
             InstrAddW(ea -> extra[i]);
         }
     }
@@ -504,7 +513,7 @@ static void InstrWEE(uint16_t op, EArec *srcEA, EArec *dstEA)
     InstrClear();
 
     InstrAddW((op & 0xF000) | srcEA -> mode | (((dstEA -> mode) & 0x07) << 9) |
-                                              (((dstEA -> mode) & 0x38) << 3));
+              (((dstEA -> mode) & 0x38) << 3));
     InstrAddE(srcEA);
     InstrAddE(dstEA);
 }
@@ -512,7 +521,8 @@ static void InstrWEE(uint16_t op, EArec *srcEA, EArec *dstEA)
 
 static void CheckSize(int size, uint32_t val)
 {
-    switch (size) {
+    switch (size)
+    {
         case WID_B:
             CheckByte(val);
             break;
@@ -543,30 +553,41 @@ static bool GetEA(bool store, int size, EArec *ea)
     ea -> mode = 0;
     ea -> len = 0;
 
-    if (word[0] == 'D' && '0' <= word[1] && word[1] <= '7' && word[2] == 0) {
+    if (word[0] == 'D' && '0' <= word[1] && word[1] <= '7' && word[2] == 0)
+    {
         // 000nnn = Dn
         ea -> mode = word[1] - '0';
         return true;
 
-    } else if (word[0] == 'A' && '0' <= word[1] && word[1] <= '7' && word[2] == 0) {
+    }
+    else if (word[0] == 'A' && '0' <= word[1] && word[1] <= '7' && word[2] == 0)
+    {
         // 001nnn = An
         ea -> mode = 8 + word[1] - '0';
         return true;
 
-    } else if (word[0] == 'S' && word[1] == 'P' && word[2] == 0) {
+    }
+    else if (word[0] == 'S' && word[1] == 'P' && word[2] == 0)
+    {
         // 001111 = SP
         ea -> mode = 0x0F;
         return true;
 
-    } else if (token == '#') {
+    }
+    else if (token == '#')
+    {
         // 111100 = #imm - load-EA only
-        if (store || size < 0) {
+        if (store || size < 0)
+        {
             BadMode();
-        } else {
+        }
+        else
+        {
             ea -> mode = 0x3C;
             val = Eval();
             CheckSize(size, val);
-            switch (size) {
+            switch (size)
+            {
                 case WID_B:
                     val = val & 0xFF;
                     FALLTHROUGH;
@@ -586,20 +607,27 @@ static bool GetEA(bool store, int size, EArec *ea)
         }
         return true;
 
-    } else if (token == '-') {
+    }
+    else if (token == '-')
+    {
         // 100nnn -(An)
-        if (GetWord(word) == '(') {
+        if (GetWord(word) == '(')
+        {
             reg1 = GetReg(addr_regs);
             if (reg1 == 8) reg1 = 7;
-            if (reg1 >= 0) {
-                if (GetWord(word) == ')') {
+            if (reg1 >= 0)
+            {
+                if (GetWord(word) == ')')
+                {
                     ea -> mode = 0x20 + reg1;
                     return true;
                 }
             }
         }
 
-    } else if (token == '(') {
+    }
+    else if (token == '(')
+    {
         // 010nnn (An)
         // 011nnn (An)+
         // 101nnn (d16,An)
@@ -610,16 +638,21 @@ static bool GetEA(bool store, int size, EArec *ea)
 
         reg1 = GetReg(A_PC_regs);
         if (reg1 == 8) reg1 = 7; // SP -> A7
-        if (reg1 >= 0) {
+        if (reg1 >= 0)
+        {
             token = GetWord(word);
-            switch (token) {
+            switch (token)
+            {
                 case ')': // (An)
                     oldLine = linePtr;
-                    if (GetWord(word) == '+') {
+                    if (GetWord(word) == '+')
+                    {
                         // 011 (An)+
                         ea -> mode = 0x18 + reg1;
                         return true;
-                    } else {
+                    }
+                    else
+                    {
                         // 010 (An)
                         linePtr = oldLine;
                         ea -> mode = 0x10 + reg1;
@@ -633,14 +666,17 @@ static bool GetEA(bool store, int size, EArec *ea)
                     val = 0;
                     reg2 = GetReg(DA_regs);
                     if (reg2 == 16) reg2 = 15; // SP -> A7
-                    if (reg2 >= 0) {
+                    if (reg2 >= 0)
+                    {
                         // get Xn forced size if any
                         width = WID_W;
-                        if (linePtr[0] == '.') {
-                            switch (toupper(linePtr[1])) {
+                        if (linePtr[0] == '.')
+                        {
+                            switch (toupper(linePtr[1]))
+                            {
                                 case 'L':
                                     width = WID_L;
-                                    // fall through...
+                                // fall through...
                                 case 'W':
                                     linePtr = linePtr + 2;
                                     break;
@@ -650,31 +686,39 @@ static bool GetEA(bool store, int size, EArec *ea)
                         //CheckByte(val); // zero IS a byte
                         if (RParen()) return false;
 
-                        if (reg1 == 9) { // PC
+                        if (reg1 == 9)   // PC
+                        {
                             // (PC,Xn)
-                            if (!store) {
+                            if (!store)
+                            {
                                 // val = val - locPtr - 2; // don't offset from PC
                                 ea -> mode = 0x3B;
                                 ea -> len = 1;
                                 ea -> extra[0] = (reg2 << 12) + (val & 0xFF);
-                                if (width == WID_L) {
+                                if (width == WID_L)
+                                {
                                     ea -> extra[0] |= 0x0800;
                                 }
                                 return true;
                             }
-                        } else {
+                        }
+                        else
+                        {
                             // (An,Xn)
                             ea -> mode = 0x30 + reg1;
                             ea -> len = 1;
                             ea -> extra[0] = (reg2 << 12) + (val & 0xFF);
-                            if (width == WID_L) {
+                            if (width == WID_L)
+                            {
                                 ea -> extra[0] |= 0x0800;
                             }
                             return true;
                         }
                     }
             }
-        } else {
+        }
+        else
+        {
             // (value
             linePtr = oldLine;
 
@@ -683,14 +727,19 @@ static bool GetEA(bool store, int size, EArec *ea)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == ')') {
+            if (token == ')')
+            {
                 // (expr) which may be followed by more expr: (foo)*(bar)
                 oldLine = oldLine0; // completely back up to start of EA
-            } else {
-                if (token == '.') {
+            }
+            else
+            {
+                if (token == '.')
+                {
                     // abs.w/abs.l with forced size
                     width = WID_X;
-                    switch (toupper(*linePtr)) {
+                    switch (toupper(*linePtr))
+                    {
                         case 'W':
                             width = WID_W;
                             linePtr = linePtr + 1;
@@ -715,16 +764,21 @@ static bool GetEA(bool store, int size, EArec *ea)
                 reg1 = GetReg(A_PC_regs);
                 if (reg1 == 8) reg1 = 7; // SP -> A7
 
-                if (reg1 >= 0) {
+                if (reg1 >= 0)
+                {
                     // look for rparen or Xn
-                    switch (GetWord(word)) {
+                    switch (GetWord(word))
+                    {
                         case ')':
                             // (ofs,An) or (ofs,PC)
-                            if (reg1 == 9) { // PC
+                            if (reg1 == 9)   // PC
+                            {
                                 // (d16,PC)
-                                if (!store) {
+                                if (!store)
+                                {
                                     val = val - locPtr - 2;
-                                    if (!errFlag && (val < -128 || val > 127)) {
+                                    if (!errFlag && (val < -128 || val > 127))
+                                    {
                                         Error("Offset out of range");
                                     }
                                     ea -> mode = 0x3A;
@@ -732,8 +786,11 @@ static bool GetEA(bool store, int size, EArec *ea)
                                     ea -> extra[0] = val;
                                     return true;
                                 }
-                            } else {
-                                if (!exactFlag && evalKnown && val == 0) {
+                            }
+                            else
+                            {
+                                if (!exactFlag && evalKnown && val == 0)
+                                {
                                     // 010 (An)
                                     ea -> mode = 0x10 + reg1;
                                     return true;
@@ -750,13 +807,16 @@ static bool GetEA(bool store, int size, EArec *ea)
                         case ',': // (d8,An,Xn) or (d8,PC,Xn)
                             reg2 = GetReg(DA_regs);
                             if (reg2 == 16) reg2 = 15; // SP -> A7
-                            if (reg2 >= 0) {
+                            if (reg2 >= 0)
+                            {
                                 width = WID_W;
-                                if (linePtr[0] == '.') {
-                                    switch (toupper(linePtr[1])) {
+                                if (linePtr[0] == '.')
+                                {
+                                    switch (toupper(linePtr[1]))
+                                    {
                                         case 'L':
                                             width = WID_L;
-                                            // fall through...
+                                        // fall through...
                                         case 'W':
                                             linePtr = linePtr + 2;
                                             break;
@@ -765,28 +825,35 @@ static bool GetEA(bool store, int size, EArec *ea)
 
                                 if (RParen()) break;
 
-                                if (reg1 == 9) { // PC
+                                if (reg1 == 9)   // PC
+                                {
                                     // (d8,PC,Xn)
-                                    if (!store) {
+                                    if (!store)
+                                    {
                                         val = val - locPtr - 2;
-                                        if (!errFlag && (val < -128 || val > 127)) {
+                                        if (!errFlag && (val < -128 || val > 127))
+                                        {
                                             Error("Offset out of range");
                                         }
                                         ea -> mode = 0x3B;
                                         ea -> len = 1;
                                         ea -> extra[0] = (reg2 << 12) + (val & 0xFF);
-                                        if (width == WID_L) {
+                                        if (width == WID_L)
+                                        {
                                             ea -> extra[0] |= 0x0800;
                                         }
                                         return true;
                                     }
-                                } else {
+                                }
+                                else
+                                {
                                     // (d8,An,Xn)
                                     CheckByte(val);
                                     ea -> mode = 0x30 + reg1;
                                     ea -> len = 1;
                                     ea -> extra[0] = (reg2 << 12) + (val & 0xFF);
-                                    if (width == WID_L) {
+                                    if (width == WID_L)
+                                    {
                                         ea -> extra[0] |= 0x0800;
                                     }
                                     return true;
@@ -812,8 +879,10 @@ static bool GetEA(bool store, int size, EArec *ea)
         // get address/offset and forced size if any
         val = Eval();
         width = WID_X;
-        if (linePtr[0] == '.') {
-            switch (toupper(linePtr[1])) {
+        if (linePtr[0] == '.')
+        {
+            switch (toupper(linePtr[1]))
+            {
                 case 'W':
                     width = WID_W;
                     linePtr = linePtr + 2;
@@ -826,20 +895,26 @@ static bool GetEA(bool store, int size, EArec *ea)
         }
 
         oldLine = linePtr;
-        switch (GetWord(word)) {
+        switch (GetWord(word))
+        {
             case '(':
                 // offset indexed
                 reg1 = GetReg(A_PC_regs);
                 if (reg1 == 8) reg1 = 7; // SP -> A7
-                if (reg1 >= 0) {
+                if (reg1 >= 0)
+                {
                     // now look for ) or ,
-                    switch (GetWord(word)) {
+                    switch (GetWord(word))
+                    {
                         case ')':
-                            if (reg1 == 9) { // PC
+                            if (reg1 == 9)   // PC
+                            {
                                 // d16(PC)
-                                if (!store) {
+                                if (!store)
+                                {
                                     val = val - locPtr - 2;
-                                    if (!errFlag && (val < -32768 || val > 32767)) {
+                                    if (!errFlag && (val < -32768 || val > 32767))
+                                    {
                                         Error("Offset out of range");
                                     }
                                     ea -> mode = 0x3A;
@@ -847,8 +922,11 @@ static bool GetEA(bool store, int size, EArec *ea)
                                     ea -> extra[0] = val;
                                     return true;
                                 }
-                            } else {
-                                if (!exactFlag && evalKnown && val == 0) {
+                            }
+                            else
+                            {
+                                if (!exactFlag && evalKnown && val == 0)
+                                {
                                     // 010 (An)
                                     ea -> mode = 0x10 + reg1;
                                     return true;
@@ -866,14 +944,17 @@ static bool GetEA(bool store, int size, EArec *ea)
                         case ',': // d8(An,Xn) or d8(PC,Xn)
                             reg2 = GetReg(DA_regs);
                             if (reg2 == 16) reg2 = 15; // SP -> A7
-                            if (reg2 >= 0) {
+                            if (reg2 >= 0)
+                            {
                                 // get Xn forced size if any
                                 width = WID_W;
-                                if (linePtr[0] == '.') {
-                                    switch (toupper(linePtr[1])) {
+                                if (linePtr[0] == '.')
+                                {
+                                    switch (toupper(linePtr[1]))
+                                    {
                                         case 'L':
                                             width = WID_L;
-                                            // fall through
+                                        // fall through
                                         case 'W':
                                             linePtr = linePtr + 2;
                                             break;
@@ -882,28 +963,35 @@ static bool GetEA(bool store, int size, EArec *ea)
 
                                 if (RParen()) break;
 
-                                if (reg1 == 9) { // PC
+                                if (reg1 == 9)   // PC
+                                {
                                     // d8(PC,Xn)
-                                    if (!store) {
+                                    if (!store)
+                                    {
                                         val = val - locPtr - 2;
-                                        if (!errFlag && (val < -128 || val > 127)) {
+                                        if (!errFlag && (val < -128 || val > 127))
+                                        {
                                             Error("Offset out of range");
                                         }
                                         ea -> mode = 0x3B;
                                         ea -> len = 1;
                                         ea -> extra[0] = (reg2 << 12) + (val & 0xFF);
-                                        if (width == WID_L) {
+                                        if (width == WID_L)
+                                        {
                                             ea -> extra[0] |= 0x0800;
                                         }
                                         return true;
                                     }
-                                } else {
+                                }
+                                else
+                                {
                                     // d8(An,Xn)
                                     CheckByte(val);
                                     ea -> mode = 0x30 + reg1;
                                     ea -> len = 1;
                                     ea -> extra[0] = (reg2 << 12) + (val & 0xFF);
-                                    if (width == WID_L) {
+                                    if (width == WID_L)
+                                    {
                                         ea -> extra[0] |= 0x0800;
                                     }
                                     return true;
@@ -921,16 +1009,20 @@ ABSOLUTE:
                 reg2 = val & 0xFFFFFF; // 68000/68010: truncate to 24 bits for range checks
                 if (reg2 & 0x800000) reg2 = reg2 | 0xFF000000; // 68000/68010: sign extend from 24 bits
                 if ((evalKnown && width == WID_X && -0x8000 <= reg2 && reg2 <= 0x7FFF)
-                               || width == WID_W) {
+                        || width == WID_W)
+                {
                     // abs.w
-                    if (reg2 < -0x8000 || reg2 > 0x7FFF) {
+                    if (reg2 < -0x8000 || reg2 > 0x7FFF)
+                    {
                         Error("Absolute word addressing mode out of range");
                     }
                     ea -> mode = 0x38;
                     ea -> len = 1;
                     ea -> extra[0] = val;
                     return true;
-                } else {
+                }
+                else
+                {
                     // abs.l
                     ea -> mode = 0x39;
                     ea -> len = 2;
@@ -954,7 +1046,8 @@ ABSOLUTE:
 
 static void Set68KMultiReg(int reg, int *regs, bool *warned)
 {
-    if (!*warned && *regs & (1 << reg)) {
+    if (!*warned && *regs & (1 << reg))
+    {
         Warning("MOVEM register specified twice");
         *warned = true;
     }
@@ -970,10 +1063,12 @@ static int Get68KMultiRegs(void)
 
     char *oldLine = linePtr;
     int token = '/';
-    while (token == '/') {
+    while (token == '/')
+    {
         int reg1 = GetReg(DA_regs);
         if (reg1 == 16) reg1 = 15; // SP -> A7
-        if (reg1 < 0) {
+        if (reg1 < 0)
+        {
             IllegalOperand();      // abort if not valid register
             break;
         }
@@ -985,27 +1080,35 @@ static int Get68KMultiRegs(void)
         oldLine = linePtr;
         token = GetWord(word);
 
-        if (token == '-') {     // register range
+        if (token == '-')       // register range
+        {
             oldLine = linePtr;  // commit line position
             int reg2 = GetReg(DA_regs); // check for second register
             if (reg2 == 16) reg2 = 15; // SP -> A7
-            if (reg2 < 0) {
+            if (reg2 < 0)
+            {
                 IllegalOperand();      // abort if not valid register
                 break;
             }
-            if (reg1 < reg2) {
-                for (int i = reg1 + 1; i <= reg2; i++) {
+            if (reg1 < reg2)
+            {
+                for (int i = reg1 + 1; i <= reg2; i++)
+                {
                     Set68KMultiReg(i, &regs, &warned);
                 }
-            } else if (reg1 > reg2) {
-                for (int i = reg1 - 1; i >= reg2; i--) {
+            }
+            else if (reg1 > reg2)
+            {
+                for (int i = reg1 - 1; i >= reg2; i--)
+                {
                     Set68KMultiReg(i, &regs, &warned);
                 }
             }
             oldLine = linePtr;  // commit line position
             token = GetWord(word);
         }
-        if (token == '/') { // is there another register?
+        if (token == '/')   // is there another register?
+        {
             oldLine = linePtr;  // commit line position
         }
     }
@@ -1037,7 +1140,8 @@ static int GetMOVECreg(void)
 {
     int reg = GetReg("SFC DFC USP VBR"); // 68010 MOVEC registers
 
-    switch (reg) {
+    switch (reg)
+    {
         case 0: // SFC = 000
         case 1: // DFC = 001
             break;
@@ -1068,30 +1172,38 @@ static int M68K_DoCPUOpcode(int typ, int parm)
 //  int     token;
     bool    skipArithI = false;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_Inherent:
             InstrW(parm);
             break;
 
         case o_DBcc:
             reg1 = GetReg(data_regs);
-            if (reg1 >= 0) {
+            if (reg1 >= 0)
+            {
                 if (Comma()) break;
                 val = EvalWBranch(2);
                 InstrWW(parm + reg1, val);
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
             }
             break;
 
         case o_Branch:
-            switch (parm & 3) {
+            switch (parm & 3)
+            {
                 case WID_B:
                     val = EvalBranch(2);
-                    if (val == 0) {
+                    if (val == 0)
+                    {
                         Error("Short branch can not have zero offset!");
                         InstrW(0x4E71); // assemble a NOP instead of a zero branch
-                    } else {
+                    }
+                    else
+                    {
                         InstrW((parm & 0xFF00) + (val & 0x00FF));
                     }
                     break;
@@ -1101,20 +1213,29 @@ static int M68K_DoCPUOpcode(int typ, int parm)
 #if 0 // long branch for 68020+
                     // if not a forward reference, can choose L, W, or B branch
                     val = EvalLBranch(2);
-                    if (evalKnown && -128 <= val && val <= 127 && val != 0 && val != 0xFF) {
-                         InstrW((parm & 0xFF00) + (val & 0x00FF));
-                    } else if (evalKnown && -32768 <= val && val <= 32767) {
-                         InstrWW(parm & 0xFF00, val);
-                    } else {
-                         InstrWL(parm & 0xFF00 + 0xFF, val);
+                    if (evalKnown && -128 <= val && val <= 127 && val != 0 && val != 0xFF)
+                    {
+                        InstrW((parm & 0xFF00) + (val & 0x00FF));
+                    }
+                    else if (evalKnown && -32768 <= val && val <= 32767)
+                    {
+                        InstrWW(parm & 0xFF00, val);
+                    }
+                    else
+                    {
+                        InstrWL(parm & 0xFF00 + 0xFF, val);
                     }
 #else
                     // if not a forward reference, can choose W or B branch
                     val = EvalWBranch(2);
-                    if (evalKnown && -128 <= val && val <= 127 && val != 0 && val != 0xFF) {
-                         InstrW((parm & 0xFF00) + (val & 0x00FF));
-                    } else {
-                        if (val != 0 && -128 <= val && val <= 129 && !exactFlag) {
+                    if (evalKnown && -128 <= val && val <= 127 && val != 0 && val != 0xFF)
+                    {
+                        InstrW((parm & 0xFF00) + (val & 0x00FF));
+                    }
+                    else
+                    {
+                        if (val != 0 && -128 <= val && val <= 129 && !exactFlag)
+                        {
                             // max is +129 because short branch saves 2 bytes
                             Warning("Short branch could be used here");
                         }
@@ -1125,7 +1246,8 @@ static int M68K_DoCPUOpcode(int typ, int parm)
 #endif
                 case WID_W:
                     val = EvalWBranch(2);
-                    if (val != 0 && -128 <= val && val <= 129 && !exactFlag) {
+                    if (val != 0 && -128 <= val && val <= 129 && !exactFlag)
+                    {
                         // max is +129 because short branch saves 2 bytes
                         Warning("Short branch could be used here");
                     }
@@ -1135,10 +1257,13 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                 case WID_L:
 #if 0 // long branch for 68020+
                     val = EvalLBranch(2);
-                    if (val != 0 && -128 <= val && val <= 131 && !exactFlag) {
+                    if (val != 0 && -128 <= val && val <= 131 && !exactFlag)
+                    {
                         // max is +131 because short branch saves 4 bytes
                         Warning("Short branch could be used here");
-                    } else    if (-32768 <= val && val <= 32769 && !exactFlag) {
+                    }
+                    else    if (-32768 <= val && val <= 32769 && !exactFlag)
+                    {
                         // max is +32769 because word branch saves 2 bytes
                         Warning("Word branch could be used here");
                     }
@@ -1163,26 +1288,36 @@ static int M68K_DoCPUOpcode(int typ, int parm)
         case o_BKPT:
             if (Expect("#")) break;
             val = Eval();
-            if (val < 0 || val > 15 || (typ == o_BKPT && val > 7)) {
+            if (val < 0 || val > 15 || (typ == o_BKPT && val > 7))
+            {
                 IllegalOperand();
                 InstrW(parm); // to avoid potential phase errors
-            } else {
+            }
+            else
+            {
                 InstrW(parm + val);
             }
             break;
 
         case o_LEA:
-            if (GetEA(false, -1, &ea1)) {
+            if (GetEA(false, -1, &ea1))
+            {
                 reg1 = ea1.mode & 0x38; // don't allow Dn An (An)+ or -(An)
-                if (reg1 == 0x00 || reg1 == 0x08 || reg1 == 0x18 || reg1 == 0x20) {
+                if (reg1 == 0x00 || reg1 == 0x08 || reg1 == 0x18 || reg1 == 0x20)
+                {
                     BadMode();
-                } else {
+                }
+                else
+                {
                     if (Comma()) break;
                     reg1 = GetReg(addr_regs);
                     if (reg1 == 8) reg1 = 7;
-                    if (reg1 >= 0) {
+                    if (reg1 >= 0)
+                    {
                         InstrWE(parm + (reg1 << 9), &ea1);
-                    } else {
+                    }
+                    else
+                    {
                         IllegalOperand();
                     }
                 }
@@ -1190,29 +1325,38 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_JMP:
-            if (GetEA(false, -1, &ea1)) {
+            if (GetEA(false, -1, &ea1))
+            {
                 reg1 = ea1.mode & 0x38; // don't allow Dn An (An)+ or -(An)
-                if (reg1 == 0x00 || reg1 == 0x08 || reg1 == 0x18 || reg1 == 0x20) {
+                if (reg1 == 0x00 || reg1 == 0x08 || reg1 == 0x18 || reg1 == 0x20)
+                {
                     BadMode();
-                } else {
+                }
+                else
+                {
                     InstrWE(parm, &ea1);
                 }
             }
             break;
 
         case o_OneEA:
-            if (GetEA(true, -1, &ea1)) {
+            if (GetEA(true, -1, &ea1))
+            {
                 InstrWE(parm, &ea1);
             }
             break;
 
         case o_DIVMUL:
-            if (GetEA(false, WID_W, &ea1)) {
+            if (GetEA(false, WID_W, &ea1))
+            {
                 if (Comma()) break;
                 reg1 = GetReg(data_regs);
-                if (0 <= reg1 && reg1 <= 7) {
+                if (0 <= reg1 && reg1 <= 7)
+                {
                     InstrWE(parm + (reg1 << 9), &ea1);
-                } else {
+                }
+                else
+                {
                     IllegalOperand();
                 }
             }
@@ -1222,67 +1366,95 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             size = parm & 3;
             reg1 = GetReg("CCR SR USP");
             if (reg1 == reg_EOL) break;
-            if (reg1 >= 0) {
+            if (reg1 >= 0)
+            {
                 if (Comma()) break;
-                if (GetEA(true, size, &ea1)) {
-                    switch (reg1) {
+                if (GetEA(true, size, &ea1))
+                {
+                    switch (reg1)
+                    {
                         case 0: // from CCR
-                            if (curCPU == CPU_68010) {
-                                if (size == WID_B || size == WID_L) {
+                            if (curCPU == CPU_68010)
+                            {
+                                if (size == WID_B || size == WID_L)
+                                {
                                     BadMode();
-                                } else {
+                                }
+                                else
+                                {
                                     InstrWE(0x42C0, &ea1);
                                 }
-                            } else {
+                            }
+                            else
+                            {
                                 BadMode();
                             }
                             break;
 
                         case 1: // from SR
-                            if (size == WID_B || size == WID_L) {
+                            if (size == WID_B || size == WID_L)
+                            {
                                 BadMode();
-                            } else {
+                            }
+                            else
+                            {
                                 InstrWE(0x40C0, &ea1);
                             }
                             break;
 
                         case 2: // from USP
                             if ((ea1.mode & 0x38) != 0x08 || // An
-                                size == WID_B || size == WID_W) {
+                                    size == WID_B || size == WID_W)
+                            {
                                 BadMode();
-                            } else {
+                            }
+                            else
+                            {
                                 InstrW(0x4E68 + (ea1.mode & 0x0007));
                             }
                             break;
-                        }
                     }
-            } else {
+                }
+            }
+            else
+            {
                 reg1 = size;
                 if (reg1 == WID_X) reg1 = WID_W;
-                if (GetEA(false, reg1, &ea1)) {
+                if (GetEA(false, reg1, &ea1))
+                {
                     if (Comma()) break;
-                    switch (GetReg("CCR SR USP")) {
+                    switch (GetReg("CCR SR USP"))
+                    {
                         case 0: // CCR
-                            if (size == WID_B || size == WID_L) {
+                            if (size == WID_B || size == WID_L)
+                            {
                                 BadMode();
-                            } else {
+                            }
+                            else
+                            {
                                 InstrWE(0x44C0, &ea1);
                             }
                             break;
 
                         case 1: // SR
-                            if (size == WID_B || size == WID_L) {
+                            if (size == WID_B || size == WID_L)
+                            {
                                 BadMode();
-                            } else {
+                            }
+                            else
+                            {
                                 InstrWE(0x46C0, &ea1);
                             }
                             break;
 
                         case 2: // USP
                             if ((ea1.mode & 0x38) != 0x08 || // An
-                                size == WID_B || size == WID_W) {
+                                    size == WID_B || size == WID_W)
+                            {
                                 BadMode();
-                            } else {
+                            }
+                            else
+                            {
                                 InstrW(0x4E60 + (ea1.mode & 0x0007));
                             }
                             break;
@@ -1292,7 +1464,8 @@ static int M68K_DoCPUOpcode(int typ, int parm)
 
                         default:
                             if (size == WID_X) size = WID_W;
-                            if (GetEA(true, size, &ea2)) {
+                            if (GetEA(true, size, &ea2))
+                            {
                                 InstrWEE(parm, &ea1, &ea2);
                             }
                             break;
@@ -1306,29 +1479,38 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             parm = parm & 0xFFFC;
 
             reg1 = GetReg("D0 D1 D2 D3 D4 D5 D6 D7 #");
-            if (reg1 >= 0) {
+            if (reg1 >= 0)
+            {
                 val = 0; // to avoid unitialized use
-                if (reg1 == 8) { // immediate
+                if (reg1 == 8)   // immediate
+                {
                     val = Eval();
                 }
                 if (Comma()) break;
-                if (GetEA(true, -1, &ea1)) {
+                if (GetEA(true, -1, &ea1))
+                {
                     reg2 = (ea1.mode & 0x38);
                     if ((reg2 == 0x08)                  ||  // An not allowed
-                        (reg2 == 0x00 && size == WID_B) ||  // Bxxx.B Dn
-                        (reg2 >= 0x10 && size == WID_L)) {  // Bxxx.L everything else
+                            (reg2 == 0x00 && size == WID_B) ||  // Bxxx.B Dn
+                            (reg2 >= 0x10 && size == WID_L))    // Bxxx.L everything else
+                    {
                         BadMode();
                         break;
                     }
                     // mask out 0x07 immediate if non-data reg EA
                     if (reg1 == 8 && reg2 != 0) val = val & 0x07;
-                    if (reg1 == 8) {
+                    if (reg1 == 8)
+                    {
                         InstrWWE(parm + 0x0800, val & 0x1F, &ea1);
-                    } else {
+                    }
+                    else
+                    {
                         InstrWE (parm + 0x0100 + (reg1 << 9), &ea1);
                     }
                 }
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
             }
             break;
@@ -1338,9 +1520,12 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             val = EvalByte();
             if (Comma()) break;
             reg1 = GetReg(data_regs);
-            if (0 <= reg1 && reg1 <= 7) {
+            if (0 <= reg1 && reg1 <= 7)
+            {
                 InstrW(0x7000 + (reg1 << 9) + val);
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
             }
             break;
@@ -1348,13 +1533,17 @@ static int M68K_DoCPUOpcode(int typ, int parm)
         case o_ArithA:
             size = parm & 3;
             parm = parm & 0xFFFC;
-            if (GetEA(false, size, &ea1)) {
+            if (GetEA(false, size, &ea1))
+            {
                 if (Comma()) break;
                 reg1 = GetReg(addr_regs);
                 if (reg1 == 8) reg1 = 7;
-                if (reg1 >= 0) {
+                if (reg1 >= 0)
+                {
                     InstrWE(parm + (reg1 << 9), &ea1);
-                } else {
+                }
+                else
+                {
                     IllegalOperand();
                 }
             }
@@ -1368,29 +1557,36 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             parm = (parm & 0xFFC0) | 0x8000; // rebuild base opcode word
             oldLine = linePtr;
             if (((GetWord(word) != '#' )  // let immediate fall through if allowed
-                 ||  val == 0xD // ADD
-                 ||  val == 0xC // AND
-                 || (val == 0xB && reg2 == 0x8004) // CMP but not EOR
-                 ||  val == 0x9 // SUB
+                    ||  val == 0xD // ADD
+                    ||  val == 0xC // AND
+                    || (val == 0xB && reg2 == 0x8004) // CMP but not EOR
+                    ||  val == 0x9 // SUB
                 ) && (exactFlag || exactArithI)) // ...and if exact is not set
-            { // check for Dn
+            {
+                // check for Dn
                 linePtr = oldLine;
                 if (size == WID_X) size = WID_W;
                 reg1 = GetReg(data_regs);
-                if (reg1 >= 0) {
+                if (reg1 >= 0)
+                {
                     // Dn,EA
                     if (Comma()) break;
-                    if (GetEA(true, size, &ea1)) {
-                        if ((ea1.mode & 0x38) == 8) { // Dn,An
+                    if (GetEA(true, size, &ea1))
+                    {
+                        if ((ea1.mode & 0x38) == 8)   // Dn,An
+                        {
                             // An can only be a destination register with ADDA / SUBA / CMPA
-                            if (size == WID_B) {
+                            if (size == WID_B)
+                            {
                                 // must be word or long
                                 IllegalOperand();
                                 break;
                             }
-                            switch (parm & 0xF000) {
+                            switch (parm & 0xF000)
+                            {
                                 case 0xB000: // CMP
-                                    if ((reg2 & 4) == 0) { // EOR not allowed here
+                                    if ((reg2 & 4) == 0)   // EOR not allowed here
+                                    {
                                         BadMode();
                                         break;
                                     }
@@ -1398,7 +1594,8 @@ static int M68K_DoCPUOpcode(int typ, int parm)
 
                                 case 0xD000: // ADD
                                 case 0x9000: // SUB
-                                    if (size != WID_B) {
+                                    if (size != WID_B)
+                                    {
                                         // bits 6-8 mode .W = 011 / .L = 111
                                         parm = (parm & 0xF000) | (size << 7) | 0xC0;
                                         // generate ANDA / SUBA / CMPA instruction
@@ -1413,12 +1610,18 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                             }
                             break;
                         }
-                        if (reg2 & 4) { // check if Dn,EA is not allowed
+                        if (reg2 & 4)   // check if Dn,EA is not allowed
+                        {
                             // CMP Dn,EA is invalid unless EA is Dn
                             // dest must be a data register
-                            if ((ea1.mode & 0x38) != 0) { BadMode(); break; }
+                            if ((ea1.mode & 0x38) != 0)
+                            {
+                                BadMode();
+                                break;
+                            }
                         }
-                        if ((ea1.mode & 0x38) == 0 && (reg2 & 0x8000)) {
+                        if ((ea1.mode & 0x38) == 0 && (reg2 & 0x8000))
+                        {
                             // Dn,Dn, except for EOR
                             // Dn,Dn needs the dest to be a register for CMP
                             InstrW(parm + (ea1.mode << 9) + reg1);
@@ -1426,32 +1629,42 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                         }
                         InstrWE(parm + (reg1 << 9) + 0x0100, &ea1);
                     }
-                } else {
+                }
+                else
+                {
                     // EA,
-                    if (GetEA(false, size, &ea1)) {
+                    if (GetEA(false, size, &ea1))
+                    {
                         if (Comma()) break;
                         reg1 = GetReg(DA_regs);
                         if (reg1 == 16) reg1 = 15; // SP -> A7
-                        if (0 <= reg1 && reg1 <= 7) { // EA,Dn
-                            if (reg2 == 0) {
+                        if (0 <= reg1 && reg1 <= 7)   // EA,Dn
+                        {
+                            if (reg2 == 0)
+                            {
                                 // EOR EA,Dn is invalid
                                 BadMode();
                                 break;
                             }
-                            if (/*(reg2 & 4) &&*/ (ea1.mode & 0x38) == 8 && size == WID_B) {
+                            if (/*(reg2 & 4) &&*/ (ea1.mode & 0x38) == 8 && size == WID_B)
+                            {
                                 // all op.B An,Dn is invalid (orignally only tested for CMP.B)
                                 BadMode();
                                 break;
                             }
                             InstrWE(parm + (reg1 << 9), &ea1);
-                        } else if (8 <= reg1 && reg1 <= 15 && size != WID_B) { // EA,An
+                        }
+                        else if (8 <= reg1 && reg1 <= 15 && size != WID_B)     // EA,An
+                        {
                             // EA,An allowed for ADD/SUB/CMP only!
                             reg1 = reg1 - 8; // reg1 = An
-                            switch (parm & 0xF000) {
+                            switch (parm & 0xF000)
+                            {
                                 case 0xD000: // AND
                                 case 0x9000: // SUB
                                 case 0xB000: // CMP/EOR
-                                    if (reg2 & 0x8000) { // EOR not allowed here
+                                    if (reg2 & 0x8000)   // EOR not allowed here
+                                    {
                                         // bits 6-8 mode .W = 011 / .L = 111
                                         parm = (parm & 0xF000) | (size << 7) | 0xC0;
                                         // generate ANDA / SUBA / CMPA instruction
@@ -1463,7 +1676,9 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                                     IllegalOperand();
                                     break;
                             }
-                        } else {
+                        }
+                        else
+                        {
                             IllegalOperand();
                         }
                     }
@@ -1474,10 +1689,13 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             linePtr = oldLine;
 
             // set up parm for o_ArithI or o_LogImm
-            if (!(reg1 & 0x0100)) {
+            if (!(reg1 & 0x0100))
+            {
                 skipArithI = true; // do o_LogImm
                 parm = (reg1 << 6) + size;
-            } else {
+            }
+            else
+            {
                 if (size == WID_X) size = WID_W;
                 parm = (reg1 << 6) + (size << 6) + size;
             }
@@ -1485,35 +1703,53 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             FALLTHROUGH;
 
         case o_ArithI:
-            if (!skipArithI) {
+            if (!skipArithI)
+            {
                 size = parm & 3;
                 parm = parm & 0xFFFC;
                 if (Expect("#")) break;
                 val = Eval();
                 CheckSize(size, val);
                 if (Comma()) break;
-                if (GetEA(true, -1, &ea1)) {
-                    if ((ea1.mode & 0x38) == 0x08) {
+                if (GetEA(true, -1, &ea1))
+                {
+                    if ((ea1.mode & 0x38) == 0x08)
+                    {
                         // arith immediate does not support An as dest
-                        if ((parm & 0x0400) && size != WID_B) {
+                        if ((parm & 0x0400) && size != WID_B)
+                        {
                             // SUBI/ADDI/CMPI = 04xx/06xx/0Cxx
-                            switch (parm & 0x0F00) {
+                            switch (parm & 0x0F00)
+                            {
                                 default:
-                                case 0x0400: parm = 0x9000; break; // SUBI
-                                case 0x0600: parm = 0xD000; break; // ADDI
-                                case 0x0C00: parm = 0xB000; break; // CMPI
+                                case 0x0400:
+                                    parm = 0x9000;
+                                    break; // SUBI
+                                case 0x0600:
+                                    parm = 0xD000;
+                                    break; // ADDI
+                                case 0x0C00:
+                                    parm = 0xB000;
+                                    break; // CMPI
                             }
-                            if (size == WID_L) {
+                            if (size == WID_L)
+                            {
                                 InstrWL(parm + ((ea1.mode & 7) << 9) + (size << 7) + 0x007C, val);
-                            } else {
+                            }
+                            else
+                            {
                                 InstrWW(parm + ((ea1.mode & 7) << 9) + (size << 7) + 0x007C, val);
                             }
                             break;
                         }
                         BadMode();
-                    } else if (size == WID_L) {
+                    }
+                    else if (size == WID_L)
+                    {
                         InstrWLE(parm, val, &ea1);
-                    } else {
+                    }
+                    else
+                    {
                         InstrWWE(parm, val, &ea1);
                     }
                 }
@@ -1525,26 +1761,36 @@ static int M68K_DoCPUOpcode(int typ, int parm)
         case o_LogImm:
             size = parm & 3;
             parm = parm & 0xFFFC;
-            if (GetWord(word) != '#') {
+            if (GetWord(word) != '#')
+            {
                 BadMode();
-            } else {
+            }
+            else
+            {
                 val = Eval();
                 if (Comma()) break;
-                switch ((reg1 = GetReg("CCR SR"))) {
+                switch ((reg1 = GetReg("CCR SR")))
+                {
                     case 0: // CCR
                         CheckByte(val);
-                        if (size != WID_X && size != WID_B) {
+                        if (size != WID_X && size != WID_B)
+                        {
                             BadMode();
-                        } else {
+                        }
+                        else
+                        {
                             InstrWW((parm & 0xFF00) + 0x003C, val & 0xFF);
                         }
                         break;
 
                     case 1: // SR
                         CheckSize(size, val);
-                        if (size != WID_X && size != WID_W) {
+                        if (size != WID_X && size != WID_W)
+                        {
                             BadMode();
-                        } else {
+                        }
+                        else
+                        {
                             InstrWW((parm & 0xFF00) + 0x007C, val);
                         }
                         break;
@@ -1552,14 +1798,21 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                     default:
                         if (size == WID_X) size = WID_W;
                         CheckSize(size, val);
-                        if (GetEA(true, -1, &ea1)) {
-                            if ((ea1.mode & 0x38) == 0x08) {
+                        if (GetEA(true, -1, &ea1))
+                        {
+                            if ((ea1.mode & 0x38) == 0x08)
+                            {
                                 // logical immediate does not support An as dest
                                 BadMode();
-                            } else {
-                                if (size == WID_L) {
+                            }
+                            else
+                            {
+                                if (size == WID_L)
+                                {
                                     InstrWLE(parm + (size << 6), val, &ea1);
-                                } else {
+                                }
+                                else
+                                {
                                     InstrWWE(parm + (size << 6), val, &ea1);
                                 }
                             }
@@ -1577,17 +1830,23 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             if (reg1 == 16) reg1 = 15; // SP -> A7
             linePtr = oldLine;
 
-            if (reg1 >= 0) { // register-to-memory
+            if (reg1 >= 0)   // register-to-memory
+            {
                 reg2 = Get68KMultiRegs();
                 if (Comma()) break;
-                if (GetEA(true, -1, &ea1)) {
+                if (GetEA(true, -1, &ea1))
+                {
                     val = ea1.mode & 0x38;
-                    if (val == 0x00 || val == 0x08 || val == 0x18) {
+                    if (val == 0x00 || val == 0x08 || val == 0x18)
+                    {
                         BadMode();
-                    } else if (val == 0x20) {
+                    }
+                    else if (val == 0x20)
+                    {
                         // reverse bits of reg2
                         reg1 = 0;
-                        for (int i = 0; i <= 15; i++) {
+                        for (int i = 0; i <= 15; i++)
+                        {
                             reg1 = (reg1 << 1) + (reg2 & 1);
                             reg2 = reg2 >> 1;
                         }
@@ -1595,14 +1854,20 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                     }
                     InstrWWE(parm, reg2, &ea1);
                 }
-            } else { // memory-to-register
-                if (GetEA(true, -1, &ea1)) {
+            }
+            else     // memory-to-register
+            {
+                if (GetEA(true, -1, &ea1))
+                {
                     if (Comma()) break;
                     reg2 = Get68KMultiRegs();
                     val = ea1.mode & 0x38;
-                    if (val == 0x00 || val == 0x08 || val == 0x20) {
+                    if (val == 0x00 || val == 0x08 || val == 0x20)
+                    {
                         BadMode();
-                    } else {
+                    }
+                    else
+                    {
                         InstrWWE(parm + 0x0400, reg2, &ea1);
                     }
                 }
@@ -1613,11 +1878,14 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             size = parm & 3;
             parm = parm & 0xFFFC;
 
-            if (GetWord(word) == '#') {
+            if (GetWord(word) == '#')
+            {
                 val = Eval();
                 if (Comma()) break;
-                if (GetEA(true, -1, &ea1)) {
-                    if ((ea1.mode & 0x38) == 0x08 && size == WID_B) {
+                if (GetEA(true, -1, &ea1))
+                {
+                    if ((ea1.mode & 0x38) == 0x08 && size == WID_B)
+                    {
                         // byte add to An is invalid
                         BadMode();
                         break;
@@ -1626,7 +1894,9 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                     val = val & 7;
                     InstrWE(parm + (val << 9), &ea1);
                 }
-            } else {
+            }
+            else
+            {
                 BadMode();
             }
             break;
@@ -1636,31 +1906,42 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             parm = parm & 0xFFFC;
 
             oldLine = linePtr;
-            if (GetWord(word) == '#') {
+            if (GetWord(word) == '#')
+            {
                 // #data,Dy
                 val = Eval();
                 if (Comma()) break;
                 reg1 = GetReg(data_regs);
-                if (reg1 >= 0) {
+                if (reg1 >= 0)
+                {
                     if (size == WID_X) size = WID_W;
                     if (val < 1 || val > 8) IllegalOperand();
                     val = val & 7;
                     InstrW(parm + (val << 9) + (size << 6) + reg1);
-                } else {
+                }
+                else
+                {
                     IllegalOperand();
                 }
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine;
-                if (GetEA(true, -1, &ea1)) {
+                if (GetEA(true, -1, &ea1))
+                {
                     val = ea1.mode & 0x38;
-                    switch (val) {
+                    switch (val)
+                    {
                         case 0x00: // Dx,Dy
                             if (Comma()) break;
                             if (size == WID_X) size = WID_W;
                             reg1 = GetReg(data_regs);
-                            if (reg1 >= 0) {
+                            if (reg1 >= 0)
+                            {
                                 InstrW(parm + (ea1.mode << 9) + (size << 6) + reg1 + 0x20);
-                            } else {
+                            }
+                            else
+                            {
                                 IllegalOperand();
                             }
                             break;
@@ -1670,10 +1951,13 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                             break;
 
                         default: // EA
-                            if (size != WID_W && size != WID_X) {
-                                // memory shifts can't be .B or .L!    
+                            if (size != WID_W && size != WID_X)
+                            {
+                                // memory shifts can't be .B or .L!
                                 Error("Invalid size in opcode");
-                            } else {
+                            }
+                            else
+                            {
                                 InstrWE((parm & 0xF100) + ((parm & 0x18) << 6) + 0xC0, &ea1);
                             }
                             break;
@@ -1686,13 +1970,18 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             size = parm & 3;
             parm = parm & 0xFFFC;
 
-            if (GetEA(false, size, &ea1)) {
-                if ((ea1.mode & 0x38) == 0x08) {
+            if (GetEA(false, size, &ea1))
+            {
+                if ((ea1.mode & 0x38) == 0x08)
+                {
                     BadMode(); // address register not allowed
-                } else {
+                }
+                else
+                {
                     if (Comma()) break;
                     reg1 = GetReg(data_regs);
-                    if (reg1 >= 0) {
+                    if (reg1 >= 0)
+                    {
                         InstrWE(parm + (reg1 << 9), &ea1);
                     }
                 }
@@ -1700,14 +1989,19 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_CMPM:
-            if (GetEA(true, -1, &ea1)) {
+            if (GetEA(true, -1, &ea1))
+            {
                 if (Comma()) break;
-                if (GetEA(true, -1, &ea2)) {
+                if (GetEA(true, -1, &ea2))
+                {
                     reg1 = ea1.mode & 7;
                     reg2 = ea2.mode & 7;
-                    if ((ea1.mode & 0x38) != 0x18 || (ea2.mode & 0x38) != 0x18) {
+                    if ((ea1.mode & 0x38) != 0x18 || (ea2.mode & 0x38) != 0x18)
+                    {
                         BadMode();
-                    } else {
+                    }
+                    else
+                    {
                         InstrW(parm + (reg2 << 9) + reg1);
                     }
                 }
@@ -1715,22 +2009,25 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_MOVEP:
-            if (GetEA(true, -1, &ea1)) {
+            if (GetEA(true, -1, &ea1))
+            {
                 if (Comma()) break;
-                if (GetEA(true, -1, &ea2)) {
+                if (GetEA(true, -1, &ea2))
+                {
                     reg1 = ea1.mode & 7;
                     reg2 = ea2.mode & 7;
-                    switch ((ea1.mode & 0x38)*256 + (ea2.mode & 0x38)) {
+                    switch ((ea1.mode & 0x38)*256 + (ea2.mode & 0x38))
+                    {
                         case 0x0010: // Dx,(Ay)
                             ea2.extra[0] = 0;
-                            // fall through...
+                        // fall through...
                         case 0x0028: // Dx,(d16,Ay) or Dx,d16(Ay)
                             InstrWW(parm + (reg1 << 9) + reg2 + 0x0080, ea2.extra[0]);
                             break;
 
                         case 0x1000: // (Ay),Dx
                             ea1.extra[0] = 0;
-                            // fall through...
+                        // fall through...
                         case 0x2800: // (d16,Ay),Dx or d16(Ay),Dx
                             InstrWW(parm + (reg2 << 9) + reg1, ea1.extra[0]);
                             break;
@@ -1746,45 +2043,63 @@ static int M68K_DoCPUOpcode(int typ, int parm)
         case o_EXG:
             reg1 = GetReg(DA_regs);
             if (reg1 == 16) reg1 = 15; // SP -> A7
-            if (reg1 >= 0) {
+            if (reg1 >= 0)
+            {
                 if (Comma()) break;
                 reg2 = GetReg(DA_regs);
                 if (reg2 == 16) reg2 = 15; // SP -> A7
-                if (reg2 >= 0) {
-                    if (reg1 <= 7) { // Dn
-                        if (reg2 <= 7) {
+                if (reg2 >= 0)
+                {
+                    if (reg1 <= 7)   // Dn
+                    {
+                        if (reg2 <= 7)
+                        {
                             // Dn,Dn
                             InstrW(0xC140 + (reg1 << 9) + reg2);
-                        } else {
+                        }
+                        else
+                        {
                             // Dn,An
                             InstrW(0xC188 + (reg1 << 9) + (reg2 & 7));
                         }
-                    } else { // An
+                    }
+                    else     // An
+                    {
                         reg1 = reg1 & 7;
-                        if (reg2 <= 7) {
+                        if (reg2 <= 7)
+                        {
                             // An,Dn
                             InstrW(0xC188 + (reg2 << 9) + reg1);
-                        } else {
+                        }
+                        else
+                        {
                             // An,An
                             InstrW(0xC148 + (reg1 << 9) + (reg2 & 7));
                         }
                     }
-                } else {
+                }
+                else
+                {
                     IllegalOperand();
                 }
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
             }
             break;
 
         case o_ABCD:
         case o_ADDX:
-            if (GetEA(true, -1, &ea1)) {
+            if (GetEA(true, -1, &ea1))
+            {
                 if (Comma()) break;
-                if (GetEA(true, -1, &ea2)) {
+                if (GetEA(true, -1, &ea2))
+                {
                     reg1 = ea1.mode & 7;
                     reg2 = ea2.mode & 7;
-                    switch ((ea1.mode & 0x38)*256 + (ea2.mode & 0x38)) {
+                    switch ((ea1.mode & 0x38)*256 + (ea2.mode & 0x38))
+                    {
                         case 0x0000:
                             InstrW(parm + (reg2 << 9) + reg1); // Dy,Dx
                             break;
@@ -1804,16 +2119,20 @@ static int M68K_DoCPUOpcode(int typ, int parm)
         case o_LINK:
             reg1 = GetReg(addr_regs);
             if (reg1 == 8) reg1 = 7;
-            if (reg1 >= 0) {
+            if (reg1 >= 0)
+            {
                 if (Comma()) break;
                 if (Expect("#")) break;
                 val = Eval();
-                if (val > 0) {
+                if (val > 0)
+                {
                     Warning("LINK opcode with positive displacement");
                 }
                 CheckWord(val);
                 InstrWW(parm + reg1, val);
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
             }
             break;
@@ -1822,9 +2141,12 @@ static int M68K_DoCPUOpcode(int typ, int parm)
         case o_OneA:
             reg1 = GetReg(addr_regs);
             if (reg1 == 8) reg1 = 7;
-            if (reg1 >= 0) {
+            if (reg1 >= 0)
+            {
                 InstrW(parm + reg1);
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
             }
             break;
@@ -1832,9 +2154,12 @@ static int M68K_DoCPUOpcode(int typ, int parm)
         case o_OneD:
             reg1 = GetReg(data_regs);
             if (reg1 == 8) reg1 = 7;
-            if (reg1 >= 0) {
+            if (reg1 >= 0)
+            {
                 InstrW(parm + reg1);
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
             }
             break;
@@ -1843,27 +2168,33 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             if (curCPU == CPU_68000) return 0;
 
             reg2 = GetMOVECreg();
-            if (reg2 >= 0) {
+            if (reg2 >= 0)
+            {
                 // Rc,Rn
                 if (Comma()) break;
                 reg1 = GetReg(DA_regs);
                 if (reg1 == 16) reg1 = 15; // SP -> A7
-                if (reg1 < 0) {
+                if (reg1 < 0)
+                {
                     IllegalOperand();
                     break;
                 }
                 val = 0;
-            } else {
+            }
+            else
+            {
                 // Rn,Rc
                 reg1 = GetReg(DA_regs);
                 if (reg1 == 16) reg1 = 15; // SP -> A7
-                if (reg1 < 0) {
+                if (reg1 < 0)
+                {
                     IllegalOperand();
                     break;
                 }
                 if (Comma()) break;
                 reg2 = GetMOVECreg();
-                if (reg2 < 0) {
+                if (reg2 < 0)
+                {
                     IllegalOperand();
                     break;
                 }
@@ -1879,21 +2210,26 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             parm = parm & 0xFFFC;
             reg1 = GetReg(DA_regs);
             if (reg1 == 16) reg1 = 15; // SP -> A7
-            if (reg1 >= 0) {
+            if (reg1 >= 0)
+            {
                 // Rn,ea
                 reg2 = 0x0800;  // direction = general register to ea
                 if (Comma()) break;
                 if (!GetEA(true, size, &ea1)) break;
-                if ((ea1.mode & 0x30) == 0) {
+                if ((ea1.mode & 0x30) == 0)
+                {
                     BadMode();
                     break;
                 }
-            } else {
+            }
+            else
+            {
                 // ea,Rn
                 reg2 = 0x0000;  // direction = ea to general register
                 if (!GetEA(true, size, &ea1)) break;
                 if (Comma()) break;
-                if ((ea1.mode & 0x30) == 0) {
+                if ((ea1.mode & 0x30) == 0)
+                {
                     BadMode();
                     break;
                 }
@@ -1909,7 +2245,8 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             break;
     }
 
-    if (locPtr & 1) {
+    if (locPtr & 1)
+    {
         Error("Code at non-word-aligned address");
         // deposit an extra byte to reset alignment and prevent further errors
         InstrAddB(0);

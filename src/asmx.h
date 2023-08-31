@@ -3,7 +3,8 @@
 #ifndef _ASMX_H_
 #define _ASMX_H_
 
-enum {
+enum
+{
     MAX_BYTSTR = 1024,          // size of bytStr[]
 };
 
@@ -26,7 +27,7 @@ typedef unsigned long  u_long;
 
 
 #if defined(__clang__) // disable unwanted warnings for xcode
- #pragma clang diagnostic ignored "-Wshorten-64-to-32"
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #endif
 
 #if 0
@@ -38,11 +39,13 @@ enum { false = 0, false = 1 };
 
 typedef char Str255[256];       // generic string type
 
-enum {
+enum
+{
     maxOpcdLen = 11,            // max opcode length (for building opcode table)
 };
 typedef char OpcdStr[maxOpcdLen+1];
-struct OpcdRec {
+struct OpcdRec
+{
     OpcdStr         name;       // opcode name
     short           typ;        // opcode type
     uint32_t        parm;       // opcode parameter
@@ -50,15 +53,16 @@ struct OpcdRec {
 typedef struct OpcdRec OpcdRec;
 
 // CPU option flags
-enum {
+enum
+{
     OPT_ATSYM     = 0x01,   // allow symbols to start with '@'
     OPT_DOLLARSYM = 0x02,   // allow symbols to start with '$'
 };
 
 void *AddAsm(const char *name,  // assembler name
-              int (*DoCPUOpcode) (int typ, int parm),
-              int (*DoCPULabelOp) (int typ, int parm, char *labl),
-              void (*PassInit) (void) );
+             int (*DoCPUOpcode) (int typ, int parm),
+             int (*DoCPULabelOp) (int typ, int parm, char *labl),
+             void (*PassInit) (void) );
 void AddCPU(void *as,           // assembler for this CPU
             const char *name,   // uppercase name of this CPU
             int index,          // index number for this CPU
@@ -76,13 +80,15 @@ enum { ADDR_16, ADDR_24, ADDR_32 };
 enum { LIST_16, LIST_24 }; // Note: ADDR_24 and ADDR_32 should always use LIST_24
 
 // special register numbers for FindReg/GetReg
-enum {
+enum
+{
     reg_EOL = -2,   // -2
     reg_None,       // -1
 };
 
 // opcode constants
-enum {
+enum
+{
     o_Illegal = 0x0100,
     o_LabelOp = 0x1000,
     o_EQU     = o_LabelOp + 0x100,
@@ -172,27 +178,27 @@ extern  bool            exactFlag;          // true to disable assembler-specifi
 
 // fallthrough annotation to prevent warnings
 #if defined(__clang__) && __cplusplus >= 201103L
- #define FALLTHROUGH [[clang::fallthrough]]
+#define FALLTHROUGH [[clang::fallthrough]]
 #elif defined(_MSC_VER)
- #include <sal.h>
- #define FALLTHROUGH __fallthrough
+#include <sal.h>
+#define FALLTHROUGH __fallthrough
 #elif defined(__GNUC__) && __GNUC__ >= 7
- #define FALLTHROUGH __attribute__ ((fallthrough))
+#define FALLTHROUGH __attribute__ ((fallthrough))
 #elif defined (__has_cpp_attribute)
- #if __has_cpp_attribute(fallthrough)
-  #define FALLTHROUGH [[fallthrough]]
- #else // default version
-  #define FALLTHROUGH ((void)0)
- #endif
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
 #else // default version
- #define FALLTHROUGH ((void)0)
+#define FALLTHROUGH ((void)0)
+#endif
+#else // default version
+#define FALLTHROUGH ((void)0)
 #endif /* __GNUC__ >= 7 */
 
 // disable GCC format truncation detection for snprintf
 // and strncpy trunction detection
 #if defined(__GNUC__) && __GNUC__ >= 7
- #pragma GCC diagnostic ignored "-Wformat-truncation"
- #pragma GCC diagnostic ignored "-Wstringop-truncation"
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
 #endif /* __GNUC__ >= 7 */
 
 #endif // _ASMX_H_

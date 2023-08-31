@@ -3,7 +3,8 @@
 #define versionName "68HC16 assembler"
 #include "asmx.h"
 
-enum {
+enum
+{
     o_Inherent,     // implied instructions
     o_Branch,       // short relative branch instructions
     o_LBranch,      // long relative branch instructions
@@ -34,7 +35,8 @@ enum {
 //  o_Foo = o_LabelOp,
 };
 
-static const struct OpcdRec M68HC16_opcdTab[] = {
+static const struct OpcdRec M68HC16_opcdTab[] =
+{
     {"ABA",   o_Inherent, 0x370B},
     {"ABX",   o_Inherent, 0x374F},
     {"ABY",   o_Inherent, 0x375F},
@@ -329,7 +331,8 @@ static int GetIndex(void)
 
     char *oldLine = linePtr;
     int token = GetWord(word);
-    if (token == ',') {
+    if (token == ',')
+    {
         token = GetReg("X Y Z");
         if (token >= 0) return token;
     }
@@ -348,7 +351,8 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
     char    reg;
     bool    known;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_Inherent:
             InstrX(parm);
             break;
@@ -359,9 +363,12 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_LBranch:
-            if (parm < 256) {
+            if (parm < 256)
+            {
                 val = EvalLBranch(3);
-            } else {
+            }
+            else
+            {
                 val = EvalLBranch(4);
             }
             InstrXW(parm, val);
@@ -376,9 +383,12 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
         case o_AIX:
             Expect("#");
             val = Eval();
-            if (evalKnown && -128 <= val && val <= 127) {
-                InstrXB(parm         , val);
-            } else {
+            if (evalKnown && -128 <= val && val <= 127)
+            {
+                InstrXB(parm, val);
+            }
+            else
+            {
                 InstrXW(parm + 0x3700, val);
             }
             break;
@@ -386,17 +396,23 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
         case o_MAC:
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#') {
+            if (token == '#')
+            {
                 val = Eval();
                 InstrXB(parm, val);
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine;
                 val = Eval();
                 Comma();
                 val2 = Eval();
-                if (val < 0 || val > 15 || val2 < 0 || val2 > 15) {
+                if (val < 0 || val > 15 || val2 < 0 || val2 > 15)
+                {
                     IllegalOperand();
-                } else {
+                }
+                else
+                {
                     InstrXB(parm, val * 16 + val2);
                 }
             }
@@ -406,35 +422,48 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
         case o_PULM:
             val = 0;
             token = GetWord(word);
-            while (token) {
+            while (token)
+            {
                 reg = FindReg(word, "D E X Y Z K CCR");
-                if (reg < 0) {
+                if (reg < 0)
+                {
                     IllegalOperand();
-                } else {
-                    if (typ == o_PULM) {
+                }
+                else
+                {
+                    if (typ == o_PULM)
+                    {
                         reg = 6 - reg;
                     }
                     reg = 1 << reg;
-                    if (val & reg) {
+                    if (val & reg)
+                    {
                         Error("PSHM/PULM register used twice");
-                    } else {
+                    }
+                    else
+                    {
                         val = val | reg;
                     }
                 }
 
                 token = GetWord(word);
-                if (token == ',') {
+                if (token == ',')
+                {
                     val2 = GetWord(word);
-                    if (val2 == 0) {
+                    if (val2 == 0)
+                    {
                         MissingOperand();
                         break;
                     }
                 }
             }
 
-            if (val == 0) {
+            if (val == 0)
+            {
                 Warning("PSHM/PULM with no registers");
-            } else {
+            }
+            else
+            {
                 InstrXB(parm, val);
             }
 
@@ -447,29 +476,42 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 
             val = Eval();
             reg = GetIndex();
-            if (reg == 0) { // $xx,X,$yyyy
+            if (reg == 0)   // $xx,X,$yyyy
+            {
                 CheckByte(val);
                 Comma();
                 val2 = Eval();
                 InstrXBW(parm + 0x30, val, val2);
-            } else if (reg < 0) {
+            }
+            else if (reg < 0)
+            {
                 Comma();
                 val2 = Eval();
                 reg = GetIndex();
-                if (reg == 0) { // $xxxx,$yy,X
+                if (reg == 0)   // $xxxx,$yy,X
+                {
                     CheckByte(val2);
                     InstrXBW(parm + 0x32, val2, val);
-                } else if (reg < 0) { // $xxxx,$yyyy
+                }
+                else if (reg < 0)     // $xxxx,$yyyy
+                {
                     InstrXWW(parm + 0x37FE, val, val2);
-                    if (listWid == LIST_24) {
+                    if (listWid == LIST_24)
+                    {
                         hexSpaces = 0x14;
-                    } else {
+                    }
+                    else
+                    {
                         instrLen = -instrLen; // more than 5 bytes, so use long DB listing format
                     }
-                } else {
+                }
+                else
+                {
                     IllegalOperand();
                 }
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
             }
             break;
@@ -482,10 +524,13 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 
             val = Eval();
             reg = GetIndex();
-            if (reg < 0) {
+            if (reg < 0)
+            {
                 // no index register
-                InstrXW(parm + 0x2730         , val);
-            } else {
+                InstrXW(parm + 0x2730, val);
+            }
+            else
+            {
                 InstrXW(parm + 0x2700 + reg*16, val);
             }
             break;
@@ -506,13 +551,19 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 
             val = Eval();
             reg = GetIndex();
-            if (reg < 0) {
+            if (reg < 0)
+            {
                 // no index register
                 InstrXW(parm + 0x1730, val);
-            } else {
-                if (evalKnown && 0 <= val && val <= 255) {
+            }
+            else
+            {
+                if (evalKnown && 0 <= val && val <= 255)
+                {
                     InstrXB(parm +          reg*16, val);
-                } else {
+                }
+                else
+                {
                     InstrXW(parm + 0x1700 + reg*16, val);
                 }
             }
@@ -530,24 +581,36 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#' && typ != o_STE) {
+            if (token == '#' && typ != o_STE)
+            {
                 val = Eval();
-                if (evalKnown && typ == o_ADDE && -128 <= val && val <= 127) {
+                if (evalKnown && typ == o_ADDE && -128 <= val && val <= 127)
+                {
                     InstrXB(         0x7C, val);
-                } else {
+                }
+                else
+                {
                     InstrXW(parm + 0x3730, val);
                 }
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine;
                 val = Eval();
                 reg = GetIndex();
-                if (reg < 0) {
+                if (reg < 0)
+                {
                     // no index register
                     InstrXW(parm + 0x3770, val);
-                } else {
-                    if (evalKnown && 0 <= val && val <= 255) {
+                }
+                else
+                {
+                    if (evalKnown && 0 <= val && val <= 255)
+                    {
                         InstrXB(parm +          reg*16, val);
-                    } else {
+                    }
+                    else
+                    {
                         InstrXW(parm + 0x3740 + reg*16, val);
                     }
                 }
@@ -556,13 +619,13 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 
         case o_BCLRW:
         case o_BCLR:
-            // $xxxx,X,#$mm = parm+$00
-            // $xxxx,Y,#$mm = parm+$10
-            // $xxxx,Z,#$mm = parm+$20
-            // $xxxx,#$mm   = parm+$30
-            // $xx,X,#$mm   = parm+$1700 (o_BCLR only)
-            // $xx,Y,#$mm   = parm+$1710 (o_BCLR only)
-            // $xx,Z,#$mm   = parm+$1720 (o_BCLR only)
+        // $xxxx,X,#$mm = parm+$00
+        // $xxxx,Y,#$mm = parm+$10
+        // $xxxx,Z,#$mm = parm+$20
+        // $xxxx,#$mm   = parm+$30
+        // $xx,X,#$mm   = parm+$1700 (o_BCLR only)
+        // $xx,Y,#$mm   = parm+$1710 (o_BCLR only)
+        // $xx,Z,#$mm   = parm+$1720 (o_BCLR only)
 
         case o_BRCLR:
             // $xxxx,X,#$mm = parm+$00
@@ -579,27 +642,40 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
             Comma();
             Expect("#");
             val2 = EvalByte();
-            if (typ == o_BRCLR) {
+            if (typ == o_BRCLR)
+            {
                 Comma();
-                if (known && 0 <= val && val <= 255) {
+                if (known && 0 <= val && val <= 255)
+                {
                     val3 = EvalBranch(4);
-                    if (reg < 0) {
+                    if (reg < 0)
+                    {
                         reg = 3;
                     }
                     InstrXBBB((~parm & 0x01)*0x40 + 0x8B + reg*16, val2, val, val3);
-                } else {
+                }
+                else
+                {
                     val3 = EvalBranch(5);
-                    if (reg < 0) {
+                    if (reg < 0)
+                    {
                         reg = 3;
                     }
                     InstrXBWB((parm&0xFF) + reg*16, val2, val, val3);
                 }
-            } else if (reg < 0) {
+            }
+            else if (reg < 0)
+            {
                 InstrXBW(parm + 0x30, val2, val);
-            } else {
-                if (known && typ == o_BCLR && 0 <= val && val <= 255) {
+            }
+            else
+            {
+                if (known && typ == o_BCLR && 0 <= val && val <= 255)
+                {
                     InstrXBB(parm + 0x1700 + reg*16, val2, val);
-                } else {
+                }
+                else
+                {
                     InstrXBW(parm +          reg*16, val2, val);
                 }
             }
@@ -620,24 +696,36 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#' && typ != o_STX) {
+            if (token == '#' && typ != o_STX)
+            {
                 val = Eval();
-                if (typ == o_LDX) {
+                if (typ == o_LDX)
+                {
                     InstrXW(parm + 0x3730 - 0x40, val);
-                } else {
-                    InstrXW(parm + 0x3730       , val);
                 }
-            } else {
+                else
+                {
+                    InstrXW(parm + 0x3730, val);
+                }
+            }
+            else
+            {
                 linePtr = oldLine;
                 val = Eval();
                 reg = GetIndex();
-                if (reg < 0) {
+                if (reg < 0)
+                {
                     // no index register
                     InstrXW(parm + 0x1730, val);
-                } else {
-                    if (evalKnown && 0 <= val && val <= 255) {
+                }
+                else
+                {
+                    if (evalKnown && 0 <= val && val <= 255)
+                    {
                         InstrXB(parm +          reg*16, val);
-                    } else {
+                    }
+                    else
+                    {
                         InstrXW(parm + 0x1700 + reg*16, val);
                     }
                 }
@@ -653,10 +741,13 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 
             val = Eval();
             reg = GetIndex();
-            if (reg < 0) {
+            if (reg < 0)
+            {
                 // no index register
                 InstrXW(0x7A + (parm & 0x80), val);
-            } else {
+            }
+            else
+            {
                 InstrX3(parm + reg*16, val & 0xFFFFF); // 20-bit address
             }
             break;
@@ -682,39 +773,63 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#' && typ != o_StoreAB && typ != o_STD) {
+            if (token == '#' && typ != o_StoreAB && typ != o_STD)
+            {
                 val = Eval();
-                if        (evalKnown && typ == o_ADDD  && -128 <= val && val <= 127) {
+                if        (evalKnown && typ == o_ADDD  && -128 <= val && val <= 127)
+                {
                     InstrXB(                0xFC, val);
-                } else if (evalKnown && typ == o_Arith && -128 <= val && val <= 127) {
+                }
+                else if (evalKnown && typ == o_Arith && -128 <= val && val <= 127)
+                {
                     InstrXB((parm & 0xFF) + 0x30, val);
-                } else {
+                }
+                else
+                {
                     InstrXW( parm         + 0x30, val);
                 }
-            } else if (FindReg(word, "E") == 0) {
+            }
+            else if (FindReg(word, "E") == 0)
+            {
                 reg = GetIndex();
-                if (reg < 0) {
+                if (reg < 0)
+                {
                     BadMode();
-                } else {
+                }
+                else
+                {
                     InstrX((parm & 0xFF) + 0x2700 + reg*16);
                 }
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine;
                 val = Eval();
                 reg = GetIndex();
-                if (reg < 0) {
+                if (reg < 0)
+                {
                     // no index register
-                    if (typ == o_ArithW || typ == o_ADDD || typ == o_STD) {
+                    if (typ == o_ArithW || typ == o_ADDD || typ == o_STD)
+                    {
                         InstrXW(parm + 0x70, val);
-                    } else {
+                    }
+                    else
+                    {
                         InstrXW(parm + 0x30, val);
                     }
-                } else {
-                    if (evalKnown && 0 <= val && val <= 255) {
+                }
+                else
+                {
+                    if (evalKnown && 0 <= val && val <= 255)
+                    {
                         InstrXB((parm & 0xFF) + reg*16, val);
-                    } else if (typ == o_ArithW || typ == o_ADDD || typ == o_STD) {
+                    }
+                    else if (typ == o_ArithW || typ == o_ADDD || typ == o_STD)
+                    {
                         InstrXW( parm + 0x40  + reg*16, val);
-                    } else {
+                    }
+                    else
+                    {
                         InstrXW( parm +         reg*16, val);
                     }
                 }

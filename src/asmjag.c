@@ -3,7 +3,8 @@
 #define versionName "Atari Jaguar GPU/DSP assembler"
 #include "asmx.h"
 
-enum instrType {
+enum instrType
+{
     o_None,     // no operands - NOP
     o_One,      // one operand - Rd - ABS/NEG/etc
     o_Two,      // two operands - Rs,Rd - most instructions
@@ -22,18 +23,21 @@ enum instrType {
 //  o_Foo = o_LabelOp,
 };
 
-enum {
+enum
+{
     CPU_TOM,    // GPU
     CPU_JERRY   // DSP
 };
 
-enum {
+enum
+{
     SUB32   = 0x2000, // n = 32-n
     TOMONLY = 0x4000, // opcode is Tom-only
     JERONLY = 0x8000  // opcode is Jerry-only
 };
 
-static const struct OpcdRec Jag_opcdTab[] = {
+static const struct OpcdRec Jag_opcdTab[] =
+{
     {"ADD",     o_Two,     0},
     {"ADDC",    o_Two,     1},
     {"ADDQ",    o_Num_32,  2},
@@ -118,14 +122,15 @@ static const struct OpcdRec Jag_opcdTab[] = {
 
 
 const char jag_regs[]    = "R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 R16 "
-                          "R17 R18 R19 R20 R21 R22 R23 R24 R25 R26 R27 R28 R29 R30 R31";
+                           "R17 R18 R19 R20 R21 R22 R23 R24 R25 R26 R27 R28 R29 R30 R31";
 const char jag_regs_PC[] = "R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 R16 "
-                          "R17 R18 R19 R20 R21 R22 R23 R24 R25 R26 R27 R28 R29 R30 R31 PC";
+                           "R17 R18 R19 R20 R21 R22 R23 R24 R25 R26 R27 R28 R29 R30 R31 PC";
 
 const char jag_conds[] = "NZ Z NC NCNZ NCZ C CNZ CZ NN NNNZ NNZ N N_NZ N_Z "
                          "T A NE EQ CC HS HI CS LO PL MI F";
 const char jag_cond[]  = { 1,2, 4,   5,  6,8,  9,10,20,  21, 22,24, 25, 26,
-                          0,0, 1, 2, 4, 4, 5, 8, 8,20,24,31};
+                           0,0, 1, 2, 4, 4, 5, 8, 8,20,24,31
+                         };
 
 // --------------------------------------------------------------
 
@@ -146,13 +151,15 @@ static int Jag_DoCPUOpcode(int typ, int parm)
     if ((parm & TOMONLY) && curCPU == CPU_JERRY) return 0;
     if ((parm & JERONLY) && curCPU == CPU_TOM)   return 0;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_None:
             InstrJag(parm, 0, 0);
             break;
 
         case o_One:
-            switch ((reg2 = GetReg(jag_regs))) {
+            switch ((reg2 = GetReg(jag_regs)))
+            {
                 case reg_None:
                     IllegalOperand();
                     break;
@@ -167,7 +174,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_Two:
-            switch ((reg1 = GetReg(jag_regs))) {
+            switch ((reg1 = GetReg(jag_regs)))
+            {
                 case reg_None:
                     IllegalOperand();
                     break;
@@ -178,7 +186,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                 default:
                     if (Comma()) break;
 
-                    switch ((reg2 = GetReg(jag_regs))) {
+                    switch ((reg2 = GetReg(jag_regs)))
+                    {
                         case reg_None:
                             IllegalOperand();
                             break;
@@ -196,24 +205,39 @@ static int Jag_DoCPUOpcode(int typ, int parm)
         case o_Num_15:
         case o_Num_31:
         case o_Num_32:
-            switch (typ) {
-                case o_Num_15: reg1 = -16; reg2 = 15; break;
-                FALLTHROUGH;
+            switch (typ)
+            {
+                case o_Num_15:
+                    reg1 = -16;
+                    reg2 = 15;
+                    break;
+                    FALLTHROUGH;
                 default:
-                case o_Num_31: reg1 =   0; reg2 = 31; break;
-                case o_Num_32: reg1 =   1; reg2 = 32; break;
+                case o_Num_31:
+                    reg1 =   0;
+                    reg2 = 31;
+                    break;
+                case o_Num_32:
+                    reg1 =   1;
+                    reg2 = 32;
+                    break;
             }
             val = Eval();
-            if (val < reg1 || val > reg2) {
+            if (val < reg1 || val > reg2)
+            {
                 Error("Constant out of range");
             }
-            if (parm & SUB32) {
+            if (parm & SUB32)
+            {
                 reg1 = 32 - val;
-            } else {
+            }
+            else
+            {
                 reg1 = val;
             }
             if (Comma()) break;
-            switch ((reg2 = GetReg(jag_regs))) {
+            switch ((reg2 = GetReg(jag_regs)))
+            {
                 case reg_None:
                     IllegalOperand();
                     break;
@@ -230,14 +254,16 @@ static int Jag_DoCPUOpcode(int typ, int parm)
         case o_JR:
         case o_JUMP:
             // get the condition code
-            switch ((reg1 = GetReg(jag_conds))) {
+            switch ((reg1 = GetReg(jag_conds)))
+            {
                 case reg_EOL:
                     val = -1;
                     break;
 
                 case reg_None:
                     val = Eval();
-                    if (val < 0 || val > 31) {
+                    if (val < 0 || val > 31)
+                    {
                         Error("Constant out of range");
                         val = 0;
                     }
@@ -251,7 +277,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
 
             reg1 = val;
             if (Comma()) break;
-            if (typ == o_JR) {
+            if (typ == o_JR)
+            {
                 // JR cc,n
                 val = Eval();
 #if 0
@@ -261,14 +288,18 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                 // the new way after WORDWIDTH
                 reg2 = val - (locPtr + 2)/2;
 #endif
-                if (!errFlag && (val < -16 || val > 15)) {
+                if (!errFlag && (val < -16 || val > 15))
+                {
                     Error("Branch out of range");
                 }
                 InstrJag(parm, reg2, reg1);
-            } else {
+            }
+            else
+            {
                 // JUMP cc,(Rn)
                 if (Expect("(")) break;
-                switch ((reg2 = GetReg(jag_regs))) {
+                switch ((reg2 = GetReg(jag_regs)))
+                {
                     case reg_None:
                         IllegalOperand();
                         break;
@@ -287,7 +318,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
         case o_MOVEI:
             val = Eval();
             if (Comma()) break;
-            switch ((reg2 = GetReg(jag_regs))) {
+            switch ((reg2 = GetReg(jag_regs)))
+            {
                 case reg_None:
                     IllegalOperand();
                     break;
@@ -303,7 +335,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_MOVE: // PC,Rd or Rs,Rd
-            switch ((reg1 = GetReg(jag_regs_PC))) {
+            switch ((reg1 = GetReg(jag_regs_PC)))
+            {
                 case reg_None:
                     IllegalOperand();
                     break;
@@ -314,7 +347,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                 default:
                     if (Comma()) break;
 
-                    switch ((reg2 = GetReg(jag_regs))) {
+                    switch ((reg2 = GetReg(jag_regs)))
+                    {
                         case reg_None:
                             IllegalOperand();
                             break;
@@ -324,7 +358,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
 
                         default:
                             parm = 34;
-                            if (reg1 == 32) { // PC
+                            if (reg1 == 32)   // PC
+                            {
                                 parm = 51;
                             }
                             InstrJag(parm, reg1, reg2);
@@ -335,7 +370,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
 
         case o_LOAD: // (Rn),Rn = 41 / (R14/R15+n),Rn = 43/44 / (R14/R15+Rn),Rn = 58/59
             if (Expect("(")) break;
-            switch ((reg1 = GetReg(jag_regs))) {
+            switch ((reg1 = GetReg(jag_regs)))
+            {
                 case reg_None:
                     IllegalOperand();
                     break;
@@ -347,9 +383,11 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                 case 15:
                     oldLine = linePtr;
                     token = GetWord(word);
-                    if (token == '+') {
+                    if (token == '+')
+                    {
                         parm = reg1 - 14 + 58;
-                        switch ((reg1 = GetReg(jag_regs))) {
+                        switch ((reg1 = GetReg(jag_regs)))
+                        {
                             case reg_EOL:
                                 break;
 
@@ -357,7 +395,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                                 // (R14/R15 + n)
                                 parm = parm - 58 + 43;
                                 val = Eval();
-                                if (val < 1 || val > 32) {
+                                if (val < 1 || val > 32)
+                                {
                                     Error("Constant out of range");
                                 }
                                 reg1 = val;
@@ -366,7 +405,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                             default:
                                 if (RParen()) break;
                                 if (Comma()) break;
-                                switch ((reg2 = GetReg(jag_regs))) {
+                                switch ((reg2 = GetReg(jag_regs)))
+                                {
                                     case reg_None:
                                         IllegalOperand();
                                         break;
@@ -390,7 +430,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                     if (RParen()) break;
                     if (Comma()) break;
 
-                    switch ((reg2 = GetReg(jag_regs))) {
+                    switch ((reg2 = GetReg(jag_regs)))
+                    {
                         case reg_None:
                             IllegalOperand();
                             break;
@@ -407,7 +448,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
 
         case o_LOADn: // LOADB/LOADP/LOADW (Rn),Rn
             if (Expect("(")) break;
-            switch ((reg1 = GetReg(jag_regs))) {
+            switch ((reg1 = GetReg(jag_regs)))
+            {
                 case reg_None:
                     IllegalOperand();
                     break;
@@ -419,7 +461,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                     if (RParen()) break;
                     if (Comma()) break;
 
-                    switch ((reg2 = GetReg(jag_regs))) {
+                    switch ((reg2 = GetReg(jag_regs)))
+                    {
                         case reg_None:
                             IllegalOperand();
                             break;
@@ -435,7 +478,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_STORE: // Rn,(Rn) = 47 / Rn,(R14/R15+n) = 49/50 / Rn,(R14/R15+Rn) = 60/61
-            switch ((reg1 = GetReg(jag_regs))) {
+            switch ((reg1 = GetReg(jag_regs)))
+            {
                 case reg_None:
                     IllegalOperand();
                     break;
@@ -446,7 +490,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                 default:
                     if (Comma()) break;
                     if (Expect("(")) break;
-                    switch ((reg2 = GetReg(jag_regs))) {
+                    switch ((reg2 = GetReg(jag_regs)))
+                    {
                         case reg_None:
                             IllegalOperand();
                             break;
@@ -458,9 +503,11 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                         case 15:
                             oldLine = linePtr;
                             token = GetWord(word);
-                            if (token == '+') {
+                            if (token == '+')
+                            {
                                 parm = reg2 - 14 + 60;
-                                switch ((reg2 = GetReg(jag_regs))) {
+                                switch ((reg2 = GetReg(jag_regs)))
+                                {
                                     case reg_EOL:
                                         break;
 
@@ -468,7 +515,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                                         // (R14/R15 + n)
                                         parm = parm - 60 + 49;
                                         val = Eval();
-                                        if (val < 1 || val > 32) {
+                                        if (val < 1 || val > 32)
+                                        {
                                             Error("Constant out of range");
                                         }
                                         reg2 = val;
@@ -477,7 +525,7 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                                     default:
                                         if (RParen()) break;
                                         InstrJag(parm, reg1, reg2);
-                                    break;
+                                        break;
                                 }
                                 break;
                             }
@@ -494,7 +542,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_STOREn: // STOREB/STOREP/STOREW Rn,(Rn)
-            switch ((reg1 = GetReg(jag_regs))) {
+            switch ((reg1 = GetReg(jag_regs)))
+            {
                 case reg_None:
                     IllegalOperand();
                     break;
@@ -505,7 +554,8 @@ static int Jag_DoCPUOpcode(int typ, int parm)
                 default:
                     if (Comma()) break;
                     if (Expect("(")) break;
-                    switch ((reg2 = GetReg(jag_regs))) {
+                    switch ((reg2 = GetReg(jag_regs)))
+                    {
                         case reg_None:
                             IllegalOperand();
                             break;

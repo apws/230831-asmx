@@ -3,7 +3,8 @@
 #define versionName "6805 assembler"
 #include "asmx.h"
 
-enum {
+enum
+{
     o_Inherent,     // implied instructions
     o_Relative,     // branch instructions
     o_Bit,          // BCLR/BSET
@@ -23,12 +24,14 @@ enum {
 //  o_Foo = o_LabelOp,
 };
 
-enum cputype {
+enum cputype
+{
     CPU_6805,
     CPU_68HCS08
 };
 
-static const struct OpcdRec M6805_opcdTab[] = {
+static const struct OpcdRec M6805_opcdTab[] =
+{
     {"NEGA",  o_Inherent, 0x40},
     {"COMA",  o_Inherent, 0x43},
     {"LSRA",  o_Inherent, 0x44},
@@ -182,7 +185,8 @@ static int M6805_DoCPUOpcode(int typ, int parm)
     char    force;
     char    reg;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_Inh08:       // 68HCS08 inherent instructions
             if (curCPU != CPU_68HCS08) return 0;
             FALLTHROUGH;
@@ -201,7 +205,8 @@ static int M6805_DoCPUOpcode(int typ, int parm)
         case o_Logical:
             oldLine = linePtr;
             token = GetWord(word);  // look for ",X"
-            if (token == ',') {
+            if (token == ',')
+            {
                 if (Expect("X")) break;
                 InstrB(parm + 0x70);
                 break;
@@ -212,13 +217,15 @@ static int M6805_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);  // look for ",X"
-            switch (token) {
+            switch (token)
+            {
                 case 0:
                     InstrBB(parm + 0x30, val);  // no ",X", so must be direct
                     break;
 
                 case ',':
-                    switch ((reg = GetReg("X SP"))) {
+                    switch ((reg = GetReg("X SP")))
+                    {
                         default:
                         case reg_None:
                             IllegalOperand();
@@ -231,9 +238,12 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                             parm = parm + 0x9E00;
                             FALLTHROUGH;
                         case 0: // SP
-                            if (evalKnown && val == 0 && parm < 256) {
-                                 InstrB(parm + 0x70); // 0,X
-                            } else {
+                            if (evalKnown && val == 0 && parm < 256)
+                            {
+                                InstrB(parm + 0x70); // 0,X
+                            }
+                            else
+                            {
                                 InstrXB(parm + 0x60, val); // ix1,X / sp1,SP
                             }
                     }
@@ -250,11 +260,15 @@ static int M6805_DoCPUOpcode(int typ, int parm)
         case o_Store:
             oldLine = linePtr;
             token = GetWord(word);
-            switch (token) {
+            switch (token)
+            {
                 case '#': // immediate
-                    if (typ == o_Store) {
+                    if (typ == o_Store)
+                    {
                         Error("Invalid addressing mode");
-                    } else {
+                    }
+                    else
+                    {
                         val = Eval();
                         InstrBB(parm + 0xA0, val);
                     }
@@ -269,29 +283,37 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                     force = 0;
                     parm = parm & ~0x10;
 
-                    if (token == '<' || token == '>') {
+                    if (token == '<' || token == '>')
+                    {
                         force = token;
-                    } else {
+                    }
+                    else
+                    {
                         linePtr = oldLine;
                     }
 
                     val = Eval();
 
-                oldLine = linePtr;
-                token = GetWord(word);
-                    switch (token) {
+                    oldLine = linePtr;
+                    token = GetWord(word);
+                    switch (token)
+                    {
                         case 0: // dir or ext
                             if ((force != '>' && evalKnown && (val & 0xFF00) >> 8 == 0)
-                                    || force == '<') {
+                                    || force == '<')
+                            {
                                 CheckByte(val);
                                 InstrBB(parm + 0xB0, val);  // <$xx
-                            } else {
+                            }
+                            else
+                            {
                                 InstrBW(parm + 0xC0, val);   // >$xxxx
                             }
                             break;
 
                         case ',': // ix1,X or ix2,X
-                            switch ((reg = GetReg("X SP"))) {
+                            switch ((reg = GetReg("X SP")))
+                            {
                                 default:
                                 case reg_None:
                                     IllegalOperand();
@@ -301,22 +323,28 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                                     break;
 
                                 case 1:
-                                    if (parm == 0x0C || parm == 0x0D) { // JMP / JSR
+                                    if (parm == 0x0C || parm == 0x0D)   // JMP / JSR
+                                    {
                                         BadMode();
                                         break;
                                     }
                                     parm = parm + 0x9E00;
                                     FALLTHROUGH;
                                 case 0:
-                                    if (evalKnown && val == 0 && parm < 256) { // 0,X
-                                         InstrB(parm + 0xF0);
-                                    } else if ((force != '>' && evalKnown &&
-                                                (val & 0xFF00) >> 8 == 0)
-                                             || force == '<') {
-                                         CheckByte(val);
-                                         InstrXB(parm + 0xE0, val); // ix1,X / sp1,SP
-                                    } else {
-                                         InstrXW(parm + 0xD0, val); // ix2,X / sp2,SP
+                                    if (evalKnown && val == 0 && parm < 256)   // 0,X
+                                    {
+                                        InstrB(parm + 0xF0);
+                                    }
+                                    else if ((force != '>' && evalKnown &&
+                                              (val & 0xFF00) >> 8 == 0)
+                                             || force == '<')
+                                    {
+                                        CheckByte(val);
+                                        InstrXB(parm + 0xE0, val); // ix1,X / sp1,SP
+                                    }
+                                    else
+                                    {
+                                        InstrXW(parm + 0xD0, val); // ix2,X / sp2,SP
                                     }
                             }
                             break;
@@ -331,12 +359,14 @@ static int M6805_DoCPUOpcode(int typ, int parm)
 
         case o_Bit:
             val = Eval();   // bit number
-            if (val < 0 || val > 7) {
+            if (val < 0 || val > 7)
+            {
                 Error("Bit number must be 0 - 7");
             }
 
             oldLine = linePtr;  // eat optional comma after bit number
-            if (GetWord(word) != ',') {
+            if (GetWord(word) != ',')
+            {
                 linePtr = oldLine;
             }
 
@@ -348,12 +378,14 @@ static int M6805_DoCPUOpcode(int typ, int parm)
 
         case o_BRelative:
             val = Eval();   // bit number
-            if (val < 0 || val > 7) {
+            if (val < 0 || val > 7)
+            {
                 Error("Bit number must be 0 - 7");
             }
 
             oldLine = linePtr;  // eat optional comma after bit number
-            if (GetWord(word) != ',') {
+            if (GetWord(word) != ',')
+            {
                 linePtr = oldLine;
             }
 
@@ -361,7 +393,8 @@ static int M6805_DoCPUOpcode(int typ, int parm)
             reg = 0;
 
             oldLine = linePtr;  // eat optional comma after direct page address
-            if (GetWord(word) != ',') {
+            if (GetWord(word) != ',')
+            {
                 linePtr = oldLine;
             }
 
@@ -382,11 +415,15 @@ static int M6805_DoCPUOpcode(int typ, int parm)
             if (curCPU != CPU_68HCS08) return 0;
             oldLine = linePtr;
             token = GetWord(word);
-            switch (token) {
+            switch (token)
+            {
                 case '#': // 45 LDHX #imm / 65 CPHX #imm
-                    if (parm == 0x0F) {
+                    if (parm == 0x0F)
+                    {
                         BadMode();
-                    } else {
+                    }
+                    else
+                    {
                         val = Eval();
                         InstrBW(0x45 + (parm & 0x01)*0x20, val);
                         break;
@@ -394,9 +431,12 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case ',': // 9EAE LDHX ,X
-                    if (parm != 0x0E) {
+                    if (parm != 0x0E)
+                    {
                         BadMode();
-                    } else {
+                    }
+                    else
+                    {
                         if (Expect("X")) break;
                         InstrX(0x9EAE);
                         break;
@@ -405,9 +445,12 @@ static int M6805_DoCPUOpcode(int typ, int parm)
 
                 default:
                     force = 0;
-                    if (token == '<' || token == '>') {
+                    if (token == '<' || token == '>')
+                    {
                         force = token;
-                    } else {
+                    }
+                    else
+                    {
                         linePtr = oldLine;
                     }
 
@@ -415,46 +458,71 @@ static int M6805_DoCPUOpcode(int typ, int parm)
 
                     oldLine = linePtr;
                     token = GetWord(word);
-                    if (token == 0) { // dir or ext
-                       if ((force != '>' && evalKnown && (val & 0xFF00) >> 8 == 0)
-                               || force == '<') {
+                    if (token == 0)   // dir or ext
+                    {
+                        if ((force != '>' && evalKnown && (val & 0xFF00) >> 8 == 0)
+                                || force == '<')
+                        {
                             CheckByte(val);
-                            switch (parm) {
-                                case 0x0E: parm = 0x55; break; // LDHX
-                                case 0x0F: parm = 0x35; break; // STHX
-                                default:   parm = 0x75; break; // CPHX
+                            switch (parm)
+                            {
+                                case 0x0E:
+                                    parm = 0x55;
+                                    break; // LDHX
+                                case 0x0F:
+                                    parm = 0x35;
+                                    break; // STHX
+                                default:
+                                    parm = 0x75;
+                                    break; // CPHX
                             }
                             InstrBB(parm, val); // ix1,X / sp1,SP
-                       } else {
-                            switch (parm) {
-                                case 0x0E: parm = 0x32; break; // LDHX
-                                case 0x0F: parm = 0x96; break; // STHX
-                                default:   parm = 0x3E; break; // CPHX
+                        }
+                        else
+                        {
+                            switch (parm)
+                            {
+                                case 0x0E:
+                                    parm = 0x32;
+                                    break; // LDHX
+                                case 0x0F:
+                                    parm = 0x96;
+                                    break; // STHX
+                                default:
+                                    parm = 0x3E;
+                                    break; // CPHX
                             }
                             InstrBW(parm, val); // ix2,X / sp2,SP
-                       }
-                } else { // ofs,reg
-                    linePtr = oldLine;
-                    if (Comma()) break;
-                    switch ((reg = GetReg("X SP"))) {
-                        default:
-                        case reg_None:
-                            IllegalOperand();
-                            break;
+                        }
+                    }
+                    else     // ofs,reg
+                    {
+                        linePtr = oldLine;
+                        if (Comma()) break;
+                        switch ((reg = GetReg("X SP")))
+                        {
+                            default:
+                            case reg_None:
+                                IllegalOperand();
+                                break;
 
-                        case reg_EOL: // EOL
-                            break;
+                            case reg_EOL: // EOL
+                                break;
 
                             case 0: // X
-                                if (parm != 0x0E) { // LDHX
+                                if (parm != 0x0E)   // LDHX
+                                {
                                     BadMode();
                                     break;
                                 }
                                 if ((force != '>' && evalKnown && (val & 0xFF00) >> 8 == 0)
-                                         || force == '<') {
-                                     CheckByte(val);
-                                     InstrXB(parm + 0x9EC0, val); // ix1,X
-                                } else {
+                                        || force == '<')
+                                {
+                                    CheckByte(val);
+                                    InstrXB(parm + 0x9EC0, val); // ix1,X
+                                }
+                                else
+                                {
                                     InstrXW(parm + 0x9EB0, val); // ix2,X
                                 }
                                 break;
@@ -481,23 +549,28 @@ static int M6805_DoCPUOpcode(int typ, int parm)
         case o_CBEQ:        // 68HCS08 CBEQ, DBNZ instructions
             if (curCPU != CPU_68HCS08) return 0;
             oldLine = linePtr;
-            if (GetWord(word) == ',') {
+            if (GetWord(word) == ',')
+            {
                 if (Expect("X")) break;
                 if (parm == 0x01 && Expect("+")) break;
                 if (Comma()) break;
                 val = EvalBranch(2);
                 InstrBB(parm + 0x70, val);
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine;
                 val = EvalByte();
                 if (Comma()) break;
-                switch (reg = (GetReg("X SP"))) {
+                switch (reg = (GetReg("X SP")))
+                {
                     case 0: // ,X or ,X+
                         oldLine = linePtr;
-                        if (parm == 0x01 && GetWord(word) != '+') {
+                        if (parm == 0x01 && GetWord(word) != '+')
+                        {
                             linePtr = oldLine;
                             FALLTHROUGH;
-                    case reg_None:
+                        case reg_None:
                             val2 = EvalBranch(3);
                             InstrBBB(parm + 0x30, val, val2);
                             break;
@@ -506,9 +579,12 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                     case 1: // ,SP
                         if (reg == 1) parm = parm + 0x9E00;
                         if (Comma()) break;
-                        if (reg == 1) {
+                        if (reg == 1)
+                        {
                             val2 = EvalBranch(4);
-                        } else {
+                        }
+                        else
+                        {
                             val2 = EvalBranch(3);
                         }
                         InstrXBB(parm + 0x60, val, val2);
@@ -527,7 +603,8 @@ static int M6805_DoCPUOpcode(int typ, int parm)
         case o_MOV:         // 68HCS08 MOV instruction
             if (curCPU != CPU_68HCS08) return 0;
             oldLine = linePtr;
-            switch (GetWord(word)) {
+            switch (GetWord(word))
+            {
                 case ',':
                     if (Expect("X")) break;
                     if (Expect("+")) break;
@@ -548,9 +625,12 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                     val = EvalByte();
                     if (Comma()) break;
                     oldLine = linePtr;
-                    if (GetReg("X") == 0 && (GetReg("+") == 0)) {
+                    if (GetReg("X") == 0 && (GetReg("+") == 0))
+                    {
                         InstrBB(0x5E, val); // 5E MOV dir,X+
-                    } else {
+                    }
+                    else
+                    {
                         linePtr = oldLine;
                         val2 = EvalByte();
                         InstrBBB(0x4E, val, val2); // 4E MOV dir,dir

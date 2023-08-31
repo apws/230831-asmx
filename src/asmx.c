@@ -16,7 +16,8 @@
 #endif
 #define COPYRIGHT "Copyright 1998-2020 Bruce Tomlin"
 
-enum {
+enum
+{
     IHEX_SIZE   = 32,       // max number of data bytes per line in hex object file
     MAXSYMLEN   = 32,       // max symbol length (only used in DumpSym())
     symTabCols  = 1,        // number of columns for symbol table dump
@@ -32,19 +33,22 @@ enum {
 
 const char      *progname;      // pointer to argv[0]
 
-struct MacroLine {
+struct MacroLine
+{
     struct MacroLine    *next;      // pointer to next macro line
     char                text[1];    // macro line, storage = 1 + length
 };
 typedef struct MacroLine MacroLine;
 
-struct MacroParm {
+struct MacroParm
+{
     struct MacroParm    *next;      // pointer to next macro parameter name
     char                name[1];    // macro parameter name, storage = 1 + length
 };
 typedef struct MacroParm MacroParm;
 
-struct MacroRec {
+struct MacroRec
+{
     struct MacroRec     *next;      // pointer to next macro
     bool                def;        // true after macro is defined in pass 2
     bool                toomany;    // true if too many parameters in definition
@@ -55,7 +59,8 @@ struct MacroRec {
 } *macroTab = NULL;             // pointer to first entry in macro table
 typedef struct MacroRec MacroRec;
 
-struct SegRec {
+struct SegRec
+{
     struct SegRec       *next;      // pointer to next segment
 //  bool                gen;        // false to supress code output (not currently implemented)
     uint32_t            loc;        // locptr for this segment
@@ -77,7 +82,8 @@ char            *macParms[MAXMACPARMS * MAX_MACRO]; // pointers to current macro
 int             macRepeat[MAX_MACRO]; // repeat count for REP pseudo-op
 #endif
 
-struct AsmRec {
+struct AsmRec
+{
     struct AsmRec   *next;          // next AsmRec
     int             (*DoCPUOpcode) (int typ, int parm);
     int             (*DoCPULabelOp) (int typ, int parm, char *labl);
@@ -86,7 +92,8 @@ struct AsmRec {
 };
 typedef struct AsmRec AsmRec;
 
-struct CpuRec {
+struct CpuRec
+{
     struct CpuRec   *next;          // next CpuRec
     AsmRec          *as;            // assembler for CPU type
     int             index;          // CPU type index for assembler
@@ -131,7 +138,8 @@ bool            exactFlag;          // true to disable assembler-specific optimi
 
 int             condLevel;          // current IF nesting level
 char            condState[MAX_COND];// state of current nesting level
-enum {
+enum
+{
     condELSE = 1, // ELSE has already been countered at this level
     condTRUE = 2, // condition is currently true
     condFAIL = 4  // condition has failed (to handle ELSE after ELSIF)
@@ -190,7 +198,8 @@ Str255          defCPU;             // default CPU name
 
 // --------------------------------------------------------------
 
-enum {
+enum
+{
 //  0x00-0xFF = CPU-specific opcodes
 
 //  o_Illegal = 0x100,  // opcode not found in FindOpcode
@@ -247,7 +256,8 @@ enum {
     o_ENDIF     // ENDIF pseudo-op
 };
 
-static const struct OpcdRec opcdTab2[] = {
+static const struct OpcdRec opcdTab2[] =
+{
     {"DB",        o_DB,       0},
     {"FCB",       o_DB,       0},
     {"BYTE",      o_DB,       0},
@@ -333,9 +343,12 @@ static const struct OpcdRec opcdTab2[] = {
 
 static int DoCPUOpcode(int typ, int parm)
 {
-    if (curAsm && curAsm -> DoCPUOpcode) {
+    if (curAsm && curAsm -> DoCPUOpcode)
+    {
         return curAsm -> DoCPUOpcode(typ, parm);
-    } else {
+    }
+    else
+    {
         return 0;
     }
 }
@@ -343,9 +356,12 @@ static int DoCPUOpcode(int typ, int parm)
 
 static int DoCPULabelOp(int typ, int parm, char *labl)
 {
-    if (curAsm && curAsm -> DoCPULabelOp) {
+    if (curAsm && curAsm -> DoCPULabelOp)
+    {
         return curAsm -> DoCPULabelOp(typ, parm, labl);
-    } else {
+    }
+    else
+    {
         return 0;
     }
 }
@@ -356,8 +372,10 @@ static void PassInit(void)
     AsmRec *p = asmTab;
 
     // for each assembler, call PassInit
-    while (p) {
-        if (p -> PassInit) {
+    while (p)
+    {
+        if (p -> PassInit)
+        {
             p -> PassInit();
         }
         p = p -> next;
@@ -366,9 +384,9 @@ static void PassInit(void)
 
 
 void *AddAsm(const char *name, // assembler name
-              int (*DoCPUOpcode) (int typ, int parm),
-              int (*DoCPULabelOp) (int typ, int parm, char *labl),
-              void (*PassInit) (void) )
+             int (*DoCPUOpcode) (int typ, int parm),
+             int (*DoCPULabelOp) (int typ, int parm, char *labl),
+             void (*PassInit) (void) )
 {
     AsmRec *p = (AsmRec *) malloc(sizeof *p + strlen(name));
 
@@ -414,8 +432,10 @@ static CpuRec *FindCPU(const char *cpuName)
 {
     CpuRec *p = cpuTab;
 
-    while (p) {
-        if (strcmp(cpuName, p->name) == 0) {
+    while (p)
+    {
+        if (strcmp(cpuName, p->name) == 0)
+        {
             return p;
         }
         p = p -> next;
@@ -437,7 +457,8 @@ static bool SetCPU(const char *cpuName)
 {
     CpuRec *p = FindCPU(cpuName);
 
-    if (p) {
+    if (p)
+    {
         curCPU   = p -> index;
         curAsm   = p -> as;
         endian   = p -> endian;
@@ -467,7 +488,7 @@ static void AsmInit(void)
 #define ASSEMBLER(name) extern void Asm ## name ## Init(void); Asm ## name ## Init();
 
     AddCPU(AddAsm("None", NULL, NULL, NULL),
-                  "NONE", 0, UNKNOWN_END, ADDR_32, LIST_24, 8, 0, NULL);
+           "NONE", 0, UNKNOWN_END, ADDR_32, LIST_24, 8, 0, NULL);
 
     ASSEMBLER(1802);
     ASSEMBLER(6502);
@@ -495,18 +516,22 @@ static void AsmInit(void)
     // try to find the CPU name in the executable's name
     char *p = line + strlen(line);    // start at end of executable name
 
-    while (p > line && isalphanum(p[-1])) {
+    while (p > line && isalphanum(p[-1]))
+    {
         p--;                    // skip back to last non alpha-numeric character
     }
     if (!isalphanum(*p)) p++;   // advance past last non alpha-numeric character
 
-    if (p[0] == 'A' && p[1] == 'S' && p[2] == 'M') {
+    if (p[0] == 'A' && p[1] == 'S' && p[2] == 'M')
+    {
         p = p + 3;              // skip leading "ASM"
     }
 
     // for each substring, try to find a matching CPU name
-    while (*p) {
-        if (FindCPU(p)) {
+    while (*p)
+    {
+        if (FindCPU(p))
+        {
             strcpy(defCPU, p);
             return;
         }
@@ -530,12 +555,14 @@ void Error(const char *message)
 
     char *name = cl_SrcName;
     int line = linenum;
-    if (nInclude >= 0) {
+    if (nInclude >= 0)
+    {
         name = incname[nInclude];
         line = incline[nInclude];
     }
 
-    if (pass == 2) {
+    if (pass == 2)
+    {
         listThisLine = true;
         if (cl_List)    fprintf(listing, "%s:%d: *** Error:  %s ***\n", name, line, message);
         if (cl_Err)     fprintf(stderr,  "%s:%d: *** Error:  %s ***\n", name, line, message);
@@ -553,12 +580,14 @@ void Warning(const char *message)
 
     char *name = cl_SrcName;
     int line = linenum;
-    if (nInclude >= 0) {
+    if (nInclude >= 0)
+    {
         name = incname[nInclude];
         line = incline[nInclude];
     }
 
-    if (pass == 2 && cl_Warn) {
+    if (pass == 2 && cl_Warn)
+    {
         listThisLine = true;
         if (cl_List)    fprintf(listing, "%s:%d: *** Warning:  %s ***\n", name, line, message);
         if (cl_Warn)    fprintf(stderr,  "%s:%d: *** Warning:  %s ***\n", name, line, message);
@@ -578,11 +607,13 @@ void Debleft(char *s)
 {
     char *p = s;
 
-    while (*p == 9 || *p == ' ') {
+    while (*p == 9 || *p == ' ')
+    {
         p++;
     }
 
-    if (p != s) {
+    if (p != s)
+    {
         while ((*s++ = *p++)) /* copy until end of string */;
     }
 }
@@ -596,7 +627,8 @@ void Debright(char *s)
 {
     char *p = s + strlen(s);
 
-    while (p > s && *--p == ' ') {
+    while (p > s && *--p == ' ')
+    {
         *p = 0;
     }
 }
@@ -659,20 +691,25 @@ static u_int EvalBin(const char *binStr)
     bool evalErr = false;
 
     char c;
-    while ((c = *binStr++)) {
-        if (c < '0' || c > '1') {
+    while ((c = *binStr++))
+    {
+        if (c < '0' || c > '1')
+        {
             evalErr = true;
-        } else {
+        }
+        else
+        {
             binVal = binVal * 2 + c - '0';
         }
     }
 
-    if (evalErr) {
-      binVal = 0;
-      Error("Invalid binary number");
+    if (evalErr)
+    {
+        binVal = 0;
+        Error("Invalid binary number");
     }
 
-   return binVal;
+    return binVal;
 }
 
 
@@ -682,20 +719,25 @@ static u_int EvalOct(const char *octStr)
     bool evalErr = false;
 
     char c;
-    while ((c = *octStr++)) {
-        if (c < '0' || c > '7') {
+    while ((c = *octStr++))
+    {
+        if (c < '0' || c > '7')
+        {
             evalErr = true;
-        } else {
+        }
+        else
+        {
             octVal = octVal * 8 + c - '0';
         }
     }
 
-    if (evalErr) {
+    if (evalErr)
+    {
         octVal = 0;
         Error("Invalid octal number");
     }
 
-   return octVal;
+    return octVal;
 }
 
 
@@ -712,25 +754,33 @@ static u_int EvalSplitOct(const char *octStr)
 
     char c;
     int digit = 0;
-    while ((c = *octStr++)) {
-        if (c < '0' || c > '7' || (c > '3' && (len - digit) % 3 == 0)) {
+    while ((c = *octStr++))
+    {
+        if (c < '0' || c > '7' || (c > '3' && (len - digit) % 3 == 0))
+        {
             evalErr = true;
-        } else {
-            if (digit == len - 3) {
+        }
+        else
+        {
+            if (digit == len - 3)
+            {
                 octVal = octVal * 4 + c - '0';
-            } else {
+            }
+            else
+            {
                 octVal = octVal * 8 + c - '0';
             }
         }
         digit++;
     }
 
-    if (evalErr) {
+    if (evalErr)
+    {
         octVal = 0;
         Error("Invalid split-octal number");
     }
 
-   return octVal;
+    return octVal;
 }
 
 
@@ -740,27 +790,33 @@ static u_int EvalDec(const char *decStr)
     bool evalErr = false;
 
     char c;
-    while ((c = *decStr++)) {
-        if (!isdigit(c)) {
+    while ((c = *decStr++))
+    {
+        if (!isdigit(c))
+        {
             evalErr = true;
-        } else {
+        }
+        else
+        {
             decVal = decVal * 10 + c - '0';
         }
     }
 
-    if (evalErr) {
+    if (evalErr)
+    {
         decVal = 0;
         Error("Invalid decimal number");
     }
 
-   return decVal;
+    return decVal;
 }
 
 
 static int Hex2Dec(int c)
 {
     c = toupper(c);
-    if (c > '9') {
+    if (c > '9')
+    {
         return c - 'A' + 10;
     }
     return c - '0';
@@ -773,17 +829,22 @@ static u_int EvalHex(const char *hexStr)
     bool evalErr = false;
 
     char c;
-    while ((c = *hexStr++)) {
-        if (!ishex(c)) {
+    while ((c = *hexStr++))
+    {
+        if (!ishex(c))
+        {
             evalErr = true;
-        } else {
+        }
+        else
+        {
             hexVal = hexVal * 16 + Hex2Dec(c);
         }
     }
 
-    if (evalErr) {
-      hexVal = 0;
-      Error("Invalid hexadecimal number");
+    if (evalErr)
+    {
+        hexVal = 0;
+        Error("Invalid hexadecimal number");
     }
 
     return hexVal;
@@ -793,15 +854,18 @@ static u_int EvalHex(const char *hexStr)
 static u_int EvalNum(char *word)
 {
     // handle C-style 0xnnnn hexadecimal constants
-    if(word[0] == '0') {
-        if (toupper(word[1]) == 'X') {
+    if(word[0] == '0')
+    {
+        if (toupper(word[1]) == 'X')
+        {
             return EvalHex(word+2);
         }
         // return EvalOct(word);    // 0nnn octal constants are in less demand, though
     }
 
     int val = strlen(word) - 1;
-    switch (word[val]) {
+    switch (word[val])
+    {
         case 'A': // nnnnnnA format used by Heath
             word[val] = 0;
             val = EvalSplitOct(word);
@@ -887,7 +951,8 @@ char *ListLong(char *p, uint32_t l)
 
 char *ListAddr(char *p, uint32_t addr)
 {
-    switch (addrWid) {
+    switch (addrWid)
+    {
         default:
         case ADDR_16:
             p = ListWord(p, addr);
@@ -910,7 +975,8 @@ char *ListLoc(uint32_t addr)
     char *p = ListAddr(listLine, addr);
 
     *p++ = ' ';
-    if (listWid == LIST_24 && addrWid == ADDR_16) {
+    if (listWid == LIST_24 && addrWid == ADDR_16)
+    {
         *p++ = ' ';
     }
 
@@ -920,11 +986,11 @@ char *ListLoc(uint32_t addr)
 // --------------------------------------------------------------
 // ZSCII conversion routines
 
-    uint8_t zStr[MAX_BYTSTR];   // output data buffer
-    int     zLen;               // length of output data
-    int     zOfs, zPos;         // current output offset (in bytes) and bit position
-    int     zShift;             // current shift lock status (0, 1, 2)
-    const char zSpecial[] = "0123456789.,!?_#'\"/\\<-:()"; // special chars table
+uint8_t zStr[MAX_BYTSTR];   // output data buffer
+int     zLen;               // length of output data
+int     zOfs, zPos;         // current output offset (in bytes) and bit position
+int     zShift;             // current shift lock status (0, 1, 2)
+const char zSpecial[] = "0123456789.,!?_#'\"/\\<-:()"; // special chars table
 
 
 static void InitZSCII(void)
@@ -941,9 +1007,11 @@ static void PutZSCII(char nib)
     nib = nib & 0x1F;
 
     // is it time to start a new word?
-    if (zPos == 3) {
+    if (zPos == 3)
+    {
         // check for overflow
-        if (zOfs >= MAX_BYTSTR) {
+        if (zOfs >= MAX_BYTSTR)
+        {
             if (!errFlag) Error("ZSCII string length overflow");
             return;
         }
@@ -951,7 +1019,8 @@ static void PutZSCII(char nib)
         zPos = 0;
     }
 
-    switch (zPos) {
+    switch (zPos)
+    {
         case 0:
             zStr[zOfs] = nib << 2;
             break;
@@ -979,7 +1048,8 @@ static void PutZSCIIShift(char shift, char nshift)
 
     if (shift == nshift) lock = 2;  // generate shift lock if next shift is same
 
-    switch ((shift - zShift + 3) % 3) {
+    switch ((shift - zShift + 3) % 3)
+    {
         case 0: // no shift
             break;
 
@@ -999,7 +1069,8 @@ static void PutZSCIIShift(char shift, char nshift)
 static void EndZSCII(void)
 {
     // pad final word with shift nibbles
-    while (zPos != 3) {
+    while (zPos != 3)
+    {
         PutZSCII(0x05);
     }
 
@@ -1030,7 +1101,8 @@ static void ConvertZSCII(void)
     InitZSCII();
 
     int inpos = 0;                      // input position
-    while (inpos < instrLen) {
+    while (inpos < instrLen)
+    {
         // get current char and shift
         char ch = bytStr[inpos];        // current input byte
         int shift = GetZSCIIShift(ch);  // current shift state
@@ -1041,7 +1113,8 @@ static void ConvertZSCII(void)
         while (i < instrLen && (nshift = GetZSCIIShift(bytStr[i])) < 0) i++;
         if (i >= instrLen) nshift = zShift;    // if end of data, use current shift as "next" shift
 
-        switch (shift) {
+        switch (shift)
+        {
             case 0: // alpha lower case
             case 1: // alpha upper case
                 PutZSCIIShift(shift, nshift);
@@ -1049,11 +1122,14 @@ static void ConvertZSCII(void)
                 break;
 
             case 2: // non-alpha
-                if ((p = strchr(zSpecial, ch))) {
+                if ((p = strchr(zSpecial, ch)))
+                {
                     // numeric and special chars
                     PutZSCIIShift(shift, nshift);
                     PutZSCII(p - zSpecial + 7);
-                } else {
+                }
+                else
+                {
                     // extended char
                     PutZSCIIShift(shift, nshift);
                     PutZSCII(0x06);
@@ -1088,29 +1164,33 @@ int GetWord(char *word)
 
     // skip initial whitespace
     char c = *linePtr;
-    while (c == 12 || c == '\t' || c == ' ') {
+    while (c == 12 || c == '\t' || c == ' ')
+    {
         c = *++linePtr;
     }
 
     // skip comments
-    if (c == ';') {
-        while (c) {
+    if (c == ';')
+    {
+        while (c)
+        {
             c = *++linePtr;
         }
     }
 
     // test for end of line
-    if (c) {
+    if (c)
+    {
         // test for alphanumeric token
 #if 1
         if (isalphanum(c) ||
-            (
-             (((opts & OPT_DOLLARSYM) && c == '$') || ((opts & OPT_ATSYM) && c == '@'))
-             && ((isalphanum(linePtr[1]) ||
-                 linePtr[1]=='$' ||
-                 ((opts & OPT_ATSYM) && linePtr[1]=='@'))
-                )
-           ))
+                (
+                    (((opts & OPT_DOLLARSYM) && c == '$') || ((opts & OPT_ATSYM) && c == '@'))
+                    && ((isalphanum(linePtr[1]) ||
+                         linePtr[1]=='$' ||
+                         ((opts & OPT_ATSYM) && linePtr[1]=='@'))
+                       )
+                ))
 
 #else
 
@@ -1122,13 +1202,16 @@ int GetWord(char *word)
 
 #endif
         {
-            while (isalphanum(c) || c == '$' || ((opts & OPT_ATSYM) && c == '@')) {
+            while (isalphanum(c) || c == '$' || ((opts & OPT_ATSYM) && c == '@'))
+            {
                 *word++ = toupper(c);
                 c = *++linePtr;
             }
             *word = 0;
             return -1;
-        } else {
+        }
+        else
+        {
             word[0] = c;
             word[1] = 0;
             linePtr++;
@@ -1147,35 +1230,45 @@ int GetOpcode(char *word)
 
     // skip initial whitespace
     char c = *linePtr;
-    while (c == 12 || c == '\t' || c == ' ') {
+    while (c == 12 || c == '\t' || c == ' ')
+    {
         c = *++linePtr;
     }
 
     // skip comments
-    if (c == ';') {
-        while (c) {
+    if (c == ';')
+    {
+        while (c)
+        {
             c = *++linePtr;
         }
     }
 
     // test for ":="
-    if (c == ':' && linePtr[1] == '=') {
+    if (c == ':' && linePtr[1] == '=')
+    {
         word[0] = ':';
         word[1] = '=';
         word[2] = 0;
         linePtr = linePtr + 2;
         return -1;
-    } else if (c) {
+    }
+    else if (c)
+    {
         // test for end of line
         // test for alphanumeric token
-        if (isalphanum(c) || c=='.') {
-            while (isalphanum(c) || c=='.') {
+        if (isalphanum(c) || c=='.')
+        {
+            while (isalphanum(c) || c=='.')
+            {
                 *word++ = toupper(c);
                 c = *++linePtr;
             }
             *word = 0;
             return -1;
-        } else {
+        }
+        else
+        {
             word[0] = c;
             word[1] = 0;
             linePtr++;
@@ -1190,22 +1283,26 @@ int GetOpcode(char *word)
 void GetFName(char *word)
 {
     // skip leading whitespace
-    while (*linePtr == ' ' || *linePtr == '\t') {
+    while (*linePtr == ' ' || *linePtr == '\t')
+    {
         linePtr++;
     }
     char *oldLine = word;
 
     // check for quote at start of file name
     char quote = 0;
-    if (*linePtr == '"' || *linePtr == '\'') {
+    if (*linePtr == '"' || *linePtr == '\'')
+    {
         quote = *linePtr++;
     }
 
     // continue reading until quote or whitespace or EOL
     while (*linePtr != 0 && *linePtr != quote &&
-            (quote || (*linePtr != ' ' && *linePtr != '\t'))) {
+            (quote || (*linePtr != ' ' && *linePtr != '\t')))
+    {
         char ch = *linePtr++;
-        if (ch == '\\' && *linePtr != 0) {
+        if (ch == '\\' && *linePtr != 0)
+        {
             ch = *linePtr++;
         }
         *oldLine++ = ch;
@@ -1213,10 +1310,14 @@ void GetFName(char *word)
     *oldLine++ = 0;
 
     // if looking for quote, error on end quote
-    if (quote) {
-        if (*linePtr == quote) {
+    if (quote)
+    {
+        if (*linePtr == quote)
+        {
             linePtr++;
-        } else {
+        }
+        else
+        {
             Error("Missing close quote");
         }
     }
@@ -1227,7 +1328,8 @@ bool Expect(const char *expected)
 {
     Str255 s;
     GetWord(s);
-    if (strcmp(s, expected) != 0) {
+    if (strcmp(s, expected) != 0)
+    {
         snprintf(s, sizeof s, "\"%s\" expected", expected);
         Error(s);
         return 1;
@@ -1300,26 +1402,33 @@ int FindReg(const char *regName, const char *regList)
     if (!regName[0]) return reg_EOL;
 
     int i = 0;
-    while (*regList) {
+    while (*regList)
+    {
         const char *p = regName;
         // compare words
-        while (*p && *p == *regList) {
+        while (*p && *p == *regList)
+        {
             regList++;
             p++;
         }
 
         // if not match, skip rest of word
-        if (*p || (*regList != 0 && *regList != ' ')) {
+        if (*p || (*regList != 0 && *regList != ' '))
+        {
             // skip to next whitespace
-            while (*regList && *regList != ' ') {
+            while (*regList && *regList != ' ')
+            {
                 regList++;
             }
             // skip to next word
-            while (*regList == ' ') {
+            while (*regList == ' ')
+            {
                 regList++;
             }
             i++;
-        } else {
+        }
+        else
+        {
             return i;
         }
     }
@@ -1341,13 +1450,15 @@ int GetReg(const char *regList)
     Str255  word;
 
     char *oldLine = linePtr;
-    if (!GetWord(word)) {
+    if (!GetWord(word))
+    {
         MissingOperand();
         return reg_EOL;
     }
 
     int reg = FindReg(word, regList);
-    if (reg < 0) {
+    if (reg < 0)
+    {
         linePtr = oldLine;
     }
     return reg;
@@ -1357,12 +1468,14 @@ int GetReg(const char *regList)
 // check if a register from FindReg/GetReg is valid
 int CheckReg(int reg) // may want to add a maxreg parameter
 {
-    if (reg == reg_EOL) {
+    if (reg == reg_EOL)
+    {
         MissingOperand();      // abort if not valid register
         return 1;
     }
 //  if ((reg < 0) || (reg > maxReg))
-    if (reg < 0) {
+    if (reg < 0)
+    {
         IllegalOperand();      // abort if not valid register
         return 1;
     }
@@ -1374,19 +1487,29 @@ static int GetBackslashChar(void)
 {
     Str255      s;
 
-    if (!*linePtr) {
+    if (!*linePtr)
+    {
         return -1;
     }
 
     unsigned char ch = *linePtr++;
-    if (ch == '\\' && *linePtr != 0) { // backslash
+    if (ch == '\\' && *linePtr != 0)   // backslash
+    {
         ch = *linePtr++;
-        switch (ch) {
-            case 'r':   ch = '\r';   break;
-            case 'n':   ch = '\n';   break;
-            case 't':   ch = '\t';   break;
+        switch (ch)
+        {
+            case 'r':
+                ch = '\r';
+                break;
+            case 'n':
+                ch = '\n';
+                break;
+            case 't':
+                ch = '\t';
+                break;
             case 'x':
-                if (ishex(linePtr[0]) && ishex(linePtr[1])) {
+                if (ishex(linePtr[0]) && ishex(linePtr[1]))
+                {
                     s[0] = linePtr[0];
                     s[1] = linePtr[1];
                     s[2] = 0;
@@ -1394,7 +1517,8 @@ static int GetBackslashChar(void)
                     ch = EvalHex(s);
                 }
                 break;
-            default:   break;
+            default:
+                break;
         }
     }
 
@@ -1411,9 +1535,11 @@ static MacroRec *FindMacro(const char *name)
     MacroRec *p = macroTab;
     bool found = false;
 
-    while (p && !found) {
+    while (p && !found)
+    {
         found = (strcmp(p -> name, name) == 0);
-        if (!found) {
+        if (!found)
+        {
             p = p -> next;
         }
     }
@@ -1426,7 +1552,8 @@ static MacroRec *NewMacro(const char *name)
 {
     MacroRec *p = (MacroRec *) malloc(sizeof *p + strlen(name));
 
-    if (p) {
+    if (p)
+    {
         strcpy(p -> name, name);
         p -> def     = false;
         p -> toomany = false;
@@ -1444,7 +1571,8 @@ static MacroRec *AddMacro(const char *name)
 {
     MacroRec *p = NewMacro(name);
 
-    if (p) {
+    if (p)
+    {
         macroTab = p;
     }
 
@@ -1461,12 +1589,16 @@ static void AddMacroParm(MacroRec *macro, const char *name)
     macro -> nparms++;
 
     MacroParm *p = macro -> parms;
-    if (p) {
-        while (p -> next) {
+    if (p)
+    {
+        while (p -> next)
+        {
             p = p -> next;
         }
         p -> next = parm;
-    } else {
+    }
+    else
+    {
         macro -> parms = parm;
     }
 }
@@ -1476,17 +1608,22 @@ static void AddMacroLine(MacroRec *macro, const char *line)
 {
     MacroLine *m = (MacroLine *) malloc(sizeof *m + strlen(line));
 
-    if (m) {
+    if (m)
+    {
         m -> next = NULL;
         strcpy(m -> text, line);
 
         MacroLine *p = macro -> text;
-        if (p) {
-            while (p -> next) {
+        if (p)
+        {
+            while (p -> next)
+            {
                 p = p -> next;
             }
             p -> next = m;
-        } else {
+        }
+        else
+        {
             macro -> text = m;
         }
     }
@@ -1497,13 +1634,15 @@ static void GetMacParms(MacroRec *macro)
 {
     macCurrentID[macLevel] = macUniqueID++;
 
-    for (int i = 0; i < MAXMACPARMS; i++) {
+    for (int i = 0; i < MAXMACPARMS; i++)
+    {
         macParms[i + macLevel * MAXMACPARMS] = NULL;
     }
 
     // skip initial whitespace
     char c = *linePtr;
-    while (c == 12 || c == '\t' || c == ' ') {
+    while (c == 12 || c == '\t' || c == ' ')
+    {
         c = *++linePtr;
     }
 
@@ -1512,10 +1651,12 @@ static void GetMacParms(MacroRec *macro)
 
     int n = 0;
     char *p = macParmsLine[macLevel];
-    while (*p && *p != ';' && n < MAXMACPARMS) {
+    while (*p && *p != ';' && n < MAXMACPARMS)
+    {
         // skip whitespace before current parameter
         c = *p;
-        while (c == 12 || c == '\t' || c == ' ') {
+        while (c == 12 || c == '\t' || c == ' ')
+        {
             c = *++p;
         }
 
@@ -1526,23 +1667,27 @@ static void GetMacParms(MacroRec *macro)
         char quote = 0;
         bool done = false;
         // skip to end of parameter
-        while (!done) {
+        while (!done)
+        {
             c = *p++;
-            switch (c) {
+            switch (c)
+            {
                 case 0:
                     --p;
                     done = true;
                     break;
 
                 case ';':
-                    if (quote == 0) {
+                    if (quote == 0)
+                    {
                         *--p = 0;
                         done = true;
                     }
                     break;
 
                 case ',':
-                    if (quote == 0) {
+                    if (quote == 0)
+                    {
                         *(p-1) = 0;
                         done = true;
                     }
@@ -1550,9 +1695,12 @@ static void GetMacParms(MacroRec *macro)
 
                 case 0x27:  // quote
                 case '"':
-                    if (quote == 0) {
+                    if (quote == 0)
+                    {
                         quote = c;
-                    } else if (quote == c) {
+                    }
+                    else if (quote == c)
+                    {
                         quote = 0;
                     }
             }
@@ -1563,21 +1711,26 @@ static void GetMacParms(MacroRec *macro)
 
     // terminate last parameter and point remaining parameters to null strings
     *p = 0;
-    for (int i = n; i < MAXMACPARMS; i++) {
+    for (int i = n; i < MAXMACPARMS; i++)
+    {
         macParms[i + macLevel * MAXMACPARMS] = p;
     }
 
     // remove whitespace from end of parameter
-    for (int i = 0; i < MAXMACPARMS; i++) {
-        if (macParms[i + macLevel * MAXMACPARMS]) {
+    for (int i = 0; i < MAXMACPARMS; i++)
+    {
+        if (macParms[i + macLevel * MAXMACPARMS])
+        {
             p = macParms[i + macLevel * MAXMACPARMS] + strlen(macParms[i + macLevel * MAXMACPARMS]) - 1;
-            while (p >= macParms[i + macLevel * MAXMACPARMS] && (*p == ' ' || *p == 9)) {
+            while (p >= macParms[i + macLevel * MAXMACPARMS] && (*p == ' ' || *p == 9))
+            {
                 *p-- = 0;
             }
         }
     }
 
-    if (n > macro -> nparms || n > MAXMACPARMS) {
+    if (n > macro -> nparms || n > MAXMACPARMS)
+    {
         Error("Too many macro parameters");
     }
 }
@@ -1592,25 +1745,30 @@ static void DoMacParms()
 
     // skip initial whitespace
     char c = *linePtr;
-    while (c == 12 || c == '\t' || c == ' ') {
+    while (c == 12 || c == '\t' || c == ' ')
+    {
         c = *++linePtr;
     }
 
     // while not end of line
     char *p = linePtr; // pointer to start of word
     int token = GetWord(word);
-    while (token) {
+    while (token)
+    {
         // if alphanumeric, search for macro parameter of the same name
-        if (token == -1) {
+        if (token == -1)
+        {
             int i = 0;
             MacroParm *parm = macPtr[macLevel] -> parms;
-            while (parm && strcmp(parm -> name, word)) {
+            while (parm && strcmp(parm -> name, word))
+            {
                 parm = parm -> next;
                 i++;
             }
 
             // if macro parameter found, replace parameter name with parameter value
-            if (parm) {
+            if (parm)
+            {
                 // copy from linePtr to temp string
                 strcpy(word, linePtr);
                 // copy from corresponding parameter to p
@@ -1622,12 +1780,15 @@ static void DoMacParms()
                 // update linePtr
                 linePtr = p;
             }
-        } else if (token == '#' && *linePtr == '#') {
+        }
+        else if (token == '#' && *linePtr == '#')
+        {
             // handle '##' concatenation operator
             p = linePtr + 1;    // skip second '#'
             linePtr--;          // skip first '#'
             // skip whitespace to the left
-            while (linePtr > line && linePtr[-1] == ' ') {
+            while (linePtr > line && linePtr[-1] == ' ')
+            {
                 linePtr--;
             }
             // skip whitespace to the right
@@ -1637,7 +1798,9 @@ static void DoMacParms()
             // paste it at new linePtr
             strcpy(linePtr, word);
             // and linePtr now even points to where it should
-        } else if (token == '\\' && *linePtr == '0') {
+        }
+        else if (token == '\\' && *linePtr == '0')
+        {
             // handle '\0' number of parameters operator
             p = linePtr + 1;    // skip '0'
             linePtr--;          // skip '\'
@@ -1650,7 +1813,9 @@ static void DoMacParms()
             linePtr = linePtr + strlen(word2);
             // paste right side at new linePtr
             strcpy(linePtr, word);
-        } else if (token == '\\' && '1' <= *linePtr && *linePtr <= '9') {
+        }
+        else if (token == '\\' && '1' <= *linePtr && *linePtr <= '9')
+        {
             // handle '\n' parameter operator
             int i = *linePtr - '1';
             p = linePtr + 1;    // skip 'n'
@@ -1662,7 +1827,9 @@ static void DoMacParms()
             linePtr = linePtr + strlen(macParms[i + macLevel * MAXMACPARMS]);
             // paste right side at new linePtr
             strcpy(linePtr, word);
-        } else if (token == '\\' && *linePtr == '?') {
+        }
+        else if (token == '\\' && *linePtr == '?')
+        {
             // handle '\?' unique ID operator
             p = linePtr + 1;    // skip '?'
             linePtr--;          // skip '\'
@@ -1676,20 +1843,21 @@ static void DoMacParms()
             // paste right side at new linePtr
             strcpy(linePtr, word);
         }
-/* just use "\##" instead to avoid any confusion with \\ inside of DB pseudo-op
-        // handle '\\' escape
-        else if (token == '\\' && *linePtr == '\\') {
-            p = linePtr + 1;    // skip second '\'
-            // copy right side of chopped zone
-            strcpy(word, p);
-            // paste right side at new linePtr
-            strcpy(linePtr, word);
-        }
-*/
+        /* just use "\##" instead to avoid any confusion with \\ inside of DB pseudo-op
+                // handle '\\' escape
+                else if (token == '\\' && *linePtr == '\\') {
+                    p = linePtr + 1;    // skip second '\'
+                    // copy right side of chopped zone
+                    strcpy(word, p);
+                    // paste right side at new linePtr
+                    strcpy(linePtr, word);
+                }
+        */
 
         // skip initial whitespace
         c = *linePtr;
-        while (c == 12 || c == '\t' || c == ' ') {
+        while (c == 12 || c == '\t' || c == ' ')
+        {
             c = *++linePtr;
         }
 
@@ -1701,19 +1869,22 @@ static void DoMacParms()
 
 static void DumpMacro(MacroRec *p)
 {
-    if (cl_List) {
+    if (cl_List)
+    {
         fprintf(listing, "--- Macro '%s' ---", p -> name);
         fprintf(listing, " def = %d, nparms = %d\n", p -> def, p -> nparms);
 
         // dump parms here
         fprintf(listing, "Parms:");
-        for (MacroParm *parm = p->parms; parm; parm = parm->next) {
+        for (MacroParm *parm = p->parms; parm; parm = parm->next)
+        {
             fprintf(listing, " '%s'", parm->name);
         }
         fprintf(listing, "\n");
 
         // dump text here
-        for (MacroLine *line = p->text; line; line = line->next) {
+        for (MacroLine *line = p->text; line; line = line->next)
+        {
             fprintf(listing, " '%s'\n", line->text);
         }
     }
@@ -1724,7 +1895,8 @@ static void DumpMacro(MacroRec *p)
 {
     MacroRec *p = macroTab;
 
-    while (p) {
+    while (p)
+    {
         DumpMacro(p);
         p = p -> next;
     }
@@ -1742,7 +1914,8 @@ static void DumpMacro(MacroRec *p)
 // special compare for opcodes to allow "*" wildcard
 static int opcode_strcmp(const char *s1, const char *s2)
 {
-    while (*s1 == *s2++) {
+    while (*s1 == *s2++)
+    {
         if (*s1++ == 0) return 0;
     }
     if (*s1 == '*') return 0; // this is the magic
@@ -1755,11 +1928,15 @@ static const OpcdRec *FindOpcodeTab(const OpcdRec *p, const char *name, int *typ
     bool found = false;
 
 //  while (p -> typ != o_Illegal && !found)
-    while (*(p -> name) && !found) {
+    while (*(p -> name) && !found)
+    {
         found = (opcode_strcmp(p -> name, name) == 0);
-        if (!found) {
+        if (!found)
+        {
             p++;
-        } else {
+        }
+        else
+        {
             *typ  = p -> typ;
             *parm = p -> parm;
         }
@@ -1782,22 +1959,29 @@ static const OpcdRec *GetFindOpcode(char *opcode, int *typ, int *parm, MacroRec 
     *macro = NULL;
 
     const OpcdRec *p = NULL;
-    if (GetOpcode(opcode)) {
+    if (GetOpcode(opcode))
+    {
         if (opcdTab) p = FindOpcodeTab(opcdTab,  opcode, typ, parm);
-        if (!p) {
+        if (!p)
+        {
             if (opcode[0] == '.') opcode++; // allow pseudo-ops to be invoked as ".OP"
             p = FindOpcodeTab((OpcdRec *) &opcdTab2, opcode, typ, parm);
         }
-        if (p) {
+        if (p)
+        {
             // if wildcard was matched, back up linePtr
             // NOTE: if wildcard matched an empty string, linePtr will be
             //       unchanged and point to whitespace
             int len = strlen(p->name);
-            if (len && (p->name[len-1] == '*')) {
+            if (len && (p->name[len-1] == '*'))
+            {
                 linePtr = linePtr - (strlen(opcode) - len + 1);
             }
-        } else {
-            if ((*macro = FindMacro(opcode))) {
+        }
+        else
+        {
+            if ((*macro = FindMacro(opcode)))
+            {
                 *typ = o_MacName;
                 p = opcdTab2; // return dummy non-null valid opcode pointer
             }
@@ -1812,7 +1996,8 @@ static const OpcdRec *GetFindOpcode(char *opcode, int *typ, int *parm, MacroRec 
 // symbol table
 
 
-struct SymRec {
+struct SymRec
+{
     struct SymRec   *next;      // pointer to next symtab entry
     uint32_t        value;      // symbol value
     bool            defined;    // true if defined
@@ -1834,9 +2019,11 @@ static SymRec *FindSym(const char *symName)
     SymRec *p = symTab;
     bool found = false;
 
-    while (p && !found) {
+    while (p && !found)
+    {
         found = (strcmp(p -> name, symName) == 0);
-        if (!found) {
+        if (!found)
+        {
             p = p -> next;
         }
     }
@@ -1877,12 +2064,15 @@ static int RefSym(const char *symName, bool *known)
     SymRec *p;
     Str255 s;
 
-    if ((p = FindSym(symName))) {
-        if (!p -> defined) {
+    if ((p = FindSym(symName)))
+    {
+        if (!p -> defined)
+        {
             snprintf(s, sizeof s, "Symbol '%s' undefined", symName);
             Error(s);
         }
-        switch (pass) {
+        switch (pass)
+        {
             case 1:
                 if (!p -> defined) *known = false;
                 break;
@@ -1891,7 +2081,8 @@ static int RefSym(const char *symName, bool *known)
                 break;
         }
 #if 0 // FIXME: possible fix that may be needed for 16-bit address
-        if (addrWid == ADDR_16) {
+        if (addrWid == ADDR_16)
+        {
             return (short) p -> value;    // sign-extend from 16 bits
         }
 #endif
@@ -1900,19 +2091,26 @@ static int RefSym(const char *symName, bool *known)
 
     // check for 'FFH' style constants here
     int i = strlen(symName) - 1;
-    if (toupper(symName[i]) != 'H') {
+    if (toupper(symName[i]) != 'H')
+    {
         i = -1;
-    } else {
-        while (i > 0 && ishex(symName[i-1])) {
+    }
+    else
+    {
+        while (i > 0 && ishex(symName[i-1]))
+        {
             i--;
         }
     }
 
-    if (i == 0) {
+    if (i == 0)
+    {
         strncpy(s, symName, 255);
         s[strlen(s)-1] = 0;
         return EvalHex(s);
-    } else {
+    }
+    else
+    {
         p = AddSym(symName);
         *known = false;
 //      snprintf(s, sizeof s, "Symbol '%s' undefined", symName);
@@ -1931,25 +2129,33 @@ void DefSym(const char *symName, uint32_t val, bool setSym, bool equSym)
 {
     Str255 s;
 
-    if (symName[0]) { // ignore null string symName
+    if (symName[0])   // ignore null string symName
+    {
         SymRec *p = FindSym(symName);
-        if (p == NULL) {
+        if (p == NULL)
+        {
             p = AddSym(symName);
         }
 
-        if (!p -> defined || (p -> isSet && setSym)) {
+        if (!p -> defined || (p -> isSet && setSym))
+        {
             // symbol has not been defined yet
             // or a SET symbol is being re-defined
             p -> value = val;
             p -> defined = true;
             p -> isSet = setSym;
             p -> equ = equSym;
-        } else if (p -> value != val) {
+        }
+        else if (p -> value != val)
+        {
             // trying to re-define a non-SET symbol
             p -> multiDef = true;
-            if (pass == 2 && !p -> known) {
-                 sprintf(s, "Phase error");
-            } else {
+            if (pass == 2 && !p -> known)
+            {
+                sprintf(s, "Phase error");
+            }
+            else
+            {
                 snprintf(s, sizeof s, "Symbol '%s' multiply defined", symName);
             }
             Error(s);
@@ -1969,22 +2175,26 @@ static void DumpSym(SymRec *p, char *s, int *w)
     int len = strlen(s2);
 
     *w = 1;
-    while (max-1 < len) {
+    while (max-1 < len)
+    {
         *w = *w + 1;
         max = max + MAXSYMLEN + 8; // 8 = number of extra chars between symbol names
     }
 
-    while (*s2 && n < max) {
+    while (*s2 && n < max)
+    {
         *s++ = *s2++;
         n++;
     }
 
-    while (n < max) {
+    while (n < max)
+    {
         *s++ = ' ';
         n++;
     }
 
-    switch (addrMax) {
+    switch (addrMax)
+    {
         default:
         case ADDR_16:
             sprintf(s, "%.4X ", p->value & 0xFFFF);
@@ -2003,11 +2213,28 @@ static void DumpSym(SymRec *p, char *s, int *w)
     s = s + strlen(s);
 
     n = 0;
-    if (!p -> defined)    {*s++ = 'U'; n++;}  // Undefined
-    if ( p -> multiDef)   {*s++ = 'M'; n++;}  // Multiply defined
-    if ( p -> isSet)      {*s++ = 'S'; n++;}  // Set
-    if ( p -> equ)        {*s++ = 'E'; n++;}  // Equ
-    while (n < 3) {
+    if (!p -> defined)
+    {
+        *s++ = 'U';    // Undefined
+        n++;
+    }
+    if ( p -> multiDef)
+    {
+        *s++ = 'M';    // Multiply defined
+        n++;
+    }
+    if ( p -> isSet)
+    {
+        *s++ = 'S';    // Set
+        n++;
+    }
+    if ( p -> equ)
+    {
+        *s++ = 'E';    // Equ
+        n++;
+    }
+    while (n < 3)
+    {
         *s++ = ' ';
         n++;
     }
@@ -2021,7 +2248,8 @@ static void DumpSymTab(void)
 
     int i = 0;
     SymRec *p = symTab;
-    while (p) {
+    while (p)
+    {
 #ifdef TEMP_LBLAT
         if (tempSymFlag || !(strchr(p->name, '.') || strchr(p->name, '@')))
 #else
@@ -2033,27 +2261,36 @@ static void DumpSymTab(void)
             p = p -> next;
 
             // force a newline if new symbol won't fit on current line
-            if (i + w > symTabCols) {
-                if (cl_List) {
+            if (i + w > symTabCols)
+            {
+                if (cl_List)
+                {
                     fprintf(listing, "\n");
                 }
                 i = 0;
             }
-            if (p == NULL || i + w >= symTabCols) {
+            if (p == NULL || i + w >= symTabCols)
+            {
                 // if last symbol or if symbol fills line, deblank and print it
                 Debright(s);
-                if (cl_List) {
+                if (cl_List)
+                {
                     fprintf(listing, "%s\n", s);
                 }
                 i = 0;
-            } else {
+            }
+            else
+            {
                 // otherwise just print it and count its width
-                if (cl_List) {
+                if (cl_List)
+                {
                     fprintf(listing, "%s", s);
                 }
                 i = i + w;
             }
-        } else {
+        }
+        else
+        {
             p = p -> next;
         }
     }
@@ -2068,35 +2305,52 @@ static void SortSymTab()
 
     // yes, it's a linked-list bubble sort
 
-    if (symTab != NULL) {
-        ip = NULL;  i = symTab;
-        jp = i;     j = i -> next;
+    if (symTab != NULL)
+    {
+        ip = NULL;
+        i = symTab;
+        jp = i;
+        j = i -> next;
 
-        while (j != NULL) {
-            while (j != NULL) {
-                if (strcmp(i->name, j->name) > 0) {
+        while (j != NULL)
+        {
+            while (j != NULL)
+            {
+                if (strcmp(i->name, j->name) > 0)
+                {
                     // (i->name > j->name)
-                    if (ip != NULL) {
+                    if (ip != NULL)
+                    {
                         ip -> next = j;
-                    } else {
+                    }
+                    else
+                    {
                         symTab     = j;
                     }
-                    if (i == jp) {
+                    if (i == jp)
+                    {
                         i -> next = j -> next;
                         j -> next = i;
-                    } else {
+                    }
+                    else
+                    {
                         jp -> next = i;
 
                         t         = i -> next;
                         i -> next = j -> next;
                         j -> next = t;
                     }
-                    t = i; i = j; j = t;
+                    t = i;
+                    i = j;
+                    j = t;
                 }
-                jp = j; j = j -> next;
+                jp = j;
+                j = j -> next;
             }
-            ip = i; i = i -> next;
-            jp = i; j = i -> next;
+            ip = i;
+            i = i -> next;
+            jp = i;
+            j = i -> next;
         }
     }
 }
@@ -2117,7 +2371,8 @@ static int Factor(void)
     int token = GetWord(word);
     int val = 0;
 
-    switch (token) {
+    switch (token)
+    {
         case 0:
             MissingOperand();
             break;
@@ -2129,7 +2384,8 @@ static int Factor(void)
 
 #ifdef OCTAL_AT
         case '@': // Motorola-style octal constants
-            if (isoctal(*linePtr)) {
+            if (isoctal(*linePtr))
+            {
                 GetWord(word);
                 val = EvalOct(word);
                 break;
@@ -2144,16 +2400,18 @@ static int Factor(void)
 #endif // OCTAL_AT
 
         case '$':
-            if (ishex(*linePtr)) {
+            if (ishex(*linePtr))
+            {
                 GetWord(word);
                 val = EvalHex(word);
                 break;
             }
-            // fall-through...
+        // fall-through...
         case '*':
             val = locPtr;
 #if 0 // FIXME: possible fix that may be needed for 16-bit address
-            if (addrWid == ADDR_16) {
+            if (addrWid == ADDR_16)
+            {
                 val = (short) val;            // sign-extend from 16 bits
             }
 #endif
@@ -2196,65 +2454,85 @@ static int Factor(void)
 
         case 0x27:  // single quote
 #if 1 // new flexible single-quote constants
-        {   // This first attempts to get a multi-byte 'xxxx' constant.
-            // If no closing quote is found, it tries again for just a
-            // single character (the old Motorola 8-bit style).
-            // Then it checks to make sure the number of characters
-            // is in the range of 1 to 4.
-            // The resulting constant is a big-endian number with the
-            // last character in the low byte. (The 4-byte version was
-            // used extensively for 68K Macintosh assembly language.)
-            // Note the false positive when a single-quote constant
-            // is followed by a comment with an unclosed quote closely
-            // enough to look like a multi-character quote: LDD #' ;'
-            int len = 0;
-            val = 0;
-            oldLine = linePtr;
-            // get bytes after the quote character
-            while (*linePtr != 0x27 && *linePtr >= ' ') {
-                val = val * 256 + GetBackslashChar();
-                len++;
-            }
-            if (*linePtr == 0x27) { // add "len &&" to allow '' -> 0x27
-                // close quote found!
-                linePtr++;
-            } else {
-                // close quote not found, try again for just one char
-                linePtr = oldLine;
-                len = 0;
+            {
+                // This first attempts to get a multi-byte 'xxxx' constant.
+                // If no closing quote is found, it tries again for just a
+                // single character (the old Motorola 8-bit style).
+                // Then it checks to make sure the number of characters
+                // is in the range of 1 to 4.
+                // The resulting constant is a big-endian number with the
+                // last character in the low byte. (The 4-byte version was
+                // used extensively for 68K Macintosh assembly language.)
+                // Note the false positive when a single-quote constant
+                // is followed by a comment with an unclosed quote closely
+                // enough to look like a multi-character quote: LDD #' ;'
+                int len = 0;
                 val = 0;
-                if (*linePtr >= ' ') {
-                    val = GetBackslashChar();
+                oldLine = linePtr;
+                // get bytes after the quote character
+                while (*linePtr != 0x27 && *linePtr >= ' ')
+                {
+                    val = val * 256 + GetBackslashChar();
                     len++;
                 }
+                if (*linePtr == 0x27)   // add "len &&" to allow '' -> 0x27
+                {
+                    // close quote found!
+                    linePtr++;
+                }
+                else
+                {
+                    // close quote not found, try again for just one char
+                    linePtr = oldLine;
+                    len = 0;
+                    val = 0;
+                    if (*linePtr >= ' ')
+                    {
+                        val = GetBackslashChar();
+                        len++;
+                    }
+                }
+                if (len < 1)
+                {
+                    MissingOperand();
+                }
+                else if (len > 4)
+                {
+                    Error("Quote characters too long");
+                }
             }
-            if (len < 1) {
-                MissingOperand();
-            } else if (len > 4) {
-                Error("Quote characters too long");
-            }
-        }
 #elif 0 // multi-char single-quote constants
             val = 0;
-            while (*linePtr != 0x27 && *linePtr != 0) {
+            while (*linePtr != 0x27 && *linePtr != 0)
+            {
                 val = val * 256 + GetBackslashChar();
             }
-            if (*linePtr == 0x27) {
+            if (*linePtr == 0x27)
+            {
                 linePtr++;
-            } else {
+            }
+            else
+            {
                 Error("Missing close quote");
             }
 #else // single-char single-quote constants
-            if ((val = GetBackslashChar()) >= 0) {
-                if (*linePtr && *linePtr != 0x27) {
+            if ((val = GetBackslashChar()) >= 0)
+            {
+                if (*linePtr && *linePtr != 0x27)
+                {
                     val = val * 256 + GetBackslashChar();
                 }
-                if (*linePtr == 0x27) {
+                if (*linePtr == 0x27)
+                {
                     linePtr++;
-                } else {
+                }
+                else
+                {
                     Error("Missing close quote");
                 }
-            } else {
+            }
+            else
+            {
                 MissingOperand();
             }
 #endif
@@ -2264,27 +2542,36 @@ static int Factor(void)
             // check for ".."
             oldLine = linePtr;
             val = GetWord(word);
-            if (val == '.') {
+            if (val == '.')
+            {
                 GetWord(word);
                 // check for "..DEF" operator
-                if (strcmp(word, "DEF") == 0) {
+                if (strcmp(word, "DEF") == 0)
+                {
                     val = 0;
-                    if (GetWord(word) == -1) {
+                    if (GetWord(word) == -1)
+                    {
                         SymRec *p = FindSym(word);
                         val = (p && (p -> known || pass == 1));
-                    } else {
+                    }
+                    else
+                    {
                         IllegalOperand();
                     }
                     break;
                 }
 
                 // check for "..UNDEF" operator
-                if (strcmp(word, "UNDEF") == 0) {
+                if (strcmp(word, "UNDEF") == 0)
+                {
                     val = 0;
-                    if (GetWord(word) == -1) {
+                    if (GetWord(word) == -1)
+                    {
                         SymRec *p = FindSym(word);
                         val = !(p && (p -> known || pass == 1));
-                    } else {
+                    }
+                    else
+                    {
                         IllegalOperand();
                     }
                     break;
@@ -2294,12 +2581,15 @@ static int Factor(void)
                 // rewind and return "current location"
                 linePtr = oldLine;
                 break;
-            } else if (val != -1) {
+            }
+            else if (val != -1)
+            {
                 // check for '.' as "current location"
                 linePtr = oldLine;
                 val = locPtr;
 #if 0 // FIXME: possible fix that may be needed for 16-bit address
-                if (addrWid == ADDR_16) {
+                if (addrWid == ADDR_16)
+                {
                     val = (short) val;    // sign-extend from 16 bits
                 }
 #endif
@@ -2318,9 +2608,12 @@ lblat:
 #endif // OCTAL_AT
 #endif // TEMP_LBLAT
             GetWord(word);
-            if (token == '.' && subrLabl[0]) {
+            if (token == '.' && subrLabl[0])
+            {
                 strcpy(s, subrLabl);
-            } else {
+            }
+            else
+            {
                 strcpy(s, lastLabl);
             }
             s[strlen(s)+1] = 0;
@@ -2330,7 +2623,8 @@ lblat:
             break;
 
         case -1:
-            if ((word[0] == 'H' || word[0] == 'L') && word[1] == 0 && *linePtr == '(') {
+            if ((word[0] == 'H' || word[0] == 'L') && word[1] == 0 && *linePtr == '(')
+            {
                 // handle H() and L() from vintage Atari 7800 source code
                 // note: no whitespace allowed before the open paren!
                 token = word[0];    // save 'H' or 'L'
@@ -2341,9 +2635,12 @@ lblat:
                 if (token == 'L') val = val & 0xFF;
                 break;
             }
-            if (isdigit(word[0])) {
+            if (isdigit(word[0]))
+            {
                 val = EvalNum(word);
-            } else {
+            }
+            else
+            {
                 val = RefSym(word, &evalKnown);
             }
             break;
@@ -2366,17 +2663,22 @@ static int Term(void)
 
     char *oldLine = linePtr;
     int token = GetWord(word);
-    while (token == '*' || token == '/' || token == '%') {
-        switch (token) {
+    while (token == '*' || token == '/' || token == '%')
+    {
+        switch (token)
+        {
             case '*':
                 val = val * Factor();
                 break;
 
             case '/':
                 val2 = Factor();
-                if (val2) {
+                if (val2)
+                {
                     val = val / val2;
-                } else {
+                }
+                else
+                {
                     Warning("Division by zero");
                     val = 0;
                 }
@@ -2384,9 +2686,12 @@ static int Term(void)
 
             case '%':
                 val2 = Factor();
-                if (val2) {
+                if (val2)
+                {
                     val = val % val2;
-                } else {
+                }
+                else
+                {
                     Warning("Division by zero");
                     val = 0;
                 }
@@ -2409,10 +2714,16 @@ static int Eval2(void)
 
     char *oldLine = linePtr;
     int token = GetWord(word);
-    while (token == '+' || token == '-') {
-        switch (token) {
-            case '+':   val = val + Term();     break;
-            case '-':   val = val - Term();     break;
+    while (token == '+' || token == '-')
+    {
+        switch (token)
+        {
+            case '+':
+                val = val + Term();
+                break;
+            case '-':
+                val = val - Term();
+                break;
         }
         oldLine = linePtr;
         token = GetWord(word);
@@ -2432,28 +2743,39 @@ static int Eval1(void)
     char *oldLine = linePtr;
     int token = GetWord(word);
     while ((token == '<' && *linePtr != token) ||
-           (token == '>' && *linePtr != token) ||
+            (token == '>' && *linePtr != token) ||
             token == '=' ||
-           (token == '!' && *linePtr == '=')) {
-        switch (token) {
+            (token == '!' && *linePtr == '='))
+    {
+        switch (token)
+        {
             case '<':
-                if (*linePtr == '=') {
-                    linePtr++; val = (val <= Eval2());
-                } else {
+                if (*linePtr == '=')
+                {
+                    linePtr++;
+                    val = (val <= Eval2());
+                }
+                else
+                {
                     val = (val <  Eval2());
                 }
                 break;
 
             case '>':
-                if (*linePtr == '=') {
-                    linePtr++; val = (val >= Eval2());
-                } else {
+                if (*linePtr == '=')
+                {
+                    linePtr++;
+                    val = (val >= Eval2());
+                }
+                else
+                {
                     val = (val >  Eval2());
                 }
                 break;
 
             case '=':
-                if (*linePtr == '=') {
+                if (*linePtr == '=')
+                {
                     linePtr++; // allow either one or two '=' signs
                 }
                 val = (val == Eval2());
@@ -2483,22 +2805,30 @@ static int Eval0(void)
     int token = GetWord(word);
     while (token == '&' || token == '|' || token == '^' ||
             (token == '<' && *linePtr == '<') ||
-            (token == '>' && *linePtr == '>')) {
-        switch (token) {
+            (token == '>' && *linePtr == '>'))
+    {
+        switch (token)
+        {
             case '&':
-                if (*linePtr == '&') {
+                if (*linePtr == '&')
+                {
                     linePtr++;
                     val = ((val & Eval1()) != 0);
-                } else {
+                }
+                else
+                {
                     val =   val & Eval1();
                 }
                 break;
 
             case '|':
-                if (*linePtr == '|') {
+                if (*linePtr == '|')
+                {
                     linePtr++;
                     val = ((val | Eval1()) != 0);
-                } else {
+                }
+                else
+                {
                     val =   val | Eval1();
                 }
                 break;
@@ -2536,7 +2866,8 @@ int Eval(void)
 
 void CheckByte(int val)
 {
-    if (!errFlag && (val < -128 || val > 255)) {
+    if (!errFlag && (val < -128 || val > 255))
+    {
         Warning("Byte out of range");
     }
 }
@@ -2544,7 +2875,8 @@ void CheckByte(int val)
 
 void CheckStrictByte(int val)
 {
-    if (!errFlag && (val < -128 || val > 127)) {
+    if (!errFlag && (val < -128 || val > 127))
+    {
         Warning("Byte out of range");
     }
 }
@@ -2552,7 +2884,8 @@ void CheckStrictByte(int val)
 
 void CheckWord(int val)
 {
-    if (!errFlag && (val < -32768 || val > 65535)) {
+    if (!errFlag && (val < -32768 || val > 65535))
+    {
         Warning("Word out of range");
     }
 }
@@ -2560,7 +2893,8 @@ void CheckWord(int val)
 
 void CheckStrictWord(int val)
 {
-    if (!errFlag && (val < -32768 || val > 32767)) {
+    if (!errFlag && (val < -32768 || val > 32767))
+    {
         Warning("Word out of range");
     }
 }
@@ -2579,19 +2913,26 @@ static long AddrWrap(long addr)
 {
     // handle wrap-around by sign-extending for smaller address bus sizes
 
-    switch (addrWid) {
+    switch (addrWid)
+    {
         case ADDR_16:
-            if (addr & 0x8000) {
+            if (addr & 0x8000)
+            {
                 return addr | 0xFFFF0000;
-            } else {
+            }
+            else
+            {
                 return addr & 0x0000FFFF;
             }
             break;
 
         case ADDR_24:
-            if (addr & 0x8000) {
+            if (addr & 0x8000)
+            {
                 return addr | 0xFF000000;
-            } else {
+            }
+            else
+            {
                 return addr & 0x00FFFFFF;
             }
             break;
@@ -2609,7 +2950,8 @@ int EvalBranch(int instrLen)
 {
     int32_t val = Eval();
     val = AddrWrap(val - locPtr - instrLen);
-    if (!errFlag && (val < -128 || val > 127)) {
+    if (!errFlag && (val < -128 || val > 127))
+    {
         Error("Short branch out of range");
     }
 
@@ -2621,7 +2963,8 @@ int EvalWBranch(int instrLen)
 {
     int32_t val = Eval();
     val = AddrWrap(val - locPtr - instrLen);
-    if (!errFlag && (val < -32768 || val > 32767)) {
+    if (!errFlag && (val < -32768 || val > 32767))
+    {
         Error("Word branch out of range");
     }
     return val;
@@ -2640,7 +2983,8 @@ int EvalLBranch(int instrLen)
 // object file generation
 
 // record types -- note that 0 and 1 are used directly for .hex
-enum {
+enum
+{
     REC_DATA = 0,   // data record
     REC_XFER = 1,   // transfer address record
     REC_HEDR = 2,   // header record (must be sent before start of data)
@@ -2649,12 +2993,12 @@ enum {
 #endif // CODE_COMMENTS
 };
 
-    uint8_t  hex_buf[IHEX_SIZE]; // buffer for current line of object data
-    uint32_t hex_len;            // current size of object data buffer
-    uint32_t hex_base;           // address of start of object data buffer
-    uint32_t hex_addr;           // address of next byte in object data buffer
-    uint16_t hex_page;           // high word of address for intel hex file
-    uint32_t bin_eof;            // current end of file when writing binary file
+uint8_t  hex_buf[IHEX_SIZE]; // buffer for current line of object data
+uint32_t hex_len;            // current size of object data buffer
+uint32_t hex_base;           // address of start of object data buffer
+uint32_t hex_addr;           // address of next byte in object data buffer
+uint16_t hex_page;           // high word of address for intel hex file
+uint32_t bin_eof;            // current end of file when writing binary file
 
 // Intel hex format:
 //
@@ -2682,12 +3026,14 @@ static void write_ihex(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
     if (rectype > REC_XFER) return;
 
     // if transfer record with long address, write extended address record
-    if (rectype == REC_XFER && (addr & 0xFFFF0000)) {
+    if (rectype == REC_XFER && (addr & 0xFFFF0000))
+    {
         write_ihex(addr >> 16, buf, 0, 5);
     }
 
     // if data record with long address, write extended address record
-    if (rectype == REC_DATA && (addr >> 16) != hex_page) {
+    if (rectype == REC_DATA && (addr >> 16) != hex_page)
+    {
         write_ihex(addr >> 16, buf, 0, 4);
         hex_page = addr >> 16;
     }
@@ -2699,7 +3045,8 @@ static void write_ihex(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
     fprintf(object, ":%.2X%.4X%.2X", len, addr & 0xFFFF, rectype);
 
     // print data while updating checksum
-    for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < len; i++)
+    {
         fprintf(object, "%.2X", buf[i]);
         chksum = chksum + buf[i];
     }
@@ -2739,14 +3086,18 @@ void write_srec(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
 
     // determine S9 record type
     int typ;
-    if (rectype == REC_XFER) {
+    if (rectype == REC_XFER)
+    {
         typ = cl_S9type % 10;   // xfer record = S9/S8/S7
-    } else {
+    }
+    else
+    {
         typ = cl_S9type / 10;   // code record = S1/S2/S3
     }
 
     // print length and address, and update checksum for long address
-    switch (cl_S9type) {
+    switch (cl_S9type)
+    {
         case 37:
             fprintf(object, "S%d%.2X%.8X", typ, len+5, addr);
             chksum = chksum + ((addr >> 24) & 0xFF) + ((addr >> 16) & 0xFF) + 2;
@@ -2764,7 +3115,8 @@ void write_srec(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
     }
 
     // print data while updating checksum
-    for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < len; i++)
+    {
         fprintf(object, "%.2X", buf[i]);
         chksum = chksum + buf[i];
     }
@@ -2776,7 +3128,8 @@ void write_srec(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
 
 void write_bin(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
 {
-    if (rectype == REC_DATA) {
+    if (rectype == REC_DATA)
+    {
         // return if end of data less than base address
         if (addr + len <= cl_Binbase) return;
 
@@ -2784,20 +3137,24 @@ void write_bin(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
         if (addr > cl_Binend) return;
 
         // if data crosses base address, adjust start of data
-        if (addr < cl_Binbase) {
+        if (addr < cl_Binbase)
+        {
             buf = buf + cl_Binbase - addr;
             addr = cl_Binbase;
         }
 
         // if data crossses end address, adjust length of data
-        if (addr+len-1 > cl_Binend) {
+        if (addr+len-1 > cl_Binend)
+        {
             len = cl_Binend - addr + 1;
         }
 
         // if addr is beyond current EOF, write (addr-bin_eof) bytes of 0xFF padding
-        if (addr - cl_Binbase > bin_eof) {
+        if (addr - cl_Binbase > bin_eof)
+        {
             fseek(object, bin_eof, SEEK_SET);
-            for (uint32_t i = 0; i < addr - cl_Binbase - bin_eof; i++) {
+            for (uint32_t i = 0; i < addr - cl_Binbase - bin_eof; i++)
+            {
                 fputc(0xFF, object);
             }
         }
@@ -2808,7 +3165,8 @@ void write_bin(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
 
         // update EOF of object file
         uint32_t i = ftell(object); //MIXWORX
-        if (i > bin_eof) {
+        if (i > bin_eof)
+        {
             bin_eof = i;
         }
 
@@ -2821,7 +3179,8 @@ uint8_t trs_buf[TRS_BUF_MAX]; // buffer for current object code data, used inste
 
 void write_trsdos(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
 {
-    switch (rectype) {
+    switch (rectype)
+    {
         case REC_DATA:  // write data record
             // 01 len+2 ll hh data...
             // NOTE: buf is ignored in favor of using trs_buf
@@ -2849,10 +3208,14 @@ void write_trsdos(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
             fputc(0x05, object);
             fputc(0x06, object);
 
-            for (int i = 0; i < 6; i++) {
-                if (*buf == 0 || *buf == '.') {
+            for (int i = 0; i < 6; i++)
+            {
+                if (*buf == 0 || *buf == '.')
+                {
                     fputc(' ', object);
-                } else {
+                }
+                else
+                {
                     fputc(toupper(*buf++), object);
                 }
             }
@@ -2871,7 +3234,8 @@ void write_trsdos(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
             fputc(0x1F, object);
             fputc(len,  object);
 
-            for (int i = 0; i < len; i++) {
+            for (int i = 0; i < len; i++)
+            {
                 fputc(*buf++, object);
             }
             break;
@@ -2884,7 +3248,8 @@ void write_trscas(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
 {
     uint8_t chksum;
 
-    switch (rectype) {
+    switch (rectype)
+    {
         case REC_DATA:  // write data record
             // 3C len ll hh data... cs
             // NOTE: buf is ignored in favor of using trs_buf
@@ -2894,7 +3259,8 @@ void write_trscas(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
             fputc((addr >> 8) & 0xFF, object);
 
             chksum = (addr & 0xFF) + ((addr >> 8) & 0xFF);
-            for (unsigned int i = 0; i < len; i++) {
+            for (unsigned int i = 0; i < len; i++)
+            {
                 chksum += trs_buf[i];
             }
 
@@ -2911,7 +3277,8 @@ void write_trscas(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
 
         case REC_HEDR:  // write header record
             // [00 x 255] A5 = leader and sync
-            for (int i = 0; i < 255; i++) {
+            for (int i = 0; i < 255; i++)
+            {
                 fputc(0x00, object);
             }
             fputc(0xA5, object);
@@ -2920,10 +3287,14 @@ void write_trscas(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
 
             fputc(0x55, object);
 
-            for (int i = 0; i < 6; i++) {
-                if (*buf == 0 || *buf == '.') {
+            for (int i = 0; i < 6; i++)
+            {
+                if (*buf == 0 || *buf == '.')
+                {
                     fputc(' ', object);
-                } else {
+                }
+                else
+                {
                     fputc(toupper(*buf++), object);
                 }
             }
@@ -2940,14 +3311,26 @@ void write_trscas(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
 // rectype 0 = code, rectype 1 = xfer
 void write_hex(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
 {
-    if (cl_Obj || cl_Stdout) {
-        switch (cl_ObjType) {
+    if (cl_Obj || cl_Stdout)
+    {
+        switch (cl_ObjType)
+        {
             default:
-            case OBJ_HEX:    write_ihex  (addr, buf, len, rectype); break;
-            case OBJ_S9:     write_srec  (addr, buf, len, rectype); break;
-            case OBJ_BIN:    write_bin   (addr, buf, len, rectype); break;
-            case OBJ_TRSDOS: write_trsdos(addr, buf, len, rectype); break;
-            case OBJ_TRSCAS: write_trscas(addr, buf, len, rectype); break;
+            case OBJ_HEX:
+                write_ihex  (addr, buf, len, rectype);
+                break;
+            case OBJ_S9:
+                write_srec  (addr, buf, len, rectype);
+                break;
+            case OBJ_BIN:
+                write_bin   (addr, buf, len, rectype);
+                break;
+            case OBJ_TRSDOS:
+                write_trsdos(addr, buf, len, rectype);
+                break;
+            case OBJ_TRSCAS:
+                write_trscas(addr, buf, len, rectype);
+                break;
         }
     }
 }
@@ -2965,7 +3348,8 @@ void CodeInit(void)
 
 void CodeFlush(void)
 {
-    if (hex_len) {
+    if (hex_len)
+    {
         write_hex(hex_base, hex_buf, hex_len, REC_DATA);
         hex_len  = 0;
         hex_base = hex_base + hex_len;
@@ -2976,20 +3360,24 @@ void CodeFlush(void)
 
 void CodeOut(int byte)
 {
-    if (pass == 2) {
-        if (codPtr != hex_addr) {
+    if (pass == 2)
+    {
+        if (codPtr != hex_addr)
+        {
             CodeFlush();
             hex_base = codPtr;
             hex_addr = codPtr;
         }
 
-        switch (cl_ObjType) {
+        switch (cl_ObjType)
+        {
             case OBJ_TRSDOS:
             case OBJ_TRSCAS:
                 trs_buf[hex_len++] = byte;
                 hex_addr++;
 
-                if (hex_len == cl_trslen) {
+                if (hex_len == cl_trslen)
+                {
                     CodeFlush();
                 }
                 break;
@@ -2998,7 +3386,8 @@ void CodeOut(int byte)
                 hex_buf[hex_len++] = byte;
                 hex_addr++;
 
-                if (hex_len == IHEX_SIZE) {
+                if (hex_len == IHEX_SIZE)
+                {
                     CodeFlush();
                 }
                 break;
@@ -3031,8 +3420,10 @@ void CodeEnd(void)
 {
     CodeFlush();
 
-    if (pass == 2) {
-        if (xferFound) {
+    if (pass == 2)
+    {
+        if (xferFound)
+        {
             write_hex(xferAddr, hex_buf, 0, REC_XFER);
         }
     }
@@ -3102,13 +3493,18 @@ void InstrAddX(uint32_t op)
 // add a word to the instruction in the CPU's endianness
 void InstrAddW(uint16_t w)
 {
-    if (endian == LITTLE_END) {
+    if (endian == LITTLE_END)
+    {
         bytStr[instrLen++] = w & 255;
         bytStr[instrLen++] = w >> 8;
-    } else if (endian == BIG_END) {
+    }
+    else if (endian == BIG_END)
+    {
         bytStr[instrLen++] = w >> 8;
         bytStr[instrLen++] = w & 255;
-    } else {
+    }
+    else
+    {
         Error("CPU endian not defined");
     }
     hexSpaces |= 1 << instrLen;
@@ -3118,7 +3514,8 @@ void InstrAddW(uint16_t w)
 // add a 3-byte word to the instruction in the CPU's endianness
 void InstrAdd3(uint32_t l)
 {
-    switch (endian) {
+    switch (endian)
+    {
         case LITTLE_END:
             bytStr[instrLen++] =  l        & 255;
             bytStr[instrLen++] = (l >>  8) & 255;
@@ -3140,7 +3537,8 @@ void InstrAdd3(uint32_t l)
 // add a longword to the instruction in the CPU's endianness
 void InstrAddL(uint32_t l)
 {
-    switch (endian) {
+    switch (endian)
+    {
         case LITTLE_END:
             bytStr[instrLen++] =  l        & 255;
             bytStr[instrLen++] = (l >>  8) & 255;
@@ -3375,9 +3773,11 @@ SegRec *FindSeg(const char *name)
     SegRec *p = segTab;
     bool found = false;
 
-    while (p && !found) {
+    while (p && !found)
+    {
         found = (strcmp(p -> name, name) == 0);
-        if (!found) {
+        if (!found)
+        {
             p = p -> next;
         }
     }
@@ -3420,7 +3820,8 @@ void SwitchSeg(SegRec *seg)
 
 int OpenInclude(const char *fname)
 {
-    if (nInclude == MAX_INCLUDE - 1) {
+    if (nInclude == MAX_INCLUDE - 1)
+    {
         return -1;
     }
 
@@ -3429,7 +3830,8 @@ int OpenInclude(const char *fname)
     incline[nInclude] = 0;
     strcpy(incname[nInclude], fname);
     include[nInclude] = fopen(fname, "r");
-    if (include[nInclude]) {
+    if (include[nInclude])
+    {
         return 1;
     }
 
@@ -3440,7 +3842,8 @@ int OpenInclude(const char *fname)
 
 void CloseInclude(void)
 {
-    if (nInclude < 0) {
+    if (nInclude < 0)
+    {
         return;
     }
 
@@ -3458,41 +3861,55 @@ int ReadLine(FILE *file, char *line, int max)
     macLineFlag = true;
 
     // if at end of macro and inside a nested macro, pop the stack
-    while (macLevel > 0 && macLine[macLevel] == NULL) {
+    while (macLevel > 0 && macLine[macLevel] == NULL)
+    {
 #ifdef ENABLE_REP
-        if (macRepeat[macLevel] > 0) {
-            if (macRepeat[macLevel]--) {
+        if (macRepeat[macLevel] > 0)
+        {
+            if (macRepeat[macLevel]--)
+            {
                 macLine = macPtr[macLevel] -> text;
-            } else {
+            }
+            else
+            {
                 free(macPtr[macLevel]);
                 macLevel--;
             }
-        } else
+        }
+        else
 #endif
-        macLevel--;
+            macLevel--;
     }
 
     // if there is still another macro line to process, get it
-    if (macLine[macLevel] != NULL) {
+    if (macLine[macLevel] != NULL)
+    {
         strcpy(line, macLine[macLevel] -> text);
         macLine[macLevel] = macLine[macLevel] -> next;
         DoMacParms();
-    } else {
+    }
+    else
+    {
         // else we weren't in a macro or we just ran out of macro
         macLineFlag = false;
 
-        if (nInclude >= 0) {
+        if (nInclude >= 0)
+        {
             incline[nInclude]++;
-        } else {
+        }
+        else
+        {
             linenum++;
         }
 
         macPtr[macLevel] = NULL;
 
-        while (max > 1) {
+        while (max > 1)
+        {
             c = fgetc(file);
             *line = 0;
-            switch (c) {
+            switch (c)
+            {
                 case EOF:
                     if (len == 0) return 0;
                     FALLTHROUGH;
@@ -3500,7 +3917,8 @@ int ReadLine(FILE *file, char *line, int max)
                     return 1;
                 case '\r':
                     c = fgetc(file);
-                    if (c != '\n') {
+                    if (c != '\n')
+                    {
                         ungetc(c, file);
                         c = '\r';
                     }
@@ -3512,7 +3930,8 @@ int ReadLine(FILE *file, char *line, int max)
                     break;
             }
         }
-        while (c != EOF && c != '\n') {
+        while (c != EOF && c != '\n')
+        {
             c = fgetc(file);
         }
     }
@@ -3522,7 +3941,8 @@ int ReadLine(FILE *file, char *line, int max)
 
 int ReadSourceLine(char *line, int max)
 {
-    while (nInclude >= 0) {
+    while (nInclude >= 0)
+    {
         int i = ReadLine(include[nInclude], line, max);
         if (i) return i;
 
@@ -3536,18 +3956,21 @@ int ReadSourceLine(char *line, int max)
 void ListOut(bool showStdErr)
 {
 #if 0 // uncomment this block if you want form feeds to be sent to the listing file
-    if (listLineFF && cl_List) {
+    if (listLineFF && cl_List)
+    {
         fputc(12, listing);
     }
 #endif
     Debright(listLine);
 
-    if (cl_List) {
+    if (cl_List)
+    {
         fprintf(listing, "%s\n", listLine);
     }
 
     if (pass == 2 && showStdErr
-            && ((errFlag && cl_Err) || (warnFlag && cl_Warn))) {
+            && ((errFlag && cl_Err) || (warnFlag && cl_Warn)))
+    {
         fprintf(stderr, "%s\n", listLine);
     }
 }
@@ -3566,17 +3989,24 @@ void CopyListLine(void)
 //  strcpy(listLine, "                ");       // 16 blanks
 //  strncat(listLine, line, 255-16);
 
-    if (listWid == LIST_24) {
+    if (listWid == LIST_24)
+    {
         for (n = 24; n; n--) *p++ = ' ';  // 24 blanks at start of line
-    } else {
+    }
+    else
+    {
         for (n = 16; n; n--) *p++ = ' ';  // 16 blanks at start of line
     }
 
 //  n = 0 here
-    while (n < 255-16 && (c = *q++)) {  // copy rest of line, stripping out form feeds
-        if (c == 12) {
+    while (n < 255-16 && (c = *q++))    // copy rest of line, stripping out form feeds
+    {
+        if (c == 12)
+        {
             listLineFF = true; // if a form feed was found, remember it for later
-        } else {
+        }
+        else
+        {
             *p++ = c;
             n++;
         }
@@ -3599,7 +4029,8 @@ void DoOpcode(int typ, int parm)
 
     if (DoCPUOpcode(typ, parm)) return;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_ZSCII:
         case o_ASCIIC:
         case o_ASCIIZ:
@@ -3608,53 +4039,73 @@ void DoOpcode(int typ, int parm)
             oldLine = linePtr;
             token = GetWord(word);
 
-            if (token == 0) {
+            if (token == 0)
+            {
                 // no operands at all?
                 MissingOperand();
             }
 
-            if (typ == o_ASCIIC) {
+            if (typ == o_ASCIIC)
+            {
                 // reserve space for ASCIIC count byte
                 bytStr[instrLen++] = 0;
             }
 
-            while (token) {
+            while (token)
+            {
                 // do another operand
-                if ((token == '\'' && *linePtr && linePtr[1] != '\'') || token == '"') {
+                if ((token == '\'' && *linePtr && linePtr[1] != '\'') || token == '"')
+                {
                     // found a single or double quote, so do a string
                     int quote = token;
                     int len = 0;
-                    while (token == quote) {
-                        while (*linePtr >= ' ' && *linePtr != token) {
+                    while (token == quote)
+                    {
+                        while (*linePtr >= ' ' && *linePtr != token)
+                        {
                             int ch = GetBackslashChar();
-                            if ((ch >= 0) && (instrLen < MAX_BYTSTR)) {
+                            if ((ch >= 0) && (instrLen < MAX_BYTSTR))
+                            {
                                 bytStr[instrLen++] = ch;
                                 len++;
                             }
                         }
                         token = *linePtr;
-                        if (token) {
+                        if (token)
+                        {
                             linePtr++;
-                        } else {
-                            if (len == 1 && quote == '\'') {
+                        }
+                        else
+                        {
+                            if (len == 1 && quote == '\'')
+                            {
                                 // allow "FCB 'x" (with only one ' quote)
-                            } else {
+                            }
+                            else
+                            {
                                 Error("Missing close quote");
                             }
                         }
-                        if (token == quote && *linePtr == quote) {  // two quotes together
-                            if (instrLen < MAX_BYTSTR) {
+                        if (token == quote && *linePtr == quote)    // two quotes together
+                        {
+                            if (instrLen < MAX_BYTSTR)
+                            {
                                 bytStr[instrLen++] = *linePtr++;
                             }
-                        } else {
+                        }
+                        else
+                        {
                             token = *linePtr;
                         }
                     }
-                } else {
+                }
+                else
+                {
                     // not a string, back up and get a value
                     linePtr = oldLine;
                     val = EvalByte();
-                    if (instrLen < MAX_BYTSTR) {
+                    if (instrLen < MAX_BYTSTR)
+                    {
                         bytStr[instrLen++] = val;
                     }
                 }
@@ -3663,33 +4114,44 @@ void DoOpcode(int typ, int parm)
                 token = GetWord(word);
                 oldLine = linePtr;
 
-                if (token == ',') {
+                if (token == ',')
+                {
                     // if comma, check for unexpected end of line
                     token = GetWord(word);
-                    if (token == 0) {
+                    if (token == 0)
+                    {
                         MissingOperand();
                     }
-                } else if (token) {
+                }
+                else if (token)
+                {
                     // if not comma or end of line, complain about missing comma
                     linePtr = oldLine;
                     Comma();
                     token = 0;
-                } else if (errFlag) { // this is necessary to keep EvalByte() errors
+                }
+                else if (errFlag)     // this is necessary to keep EvalByte() errors
+                {
                     token = 0;      // from causing phase errors
                 }
             }
 
-            if (instrLen >= MAX_BYTSTR || (typ == o_ASCIIC && instrLen > 256)) {
+            if (instrLen >= MAX_BYTSTR || (typ == o_ASCIIC && instrLen > 256))
+            {
                 Error("String too long");
                 instrLen = MAX_BYTSTR;
             }
 
-            switch (typ) {
+            switch (typ)
+            {
                 case o_ASCIIC:
                     // update length byte for ASCIIC
-                    if (instrLen > 255) {
+                    if (instrLen > 255)
+                    {
                         bytStr[0] = 255;
-                    } else {
+                    }
+                    else
+                    {
                         bytStr[0] = instrLen-1;
                     }
                     break;
@@ -3700,7 +4162,8 @@ void DoOpcode(int typ, int parm)
 
                 case o_ASCIIZ:
                     // add zero byte for ASCIIZ
-                    if (instrLen < MAX_BYTSTR) {
+                    if (instrLen < MAX_BYTSTR)
+                    {
                         bytStr[instrLen++] = 0;
                     }
                     break;
@@ -3714,7 +4177,8 @@ void DoOpcode(int typ, int parm)
 
         case o_DW:
         case o_DWRE:    // reverse-endian DW
-            if (endian != LITTLE_END && endian != BIG_END) {
+            if (endian != LITTLE_END && endian != BIG_END)
+            {
                 Error("CPU endian not defined");
                 break;
             }
@@ -3723,61 +4187,83 @@ void DoOpcode(int typ, int parm)
             oldLine = linePtr;
             token = GetWord(word);
 
-            if (token == 0) {
-               MissingOperand();
+            if (token == 0)
+            {
+                MissingOperand();
             }
 
-            while (token) {
+            while (token)
+            {
 #if 1 // enable padded string literals
-                if ((token == '\'' && *linePtr && linePtr[1] != '\'') || token == '"') {
+                if ((token == '\'' && *linePtr && linePtr[1] != '\'') || token == '"')
+                {
                     n = 0;
                     int quote = token;
-                    while (token == quote) {
-                        while (*linePtr != 0 && *linePtr != token) {
+                    while (token == quote)
+                    {
+                        while (*linePtr != 0 && *linePtr != token)
+                        {
                             int ch = GetBackslashChar();
-                            if ((ch >= 0) && (instrLen < MAX_BYTSTR)) {
+                            if ((ch >= 0) && (instrLen < MAX_BYTSTR))
+                            {
                                 bytStr[instrLen++] = ch;
                                 n++;
                             }
                         }
                         token = *linePtr;
-                        if (token) {
+                        if (token)
+                        {
                             linePtr++;
-                        } else {
+                        }
+                        else
+                        {
                             Error("Missing close quote");
                         }
-                        if (token == quote && *linePtr == quote) {  // two quotes together
-                            if (instrLen < MAX_BYTSTR) {
+                        if (token == quote && *linePtr == quote)    // two quotes together
+                        {
+                            if (instrLen < MAX_BYTSTR)
+                            {
                                 bytStr[instrLen++] = *linePtr++;
                                 n++;
                             }
-                        } else {
+                        }
+                        else
+                        {
                             token = *linePtr;
                         }
                     }
                     // add padding nulls here
-                    if ((n & 1) && instrLen < MAX_BYTSTR) {
+                    if ((n & 1) && instrLen < MAX_BYTSTR)
+                    {
                         bytStr[instrLen++] = 0;
                     }
-                } else
+                }
+                else
 #endif
                 {
                     linePtr = oldLine;
                     val = Eval();
-                    if ((endian == LITTLE_END) ^ (typ == o_DWRE)) {
+                    if ((endian == LITTLE_END) ^ (typ == o_DWRE))
+                    {
                         // little endian
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val;
                         }
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val >> 8;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         // big endian
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val >> 8;
                         }
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val;
                         }
                     }
@@ -3786,19 +4272,24 @@ void DoOpcode(int typ, int parm)
                 token = GetWord(word);
                 oldLine = linePtr;
 
-                if (token == ',') {
+                if (token == ',')
+                {
                     token = GetWord(word);
-                    if (token == 0) {
+                    if (token == 0)
+                    {
                         MissingOperand();
                     }
-                } else if (token) {
+                }
+                else if (token)
+                {
                     linePtr = oldLine;
                     Comma();
                     token = 0;
                 }
             }
 
-            if (instrLen >= MAX_BYTSTR) {
+            if (instrLen >= MAX_BYTSTR)
+            {
                 Error("String too long");
                 instrLen = MAX_BYTSTR;
             }
@@ -3806,7 +4297,8 @@ void DoOpcode(int typ, int parm)
             break;
 
         case o_DL:
-            if (endian != LITTLE_END && endian != BIG_END) {
+            if (endian != LITTLE_END && endian != BIG_END)
+            {
                 Error("CPU endian not defined");
                 break;
             }
@@ -3815,75 +4307,101 @@ void DoOpcode(int typ, int parm)
             oldLine = linePtr;
             token = GetWord(word);
 
-            if (token == 0) {
-               MissingOperand();
+            if (token == 0)
+            {
+                MissingOperand();
             }
 
-            while (token) {
+            while (token)
+            {
 #if 1 // enable padded string literals
                 if ((token == '\'' && *linePtr && linePtr[1] != '\'')
-                        || token == '"') {
+                        || token == '"')
+                {
                     n = 0;
                     int quote = token;
-                    while (token == quote) {
-                        while (*linePtr != 0 && *linePtr != token) {
+                    while (token == quote)
+                    {
+                        while (*linePtr != 0 && *linePtr != token)
+                        {
                             int ch = GetBackslashChar();
-                            if ((ch >= 0) && (instrLen < MAX_BYTSTR)) {
+                            if ((ch >= 0) && (instrLen < MAX_BYTSTR))
+                            {
                                 bytStr[instrLen++] = ch;
                                 n++;
                             }
                         }
                         token = *linePtr;
-                        if (token) {
+                        if (token)
+                        {
                             linePtr++;
-                        } else {
+                        }
+                        else
+                        {
                             Error("Missing close quote");
                         }
-                        if (token == quote && *linePtr == quote) {  // two quotes together
-                            if (instrLen < MAX_BYTSTR) {
+                        if (token == quote && *linePtr == quote)    // two quotes together
+                        {
+                            if (instrLen < MAX_BYTSTR)
+                            {
                                 bytStr[instrLen++] = *linePtr++;
                                 n++;
                             }
-                        } else {
+                        }
+                        else
+                        {
                             token = *linePtr;
                         }
                     }
                     // add padding nulls here
-                    while ((n & 3) && instrLen < MAX_BYTSTR) {
+                    while ((n & 3) && instrLen < MAX_BYTSTR)
+                    {
                         bytStr[instrLen++] = 0;
                         n++;
                     }
-                } else
+                }
+                else
 #endif
                 {
                     linePtr = oldLine;
                     val = Eval();
-                    if ((endian == LITTLE_END) ^ (typ == o_DWRE)) {
+                    if ((endian == LITTLE_END) ^ (typ == o_DWRE))
+                    {
                         // little endian
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val;
                         }
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val >> 8;
                         }
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val >> 16;
                         }
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val >> 24;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         // big endian
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val >> 24;
                         }
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val >> 16;
                         }
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val >> 8;
                         }
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val;
                         }
                     }
@@ -3892,19 +4410,24 @@ void DoOpcode(int typ, int parm)
                 token = GetWord(word);
                 oldLine = linePtr;
 
-                if (token == ',') {
+                if (token == ',')
+                {
                     token = GetWord(word);
-                    if (token == 0) {
+                    if (token == 0)
+                    {
                         MissingOperand();
                     }
-                } else if (token) {
+                }
+                else if (token)
+                {
                     linePtr = oldLine;
                     Comma();
                     token = 0;
                 }
             }
 
-            if (instrLen >= MAX_BYTSTR) {
+            if (instrLen >= MAX_BYTSTR)
+            {
                 Error("String too long");
                 instrLen = MAX_BYTSTR;
             }
@@ -3914,66 +4437,86 @@ void DoOpcode(int typ, int parm)
         case o_DS:
             val = Eval();
 
-            if (!evalKnown) {
+            if (!evalKnown)
+            {
                 Error("Can't use DS pseudo-op with forward-declared length");
                 break;
             }
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == ',') {
+            if (token == ',')
+            {
                 // DS len,data (with initialization)
-                if (parm == 1) {
+                if (parm == 1)
+                {
                     // data is a byte
                     n = EvalByte();
-                } else {
+                }
+                else
+                {
                     // data is bigger than a byte
                     n = Eval();
                 }
 
                 // verify initialization data size
-                if (val < 0) {
+                if (val < 0)
+                {
                     Error("Invalid negative DS size");
                     break;
                 }
-                if (val*parm > MAX_BYTSTR) {
+                if (val*parm > MAX_BYTSTR)
+                {
                     sprintf(s, "String too long (max %d bytes)", MAX_BYTSTR);
                     Error(s);
                     break;
                 }
 
-                if (parm == 1) {
+                if (parm == 1)
+                {
                     // DS.B
                     // copy the byte into every location
-                    for (int i = 0; i < val; i++) {
+                    for (int i = 0; i < val; i++)
+                    {
                         bytStr[i] = n;
                     }
-                } else {
+                }
+                else
+                {
                     // DS.W / DS.L
-                    if (endian != LITTLE_END && endian != BIG_END) {
+                    if (endian != LITTLE_END && endian != BIG_END)
+                    {
                         Error("CPU endian not defined");
                         break;
                     }
 
                     // copy words/longwords, respecting current endianness
-                    for (int i = 0; i < val*parm; i += parm) {
-                        if (endian == BIG_END) {
-                            if (parm == 4) {
+                    for (int i = 0; i < val*parm; i += parm)
+                    {
+                        if (endian == BIG_END)
+                        {
+                            if (parm == 4)
+                            {
                                 // DS.L
                                 bytStr[i]   = n >> 24;
                                 bytStr[i+1] = n >> 16;
                                 bytStr[i+2] = n >> 8;
                                 bytStr[i+3] = n;
-                            } else {
+                            }
+                            else
+                            {
                                 // DS.W
                                 bytStr[i]   = n >> 8;
                                 bytStr[i+1] = n;
                             }
-                        } else {
+                        }
+                        else
+                        {
                             // DS.W / DS.L
                             bytStr[i]   = n;
                             bytStr[i+1] = n >> 8;
-                            if (parm == 4) {
+                            if (parm == 4)
+                            {
                                 // DS.L
                                 bytStr[i+2] = n >> 16;
                                 bytStr[i+3] = n >> 24;
@@ -3985,7 +4528,9 @@ void DoOpcode(int typ, int parm)
                 // add size to the location pointer
                 instrLen = -val * parm;
                 break;
-            } else if (token) {
+            }
+            else if (token)
+            {
                 // report error "comma expected" if not EOL
                 // but don't abort
                 linePtr = oldLine;
@@ -3994,7 +4539,8 @@ void DoOpcode(int typ, int parm)
             }
 
             // "DS len" without initialization
-            if (pass == 2) {
+            if (pass == 2)
+            {
                 showAddr = false;
 
                 // "XXXX  (XXXX)"
@@ -4011,22 +4557,29 @@ void DoOpcode(int typ, int parm)
 
         case o_HEX:
             instrLen = 0;
-            while (!errFlag && GetWord(word)) {
+            while (!errFlag && GetWord(word))
+            {
                 n = strlen(word);
-                for (int i = 0; i < n; i += 2) {
-                    if (ishex(word[i]) && ishex(word[i+1])) {
+                for (int i = 0; i < n; i += 2)
+                {
+                    if (ishex(word[i]) && ishex(word[i+1]))
+                    {
                         val = Hex2Dec(word[i]) * 16 + Hex2Dec(word[i+1]);
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         Error("Invalid HEX string");
                         n = i;
                     }
                 }
             }
 
-            if (instrLen >= MAX_BYTSTR) {
+            if (instrLen >= MAX_BYTSTR)
+            {
                 Error("String too long");
                 instrLen = MAX_BYTSTR;
             }
@@ -4038,64 +4591,90 @@ void DoOpcode(int typ, int parm)
             oldLine = linePtr;
             token = GetWord(word);
 
-            if (token == 0) {
+            if (token == 0)
+            {
                 // end of line at the start
                 MissingOperand();
-            } else if (token == -1) {
+            }
+            else if (token == -1)
+            {
                 // starts with a word: FCC length,text
                 // I'm not sure where I saw this used, but apparently
                 // it was an actual thing somewhere.
                 linePtr = oldLine;
                 val = Eval();
                 token = GetWord(word);
-                if (val >= MAX_BYTSTR) {
+                if (val >= MAX_BYTSTR)
+                {
                     Error("String too long");
                 }
-                if (!errFlag && (token == ',')) {
-                    while (*linePtr >= 0x20 && instrLen < val) {
+                if (!errFlag && (token == ','))
+                {
+                    while (*linePtr >= 0x20 && instrLen < val)
+                    {
                         bytStr[instrLen++] = *linePtr++;
                     }
-                    while (instrLen < val) {
+                    while (instrLen < val)
+                    {
                         bytStr[instrLen++] = ' ';
                     }
-                } else {
+                }
+                else
+                {
                     IllegalOperand();
                 }
-            } else {
+            }
+            else
+            {
                 // normal FCC handling, always starts with quote character
                 int ch = token;
-                while (token) {
+                while (token)
+                {
                     // process next thing
-                    if (token == ch) {
+                    if (token == ch)
+                    {
                         // it's a string
-                        while (token == ch) {
+                        while (token == ch)
+                        {
                             // copy bytes until next quote
-                            while (*linePtr != 0 && *linePtr != token) {
-                                if (instrLen < MAX_BYTSTR) {
+                            while (*linePtr != 0 && *linePtr != token)
+                            {
+                                if (instrLen < MAX_BYTSTR)
+                                {
                                     bytStr[instrLen++] = *linePtr++;
                                 }
                             }
-                            if (*linePtr) {
+                            if (*linePtr)
+                            {
                                 // advance past quote character
                                 linePtr++;
-                            } else {
+                            }
+                            else
+                            {
                                 // string ended without close quote
                                 Error("FCC not terminated properly");
                             }
-                            if (*linePtr == token) {
+                            if (*linePtr == token)
+                            {
                                 // if repeated quote, insert it
-                                if (instrLen < MAX_BYTSTR) {
+                                if (instrLen < MAX_BYTSTR)
+                                {
                                     bytStr[instrLen++] = *linePtr++;
                                 }
-                            } else {
+                            }
+                            else
+                            {
                                 token = *linePtr;
                             }
                         }
-                    } else {
+                    }
+                    else
+                    {
                         // not quote character, back up and get a value
                         linePtr = oldLine;
                         val = EvalByte();
-                        if (instrLen < MAX_BYTSTR) {
+                        if (instrLen < MAX_BYTSTR)
+                        {
                             bytStr[instrLen++] = val;
                         }
                     }
@@ -4104,18 +4683,24 @@ void DoOpcode(int typ, int parm)
                     token = GetWord(word);
                     oldLine = linePtr;
 
-                    if (token == ',') {
+                    if (token == ',')
+                    {
                         // if comma, check for unexpected end of line
                         token = GetWord(word);
-                        if (token == 0) {
+                        if (token == 0)
+                        {
                             MissingOperand();
                         }
-                    } else if (token) {
+                    }
+                    else if (token)
+                    {
                         // if not comma or end of line, complain about missing comma
                         linePtr = oldLine;
                         Comma();
                         token = 0;
-                    } else if (errFlag) {
+                    }
+                    else if (errFlag)
+                    {
                         // this is necessary to keep EvalByte() errors
                         // from causing phase errors
                         token = 0;
@@ -4123,7 +4708,8 @@ void DoOpcode(int typ, int parm)
                 }
             }
 
-            if (instrLen >= MAX_BYTSTR) {
+            if (instrLen >= MAX_BYTSTR)
+            {
                 Error("String too long");
                 instrLen = MAX_BYTSTR;
             }
@@ -4134,24 +4720,32 @@ void DoOpcode(int typ, int parm)
             val = parm;
             FALLTHROUGH;
         case o_ALIGN:
-            if (typ == o_ALIGN) {
+            if (typ == o_ALIGN)
+            {
                 val = Eval();
             }
 
             // val must be a power of two
-            if (val <= 0 || val > 65535 || (val & (val - 1)) != 0) {
+            if (val <= 0 || val > 65535 || (val & (val - 1)) != 0)
+            {
                 IllegalOperand();
                 val = 0;
-            } else {
+            }
+            else
+            {
                 int i = locPtr & ~(val - 1);
-                if (i != (signed) locPtr) {
+                if (i != (signed) locPtr)
+                {
                     val = val - (locPtr - i); // aka val = val + i - locPtr;
-                } else {
+                }
+                else
+                {
                     val = 0;
                 }
             }
 
-            if (pass == 2) {
+            if (pass == 2)
+            {
                 showAddr = false;
 
                 // "XXXX  (XXXX)"
@@ -4166,11 +4760,15 @@ void DoOpcode(int typ, int parm)
             break;
 
         case o_END:
-            if (nInclude >= 0) {
+            if (nInclude >= 0)
+            {
                 CloseInclude();
-            } else {
+            }
+            else
+            {
                 oldLine = linePtr;
-                if (GetWord(word)) {
+                if (GetWord(word))
+                {
                     linePtr = oldLine;
                     val = Eval();
                     CodeXfer(val);
@@ -4189,7 +4787,8 @@ void DoOpcode(int typ, int parm)
         case o_Include:
             GetFName(word);
 
-            switch (OpenInclude(word)) {
+            switch (OpenInclude(word))
+            {
                 case -1:
                     Error("Too many nested INCLUDEs");
                     break;
@@ -4202,7 +4801,7 @@ void DoOpcode(int typ, int parm)
             }
             break;
 
-         case o_ENDM:
+        case o_ENDM:
             Error("ENDM without MACRO");
             break;
 
@@ -4213,9 +4812,12 @@ void DoOpcode(int typ, int parm)
 #endif
 
         case o_Processor:
-            if (!GetWord(word)) {
+            if (!GetWord(word))
+            {
                 MissingOperand();
-            } else {
+            }
+            else
+            {
                 if (!SetCPU(word)) IllegalOperand();
             }
             break;
@@ -4243,21 +4845,29 @@ void DoLabelOp(int typ, int parm, char *labl)
 
     if (DoCPULabelOp(typ, parm, labl)) return;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_EQU:
-            if (labl[0] == 0) {
+            if (labl[0] == 0)
+            {
                 Error("Missing label");
-            } else {
+            }
+            else
+            {
                 val = Eval();
 
                 // "XXXX  (XXXX)"
                 p = listLine;
-                switch (addrWid) {
+                switch (addrWid)
+                {
                     default:
                     case ADDR_16:
-                        if (listWid == LIST_24) {
+                        if (listWid == LIST_24)
+                        {
                             n = 5;
-                        } else {
+                        }
+                        else
+                        {
                             n = 4;
                         }
                         break;
@@ -4270,7 +4880,8 @@ void DoLabelOp(int typ, int parm, char *labl)
                         n = 8;
                         break;
                 }
-                for (int i = 0; i <= n; i++) {
+                for (int i = 0; i <= n; i++)
+                {
                     *p++ = ' ';
                 }
                 *p++ = '=';
@@ -4282,7 +4893,8 @@ void DoLabelOp(int typ, int parm, char *labl)
 
         case o_ORG:
             CodeAbsOrg(Eval());
-            if (!evalKnown) {
+            if (!evalKnown)
+            {
                 Warning("Undefined label used in ORG statement");
             }
             DefSym(labl, locPtr, false, false);
@@ -4294,7 +4906,8 @@ void DoLabelOp(int typ, int parm, char *labl)
             CodeRelOrg(val);
             DefSym(labl, codPtr, false, false);
 
-            if (pass == 2) {
+            if (pass == 2)
+            {
                 // "XXXX = XXXX"
                 p = ListLoc(codPtr);
                 *p++ = '=';
@@ -4305,7 +4918,8 @@ void DoLabelOp(int typ, int parm, char *labl)
 
         case o_SEG:
             token = GetWord(word);  // get seg name
-            if (token == 0 || token == -1) { // must be null or alphanumeric
+            if (token == 0 || token == -1)   // must be null or alphanumeric
+            {
                 SegRec *seg = FindSeg(word); // find segment storage and create if necessary
                 if (!seg) seg = AddSeg(word);
 //              seg -> gen = parm;      // copy gen flag from parameter
@@ -4321,7 +4935,8 @@ void DoLabelOp(int typ, int parm, char *labl)
             break;
 
         case o_REND:
-            if (pass == 2) {
+            if (pass == 2)
+            {
                 // "XXXX = XXXX"
                 p = ListLoc(locPtr);
             }
@@ -4335,13 +4950,14 @@ void DoLabelOp(int typ, int parm, char *labl)
         case o_LIST:
             listThisLine = true;    // always list this line
 
-            if (labl[0]) {
+            if (labl[0])
+            {
                 Error("Label not allowed");
             }
 
             GetWord(word);
 
-                 if (strcmp(word, "ON") == 0)       listFlag = true;
+            if (strcmp(word, "ON") == 0)       listFlag = true;
             else if (strcmp(word, "OFF") == 0)      listFlag = false;
             else if (strcmp(word, "MACRO") == 0)    listMacFlag = true;
             else if (strcmp(word, "NOMACRO") == 0)  listMacFlag = false;
@@ -4354,27 +4970,28 @@ void DoLabelOp(int typ, int parm, char *labl)
             else                                    IllegalOperand();
 
             break;
-/*
-        case o_PAGE:
-            listThisLine = true;    // always list this line
+        /*
+                case o_PAGE:
+                    listThisLine = true;    // always list this line
 
-            if (labl[0]) {
-                Error("Label not allowed");
-            }
+                    if (labl[0]) {
+                        Error("Label not allowed");
+                    }
 
-            listLineFF = true;
-            break;
-*/
+                    listLineFF = true;
+                    break;
+        */
         case o_OPT:
             listThisLine = true;    // always list this line
 
-            if (labl[0]) {
+            if (labl[0])
+            {
                 Error("Label not allowed");
             }
 
             GetWord(word);
 
-                 if (strcmp(word, "LIST") == 0)     listFlag = true;
+            if (strcmp(word, "LIST") == 0)     listFlag = true;
             else if (strcmp(word, "NOLIST") == 0)   listFlag = false;
             else if (strcmp(word, "MACRO") == 0)    listMacFlag = true;
             else if (strcmp(word, "NOMACRO") == 0)  listMacFlag = false;
@@ -4393,36 +5010,43 @@ void DoLabelOp(int typ, int parm, char *labl)
             break;
 
         case o_ERROR:
-            if (labl[0]) {
+            if (labl[0])
+            {
                 Error("Label not allowed");
             }
-            while (*linePtr == ' ' || *linePtr == '\t') {
+            while (*linePtr == ' ' || *linePtr == '\t')
+            {
                 linePtr++;
             }
             Error(linePtr);
             break;
 
         case o_ASSERT:
-            if (labl[0]) {
+            if (labl[0])
+            {
                 Error("Label not allowed");
             }
             val = Eval();
-            if (!val) {
+            if (!val)
+            {
                 Error("Assertion failed");
             }
             break;
 
         case o_MACRO:
             // see if label already provided
-            if (labl[0] == 0) {
+            if (labl[0] == 0)
+            {
                 // get next word on line for macro name
-                if (GetWord(labl) != -1) {
+                if (GetWord(labl) != -1)
+                {
                     Error("Macro name requried");
                     break;
                 }
                 // optional comma after macro name
                 oldLine = linePtr;
-                if (GetWord(word) != ',') {
+                if (GetWord(word) != ',')
+                {
                     linePtr = oldLine;
                 }
             }
@@ -4439,51 +5063,64 @@ void DoLabelOp(int typ, int parm, char *labl)
             }
 
             macro = FindMacro(labl);
-            if (macro && macro -> def) {
+            if (macro && macro -> def)
+            {
                 Error("Macro multiply defined");
-            } else {
-                if (macro == NULL) {
+            }
+            else
+            {
+                if (macro == NULL)
+                {
                     macro = AddMacro(labl);
                     nparms = 0;
 
                     token = GetWord(word);
-                    while (token == -1) {
+                    while (token == -1)
+                    {
                         nparms++;
-                        if (nparms > MAXMACPARMS) {
+                        if (nparms > MAXMACPARMS)
+                        {
                             Error("Too many macro parameters");
                             macro -> toomany = true;
                             break;
                         }
                         AddMacroParm(macro, word);
                         token = GetWord(word);
-                        if (token == ',') {
+                        if (token == ',')
+                        {
                             token = GetWord(word);
                         }
                     }
 
-                    if (word[0] && !errFlag) {
+                    if (word[0] && !errFlag)
+                    {
                         Error("Illegal operand");
                     }
                 }
 
-                if (pass == 2) {
+                if (pass == 2)
+                {
                     macro -> def = true;
-                    if (macro -> toomany) {
+                    if (macro -> toomany)
+                    {
                         Error("Too many macro parameters");
                     }
                 }
 
                 macroCondLevel = 0;
                 i = ReadSourceLine(line, sizeof(line));
-                while (i && typ != o_ENDM) {
-                    if ((pass == 2 || cl_ListP1) && (listFlag || errFlag)) {
+                while (i && typ != o_ENDM)
+                {
+                    if ((pass == 2 || cl_ListP1) && (listFlag || errFlag))
+                    {
                         ListOut(true);
                     }
                     CopyListLine();
 
                     // skip initial formfeeds
                     linePtr = line;
-                    while (*linePtr == 12) {
+                    while (*linePtr == 12)
+                    {
                         linePtr++;
                     }
 
@@ -4496,14 +5133,17 @@ void DoLabelOp(int typ, int parm, char *labl)
 #endif
                     {
                         token = GetWord(labl);
-                        if (token) {
+                        if (token)
+                        {
                             showAddr = true;
                         }
-                        while (*linePtr == ' ' || *linePtr == '\t') {
+                        while (*linePtr == ' ' || *linePtr == '\t')
+                        {
                             linePtr++;
                         }
 
-                        if (labl[0]) {
+                        if (labl[0])
+                        {
 #ifdef TEMP_LBLAT
                             if (token == '.' || token == '@')
 #else
@@ -4512,20 +5152,26 @@ void DoLabelOp(int typ, int parm, char *labl)
                             {
                                 // make labl = lastLabl + "." + word;
                                 GetWord(word);
-                                if (token == '.' && subrLabl[0]) {
+                                if (token == '.' && subrLabl[0])
+                                {
                                     strcpy(labl, subrLabl);
-                                } else {
+                                }
+                                else
+                                {
                                     strcpy(labl, lastLabl);
                                 }
                                 labl[strlen(labl)+1] = 0;
                                 labl[strlen(labl)]   = token;
                                 strcat(labl, word);
-                            } else {
+                            }
+                            else
+                            {
                                 strcpy(lastLabl, labl);
                             }
                         }
 
-                        if (*linePtr == ':' && linePtr[1] != '=') {
+                        if (*linePtr == ':' && linePtr[1] != '=')
+                        {
                             linePtr++;
                         }
                     }
@@ -4533,21 +5179,27 @@ void DoLabelOp(int typ, int parm, char *labl)
                     typ = 0;
                     GetFindOpcode(opcode, &typ, &parm, &xmacro);
 
-                    switch (typ) {
+                    switch (typ)
+                    {
                         case o_IF:
-                            if (pass == 1) {
+                            if (pass == 1)
+                            {
                                 AddMacroLine(macro, line);
                             }
                             macroCondLevel++;
                             break;
 
                         case o_ENDIF:
-                            if (pass == 1) {
+                            if (pass == 1)
+                            {
                                 AddMacroLine(macro, line);
                             }
-                            if (macroCondLevel) {
+                            if (macroCondLevel)
+                            {
                                 macroCondLevel--;
-                            } else {
+                            }
+                            else
+                            {
                                 Error("ENDIF without IF in macro definition");
                             }
                             break;
@@ -4557,61 +5209,78 @@ void DoLabelOp(int typ, int parm, char *labl)
                             break;
 
                         case o_ENDM:
-                            if (pass == 1 && labl[0]) {
+                            if (pass == 1 && labl[0])
+                            {
                                 AddMacroLine(macro, labl);
                             }
                             break;
 
                         default:
-                            if (pass == 1) {
+                            if (pass == 1)
+                            {
                                 AddMacroLine(macro, line);
                             }
                             break;
                     }
-                    if (typ != o_ENDM) {
+                    if (typ != o_ENDM)
+                    {
                         i = ReadSourceLine(line, sizeof(line));
                     }
                 }
 
-                if (macroCondLevel) {
+                if (macroCondLevel)
+                {
                     Error("IF block without ENDIF in macro definition");
                 }
 
-                if (typ != o_ENDM) {
+                if (typ != o_ENDM)
+                {
                     Error("Missing ENDM");
                 }
             }
             break;
 
         case o_IF:
-            if (labl[0]) {
+            if (labl[0])
+            {
                 Error("Label not allowed");
             }
 
-            if (condLevel >= MAX_COND) {
+            if (condLevel >= MAX_COND)
+            {
                 Error("IF statements nested too deeply");
-            } else {
+            }
+            else
+            {
                 condLevel++;
                 condState[condLevel] = 0; // this block false but level not permanently failed
 
                 val = Eval();
-                if (!errFlag && val != 0) {
+                if (!errFlag && val != 0)
+                {
                     condState[condLevel] = condTRUE; // this block true
                 }
             }
             break;
 
         case o_ELSE:    // previous IF was true, so this section stays off
-            if (labl[0]) {
+            if (labl[0])
+            {
                 Error("Label not allowed");
             }
 
-            if (condLevel == 0) {
+            if (condLevel == 0)
+            {
                 Error("ELSE outside of IF block");
-            } else {
-                if (condLevel < MAX_COND && (condState[condLevel] & condELSE)) {
+            }
+            else
+            {
+                if (condLevel < MAX_COND && (condState[condLevel] & condELSE))
+                {
                     Error("Multiple ELSE statements in an IF block");
-                } else {
+                }
+                else
+                {
                     condState[condLevel] = condELSE | condFAIL; // ELSE encountered, permanent fail
 //                  condState[condLevel] |= condELSE; // ELSE encountered
 //                  condState[condLevel] |= condFAIL; // this level permanently failed
@@ -4621,16 +5290,23 @@ void DoLabelOp(int typ, int parm, char *labl)
             break;
 
         case o_ELSIF:   // previous IF was true, so this section stays off
-            if (labl[0]) {
+            if (labl[0])
+            {
                 Error("Label not allowed");
             }
 
-            if (condLevel == 0) {
+            if (condLevel == 0)
+            {
                 Error("ELSIF outside of IF block");
-            } else {
-                if (condLevel < MAX_COND && (condState[condLevel] & condELSE)) {
+            }
+            else
+            {
+                if (condLevel < MAX_COND && (condState[condLevel] & condELSE))
+                {
                     Error("Multiple ELSE statements in an IF block");
-                } else {
+                }
+                else
+                {
                     // i = Eval(); // evaluate condition and ignore result
                     EatIt(); // just ignore the conditional expression
 
@@ -4641,13 +5317,17 @@ void DoLabelOp(int typ, int parm, char *labl)
             break;
 
         case o_ENDIF:   // previous ELSE was true, now exiting it
-            if (labl[0]) {
+            if (labl[0])
+            {
                 Error("Label not allowed");
             }
 
-            if (condLevel == 0) {
+            if (condLevel == 0)
+            {
                 Error("ENDIF outside of IF block");
-            } else {
+            }
+            else
+            {
                 condLevel--;
             }
             break;
@@ -4662,18 +5342,21 @@ void DoLabelOp(int typ, int parm, char *labl)
 //      4) when macro ends, decrement repeat count and start over if count > 0
 //      5) don't forget to dispose of the temp macro and its lines when done!
         case o_REPEAT:
-            if (labl[0]) {
+            if (labl[0])
+            {
                 DefSym(labl, locPtr, false, false);
                 showAddr = true;
             }
 
             // get repeat count
             val = Eval();
-            if (!errFlag) {
+            if (!errFlag)
+            {
                 if (val < 0) IllegalOperand();
             }
 
-            if (!errFlag) {
+            if (!errFlag)
+            {
                 repList -> text = NULL;
 
 // *** read line
@@ -4681,15 +5364,18 @@ void DoLabelOp(int typ, int parm, char *labl)
 // ***      add line to repeat buffer
                 macroCondLevel = 0;
                 i = ReadSourceLine(line, sizeof(line));
-                while (i && typ != o_REPEND) {
-                    if ((pass == 2 || cl_ListP1) && (listFlag || errFlag)) {
+                while (i && typ != o_REPEND)
+                {
+                    if ((pass == 2 || cl_ListP1) && (listFlag || errFlag))
+                    {
                         ListOut(true);
                     }
                     CopyListLine();
 
                     // skip initial formfeeds
                     linePtr = line;
-                    while (*linePtr == 12) {
+                    while (*linePtr == 12)
+                    {
                         linePtr++;
                     }
 
@@ -4702,14 +5388,17 @@ void DoLabelOp(int typ, int parm, char *labl)
 #endif
                     {
                         token = GetWord(labl);
-                        if (token) {
+                        if (token)
+                        {
                             showAddr = true;
                         }
-                        while (*linePtr == ' ' || *linePtr == '\t') {
+                        while (*linePtr == ' ' || *linePtr == '\t')
+                        {
                             linePtr++;
                         }
 
-                        if (labl[0]) {
+                        if (labl[0])
+                        {
 #ifdef TEMP_LBLAT
                             if (token == '.' || token == '@'))
 #else
@@ -4718,20 +5407,26 @@ void DoLabelOp(int typ, int parm, char *labl)
                             {
                                 // make labl = lastLabl + "." + word;
                                 GetWord(word);
-                                if (token == '.' && subrLabl[0]) {
+                                if (token == '.' && subrLabl[0])
+                                {
                                     strcpy(labl, subrLabl);
-                                } else {
+                                }
+                                else
+                                {
                                     strcpy(labl, lastLabl);
                                 }
                                 labl[strlen(labl)+1] = 0;
                                 labl[strlen(labl)]   = token;
                                 strcat(labl, word);
-                            } else {
+                            }
+                            else
+                            {
                                 strcpy(lastLabl, labl);
                             }
                         }
 
-                        if (*linePtr == ':' && linePtr[1] != '=') {
+                        if (*linePtr == ':' && linePtr[1] != '=')
+                        {
                             linePtr++;
                         }
                     }
@@ -4739,21 +5434,27 @@ void DoLabelOp(int typ, int parm, char *labl)
                     typ = 0;
                     GetFindOpcode(opcode, &typ, &parm, &xmacro);
 
-                    switch (typ) {
+                    switch (typ)
+                    {
                         case o_IF:
-                            if (pass == 1) {
+                            if (pass == 1)
+                            {
                                 AddMacroLine(&replist, line);
                             }
                             macroCondLevel++;
                             break;
 
                         case o_ENDIF:
-                            if (pass == 1) {
+                            if (pass == 1)
+                            {
                                 AddMacroLine(&replist, line);
                             }
-                            if (macroCondLevel) {
+                            if (macroCondLevel)
+                            {
                                 macroCondLevel--;
-                            } else {
+                            }
+                            else
+                            {
                                 Error("ENDIF without IF in REPEAT block");
                             }
                             break;
@@ -4763,38 +5464,45 @@ void DoLabelOp(int typ, int parm, char *labl)
                             break;
 
                         case o_ENDM:
-                            if (pass == 1 && labl[0]) {
+                            if (pass == 1 && labl[0])
+                            {
                                 AddMacroLine(&replist, labl);
                             }
                             break;
 
                         default:
-                            if (pass == 1) {
+                            if (pass == 1)
+                            {
                                 AddMacroLine(&replist, line);
                             }
                             break;
                     }
-                    if (typ != o_ENDM) {
+                    if (typ != o_ENDM)
+                    {
                         i = ReadSourceLine(line, sizeof(line));
                     }
                 }
 
-                if (macroCondLevel) {
+                if (macroCondLevel)
+                {
                     Error("IF block without ENDIF in REPEAT block");
                 }
 
-                if (typ != o_REPEND) {
+                if (typ != o_REPEND)
+                {
                     Error("Missing REPEND");
                 }
 
-                if (!errFlag) {
+                if (!errFlag)
+                {
 // *** while (val--)
 // ***      for each line
 // ***            doline()
                 }
 
                 // free repeat line buffer
-                while (replist) {
+                while (replist)
+                {
                     rep = replist->next;
                     free(replist);
                     replist = rep;
@@ -4803,7 +5511,7 @@ void DoLabelOp(int typ, int parm, char *labl)
             break;
 #endif
 
-       case o_Incbin:
+        case o_Incbin:
             DefSym(labl, locPtr, false, false);
 
             GetFName(word);
@@ -4813,24 +5521,31 @@ void DoLabelOp(int typ, int parm, char *labl)
             // open binary file
             incbin = fopen(word, "rb");
 
-            if (incbin) {
+            if (incbin)
+            {
                 // while not EOF
-                do {
+                do
+                {
                     //   n = count of read up to MAX_BYTSTR bytes into bytStr
                     n = fread(bytStr, 1, MAX_BYTSTR, incbin);
-                    if (n > 0) {
+                    if (n > 0)
+                    {
                         // write data out to the object file
-                        for (int i = 0; i < n; i++) {
+                        for (int i = 0; i < n; i++)
+                        {
                             CodeOut(bytStr[i]);
                         }
                         val = val + n;
                     }
-                } while (n > 0);
-                if (n < 0) {
+                }
+                while (n > 0);
+                if (n < 0)
+                {
                     snprintf(s, sizeof s, "Error reading INCBIN file '%s'", word);
                 }
 
-                if (pass == 2) {
+                if (pass == 2)
+                {
                     // "XXXX  (XXXX)"
                     p = ListLoc(locPtr-val);
                     *p++ = ' ';
@@ -4839,13 +5554,16 @@ void DoLabelOp(int typ, int parm, char *labl)
                     *p++ = ')';
                 }
 
-            } else {
+            }
+            else
+            {
                 snprintf(s, sizeof s, "Unable to open INCBIN file '%s'", word);
                 Error(s);
             }
 
             // close binary file
-            if (incbin) {
+            if (incbin)
+            {
                 fclose(incbin);
             }
             incbin = NULL;
@@ -4853,19 +5571,28 @@ void DoLabelOp(int typ, int parm, char *labl)
             break;
 
         case o_WORDSIZE:
-            if (labl[0]) {
+            if (labl[0])
+            {
                 Error("Label not allowed");
             }
 
             val = Eval();
-            if (evalKnown) {
+            if (evalKnown)
+            {
                 Error("Forward reference not allowed in WORDSIZE");
-            } else if (!errFlag) {
-                if (val == 0) {
+            }
+            else if (!errFlag)
+            {
+                if (val == 0)
+                {
                     SetWordSize(wordSize);
-                } else if (val < 1 || val > 64) {
+                }
+                else if (val < 1 || val > 64)
+                {
                     Error("WORDSIZE must be in the range of 0..64");
-                } else {
+                }
+                else
+                {
                     SetWordSize(val);
                 }
             }
@@ -4903,12 +5630,14 @@ static void DoLine()
 
     // skip initial formfeeds
     linePtr = line;
-    while (*linePtr == 12) {
+    while (*linePtr == 12)
+    {
         linePtr++;
     }
 
     // handle Motorola-style comments with "*" in column 1
-    if (*linePtr == '*') {
+    if (*linePtr == '*')
+    {
         linePtr = "";
     }
 
@@ -4922,14 +5651,17 @@ static void DoLine()
     {
         token = GetWord(labl);
         oldLine = linePtr;
-        if (token) {
+        if (token)
+        {
             showAddr = true;
         }
-        while (*linePtr == ' ' || *linePtr == '\t') {
+        while (*linePtr == ' ' || *linePtr == '\t')
+        {
             linePtr++;
         }
 
-        if (labl[0]) {
+        if (labl[0])
+        {
 #ifdef TEMP_LBLAT
             if (token == '.' || token == '@')
 #else
@@ -4937,66 +5669,89 @@ static void DoLine()
 #endif
             {
                 GetWord(word);
-                if (token == '.' && FindOpcodeTab((OpcdRec* ) &opcdTab2, word, &typ, &parm) ) {
+                if (token == '.' && FindOpcodeTab((OpcdRec* ) &opcdTab2, word, &typ, &parm) )
+                {
                     // ".pseudo-op" in column 1
                     linePtr = oldLine;
-                } else if (token == '.' && *linePtr != ':' && FindCPU(word)) {
+                }
+                else if (token == '.' && *linePtr != ':' && FindCPU(word))
+                {
                     // ".cputype" in column 1
                     // This must NOT be followed by a colon, to prevent temporary labels
                     // like ".1802:" and ".6800:" from being parsed as a CPU type!
                     linePtr = line;
-                } else {
+                }
+                else
+                {
                     // make labl = lastLabl + "." + word;
-                    if (token == '.' && subrLabl[0]) {
+                    if (token == '.' && subrLabl[0])
+                    {
                         strcpy(labl, subrLabl);
-                    } else {
+                    }
+                    else
+                    {
                         strcpy(labl, lastLabl);
                     }
                     labl[strlen(labl)+1] = 0;
                     labl[strlen(labl)]   = token;
                     strcat(labl, word);
                 }
-            } else {
+            }
+            else
+            {
                 strcpy(lastLabl, labl);
             }
         }
 
-        if (*linePtr == ':' && linePtr[1] != '=') {
+        if (*linePtr == ':' && linePtr[1] != '=')
+        {
             linePtr++;
         }
     }
 
-    if (!(condState[condLevel] & condTRUE)) {
+    if (!(condState[condLevel] & condTRUE))
+    {
         listThisLine = false;
 
         // inside failed IF statement
-        if (GetFindOpcode(opcode, &typ, &parm, &macro)) {
-            switch (typ) {
+        if (GetFindOpcode(opcode, &typ, &parm, &macro))
+        {
+            switch (typ)
+            {
                 case o_IF: // nested IF inside failed IF should stay failed
-                    if (condState[condLevel-1] & condTRUE) {
+                    if (condState[condLevel-1] & condTRUE)
+                    {
                         listThisLine = listFlag;
                     }
 
-                    if (condLevel >= MAX_COND) {
+                    if (condLevel >= MAX_COND)
+                    {
                         Error("IF statements nested too deeply");
-                    } else {
+                    }
+                    else
+                    {
                         condLevel++;
                         condState[condLevel] = condFAIL; // this level false and permanently failed
                     }
                     break;
 
                 case o_ELSE:
-                    if (condState[condLevel-1] & condTRUE) {
+                    if (condState[condLevel-1] & condTRUE)
+                    {
                         listThisLine = listFlag;
                     }
 
-                    if (!(condState[condLevel] & (condTRUE | condFAIL))) {
+                    if (!(condState[condLevel] & (condTRUE | condFAIL)))
+                    {
                         // previous IF was false
                         listThisLine = listFlag;
 
-                        if (condLevel < MAX_COND && (condState[condLevel] & condELSE)) {
+                        if (condLevel < MAX_COND && (condState[condLevel] & condELSE))
+                        {
                             Error("Multiple ELSE statements in an IF block");
-                        } else {
+                        }
+                        else
+                        {
                             condState[condLevel] |= condTRUE;
                         }
                     }
@@ -5004,19 +5759,25 @@ static void DoLine()
                     break;
 
                 case o_ELSIF:
-                    if (condState[condLevel-1] & condTRUE) {
+                    if (condState[condLevel-1] & condTRUE)
+                    {
                         listThisLine = listFlag;
                     }
 
-                    if (!(condState[condLevel] & (condTRUE | condFAIL))) {
+                    if (!(condState[condLevel] & (condTRUE | condFAIL)))
+                    {
                         // previous IF was false
                         listThisLine = listFlag;
 
-                        if (condLevel < MAX_COND && (condState[condLevel] & condELSE)) {
+                        if (condLevel < MAX_COND && (condState[condLevel] & condELSE))
+                        {
                             Error("Multiple ELSE statements in an IF block");
-                        } else {
+                        }
+                        else
+                        {
                             i = Eval();
-                            if (!errFlag && i != 0) {
+                            if (!errFlag && i != 0)
+                            {
                                 condState[condLevel] |= condTRUE;
                             }
                         }
@@ -5024,11 +5785,15 @@ static void DoLine()
                     break;
 
                 case o_ENDIF:
-                    if (condLevel == 0) {
+                    if (condLevel == 0)
+                    {
                         Error("ENDIF outside of IF block");
-                    } else {
+                    }
+                    else
+                    {
                         condLevel--;
-                        if (condState[condLevel] & condTRUE) {
+                        if (condState[condLevel] & condTRUE)
+                        {
                             listThisLine = listFlag;
                         }
                     }
@@ -5040,34 +5805,53 @@ static void DoLine()
         }
 
         if ((pass == 2 || cl_ListP1) && listThisLine
-                && (errFlag || listMacFlag || !macLineFlag)) {
+                && (errFlag || listMacFlag || !macLineFlag))
+        {
             ListOut(true);
         }
-    } else {
-        if (!GetFindOpcode(opcode, &typ, &parm, &macro) && !opcode[0]) {
+    }
+    else
+    {
+        if (!GetFindOpcode(opcode, &typ, &parm, &macro) && !opcode[0])
+        {
             // line with label only
             DefSym(labl, locPtr / wordDiv, false, false);
-        } else {
-            if (typ == o_Illegal) {
-                if (opcode[0] == '.' && SetCPU(opcode+1)) {
+        }
+        else
+        {
+            if (typ == o_Illegal)
+            {
+                if (opcode[0] == '.' && SetCPU(opcode+1))
+                {
                     /* successfully changed CPU type */;
-                } else {
-                    if (labl[0]) {
+                }
+                else
+                {
+                    if (labl[0])
+                    {
                         // always define a label even if the opcode is bad
                         DefSym(labl, locPtr / wordDiv, false, false);
                     }
                     snprintf(word, sizeof word, "Illegal opcode '%s'", opcode);
                     Error(word);
                 }
-            } else if (typ == o_MacName) {
-                if (macPtr[macLevel] && macLevel >= MAX_MACRO) {
+            }
+            else if (typ == o_MacName)
+            {
+                if (macPtr[macLevel] && macLevel >= MAX_MACRO)
+                {
                     Error("Macros nested too deeply");
 #if 1
-                } else if (pass == 2 && !macro -> def) {
+                }
+                else if (pass == 2 && !macro -> def)
+                {
                     Error("Macro has not been defined yet");
 #endif
-                } else {
-                    if (macPtr[macLevel]) {
+                }
+                else
+                {
+                    if (macPtr[macLevel])
+                    {
                         macLevel++;
                     }
 
@@ -5082,30 +5866,43 @@ static void DoLine()
                     showAddr = true;
                     DefSym(labl, locPtr, false, false);
                 }
-            } else if (typ >= o_LabelOp) {
+            }
+            else if (typ >= o_LabelOp)
+            {
                 showAddr = false;
                 DoLabelOp(typ, parm, labl);
-            } else {
+            }
+            else
+            {
                 showAddr = true;
                 DefSym(labl, locPtr, false, false);
                 DoOpcode(typ, parm);
             }
 
-            if (typ != o_Illegal && typ != o_MacName) {
-                if (!errFlag && GetWord(word)) {
+            if (typ != o_Illegal && typ != o_MacName)
+            {
+                if (!errFlag && GetWord(word))
+                {
                     Error("Too many operands");
                 }
             }
         }
 
-        if (pass == 1 && !cl_ListP1) {
+        if (pass == 1 && !cl_ListP1)
+        {
             AddLocPtr(abs(instrLen));
-        } else {
+        }
+        else
+        {
             p = listLine;
-            if (showAddr) {
+            if (showAddr)
+            {
                 p = ListLoc(locPtr);
-            } else {
-                switch (addrWid) {
+            }
+            else
+            {
+                switch (addrWid)
+                {
                     default:
                     case ADDR_16:
                         p = listLine + 5;
@@ -5122,11 +5919,15 @@ static void DoLine()
             }
 
             // determine width of hex data area
-            if (listWid == LIST_16) {
+            if (listWid == LIST_16)
+            {
                 numhex = 5;
-            } else {
+            }
+            else
+            {
                 // listWid == LIST_24
-                switch (addrWid) {
+                switch (addrWid)
+                {
                     default:
                     case ADDR_16:
                     case ADDR_24:
@@ -5139,14 +5940,19 @@ static void DoLine()
                 }
             }
 
-            if (instrLen > 0) { // positive instrLen for CPU instruction formatting
+            if (instrLen > 0)   // positive instrLen for CPU instruction formatting
+            {
                 // determine start of hex data area
-                switch (addrWid) {
+                switch (addrWid)
+                {
                     default:
                     case ADDR_16:
-                        if (listWid == LIST_24) {
+                        if (listWid == LIST_24)
+                        {
                             p = listLine + 6;
-                        } else {
+                        }
+                        else
+                        {
                             p = listLine + 5;
                         }
                         break;
@@ -5162,27 +5968,37 @@ static void DoLine()
 
                 // special case because 24-bit address usually can't fit
                 // 8 bytes of code with operand spacing
-                if (addrWid == ADDR_24 && listWid == LIST_24) {
+                if (addrWid == ADDR_24 && listWid == LIST_24)
+                {
                     numhex = 6;
                 }
 
-                if (hexSpaces & 1) {
+                if (hexSpaces & 1)
+                {
                     *p++ = ' ';
                 }
-                for (int i = 0; i < instrLen; i++) {
-                    if (listWid == LIST_24) {
+                for (int i = 0; i < instrLen; i++)
+                {
+                    if (listWid == LIST_24)
+                    {
                         if (hexSpaces & (1 << i)) *p++ = ' ';
                     }
 
-                    if (i < numhex || expandHexFlag) {
-                        if (i > 0 && i % numhex == 0) {
-                            if (listThisLine && (errFlag || listMacFlag || !macLineFlag)) {
+                    if (i < numhex || expandHexFlag)
+                    {
+                        if (i > 0 && i % numhex == 0)
+                        {
+                            if (listThisLine && (errFlag || listMacFlag || !macLineFlag))
+                            {
                                 ListOut(firstLine);
                                 firstLine = false;
                             }
-                            if (listWid == LIST_24) {
+                            if (listWid == LIST_24)
+                            {
                                 strcpy(listLine, "                        ");   // 24 blanks
-                            } else {
+                            }
+                            else
+                            {
                                 strcpy(listLine, "                ");           // 16 blanks
                             }
                             p = ListLoc(locPtr);
@@ -5192,18 +6008,27 @@ static void DoLine()
                     }
                     CodeOut(bytStr[i]);
                 }
-            } else if (instrLen < 0) { // negative instrLen for generic data formatting
+            }
+            else if (instrLen < 0)     // negative instrLen for generic data formatting
+            {
                 instrLen = abs(instrLen);
-                for (int i = 0; i < instrLen; i++) {
-                    if (i < numhex || expandHexFlag) {
-                        if (i > 0 && i % numhex == 0) {
-                            if (listThisLine && (errFlag || listMacFlag || !macLineFlag)) {
+                for (int i = 0; i < instrLen; i++)
+                {
+                    if (i < numhex || expandHexFlag)
+                    {
+                        if (i > 0 && i % numhex == 0)
+                        {
+                            if (listThisLine && (errFlag || listMacFlag || !macLineFlag))
+                            {
                                 ListOut(firstLine);
                                 firstLine = false;
                             }
-                            if (listWid == LIST_24) {
+                            if (listWid == LIST_24)
+                            {
                                 strcpy(listLine, "                        ");   // 24 blanks
-                            } else {
+                            }
+                            else
+                            {
                                 strcpy(listLine, "                ");           // 16 blanks
                             }
                             p = ListLoc(locPtr);
@@ -5218,7 +6043,8 @@ static void DoLine()
                 }
             }
 
-            if (listThisLine && (errFlag || listMacFlag || !macLineFlag)) {
+            if (listThisLine && (errFlag || listMacFlag || !macLineFlag))
+            {
                 ListOut(firstLine);
             }
         }
@@ -5237,10 +6063,12 @@ static void DoPass()
     lastLabl[0] = 0;
     subrLabl[0] = 0;
 
-    if (cl_edtasm) {
+    if (cl_edtasm)
+    {
         fprintf(stderr, "Pass %d\n", pass);
 
-        if (cl_ListP1) {
+        if (cl_ListP1)
+        {
             fprintf(listing, "Pass %d\n", pass);
         }
     }
@@ -5272,7 +6100,8 @@ static void DoPass()
     // reset all code pointers
     CodeAbsOrg(0);
     SegRec *seg = segTab;
-    while (seg) {
+    while (seg)
+    {
         seg -> cod = 0;
         seg -> loc = 0;
         seg = seg -> next;
@@ -5283,12 +6112,14 @@ static void DoPass()
 
     PassInit();
     int i = ReadSourceLine(line, sizeof(line));
-    while (i && !sourceEnd) {
+    while (i && !sourceEnd)
+    {
         DoLine();
         i = ReadSourceLine(line, sizeof(line));
     }
 
-    if (condLevel != 0) {
+    if (condLevel != 0)
+    {
         Error("IF block without ENDIF");
     }
 
@@ -5299,20 +6130,25 @@ static void DoPass()
     // any lines which have invalid syntax, etc., because whatever
     // is found after an END statement should esentially be ignored.
 
-    if (pass == 2 || cl_ListP1) {
-        while (i) {
+    if (pass == 2 || cl_ListP1)
+    {
+        while (i)
+        {
             listThisLine = listFlag;
             CopyListLine();
 
-            if (line[0]==' ' || line[0]=='\t') {        // ignore labels (this isn't the right way)
+            if (line[0]==' ' || line[0]=='\t')          // ignore labels (this isn't the right way)
+            {
                 MacroRec    *macro;
                 GetFindOpcode(opcode, &typ, &parm, &macro);
-                if (typ == o_LIST || typ == o_OPT) {
+                if (typ == o_LIST || typ == o_OPT)
+                {
                     DoLabelOp(typ, parm, "");
                 }
             }
 
-            if (listThisLine) {
+            if (listThisLine)
+            {
                 ListOut(true);
             }
 
@@ -5357,9 +6193,12 @@ static void usage(void)
     fprintf(stderr, "    -T [reclen]         output object file as TRS-80 cassette file (implies -C Z80)\n");
     fprintf(stderr, "    -c                  send object code to stdout\n");
     fprintf(stderr, "    -C cputype          specify default CPU type (currently ");
-    if (defCPU[0]) {
+    if (defCPU[0])
+    {
         fprintf(stderr, "%s", defCPU);
-    } else {
+    }
+    else
+    {
         fprintf(stderr, "no default");
     }
     fprintf(stderr, ")\n");
@@ -5376,9 +6215,11 @@ static void getopts(int argc, char * const argv[])
     int     token;
     int     neg;
 
-    while ((ch = getopt(argc, argv, "ew19t:T:b:cd:l:o:s:C:@?")) != -1) {
+    while ((ch = getopt(argc, argv, "ew19t:T:b:cd:l:o:s:C:@?")) != -1)
+    {
         errFlag = false;
-        switch (ch) {
+        switch (ch)
+        {
             case 'e':
                 cl_Err = true;
                 break;
@@ -5400,14 +6241,18 @@ static void getopts(int argc, char * const argv[])
                 cl_ObjType = OBJ_TRSDOS;
                 strcpy(defCPU, "Z80");
 
-                if (!isdigit(optarg[0])) {
+                if (!isdigit(optarg[0]))
+                {
                     // -t with no parameter
                     optarg = "";
                     optind--;
-                } else if (*optarg) {
+                }
+                else if (*optarg)
+                {
                     // -t recsize
                     val = EvalNum(optarg);
-                    if (errFlag) {
+                    if (errFlag)
+                    {
                         fprintf(stderr, "%s: Invalid number '%s' in -t option\n", progname, word);
                         usage();
                     }
@@ -5420,14 +6265,18 @@ static void getopts(int argc, char * const argv[])
                 cl_ObjType = OBJ_TRSCAS;
                 strcpy(defCPU, "Z80");
 
-                if (!isdigit(optarg[0])) {
+                if (!isdigit(optarg[0]))
+                {
                     // -t with no parameter
                     optarg = "";
                     optind--;
-                } else if (*optarg) {
+                }
+                else if (*optarg)
+                {
                     // -t recsize
                     val = EvalNum(optarg);
-                    if (errFlag) {
+                    if (errFlag)
+                    {
                         fprintf(stderr, "%s: Invalid number '%s' in -t option\n", progname, word);
                         usage();
                     }
@@ -5437,15 +6286,24 @@ static void getopts(int argc, char * const argv[])
                 break;
 
             case 's':
-                if (optarg[0] == '9' && optarg[1] == 0) {
+                if (optarg[0] == '9' && optarg[1] == 0)
+                {
                     cl_S9type = 9;
-                } else if (optarg[0] == '1' && optarg[1] == '9' && optarg[2] == 0) {
+                }
+                else if (optarg[0] == '1' && optarg[1] == '9' && optarg[2] == 0)
+                {
                     cl_S9type = 19;
-                } else if (optarg[0] == '2' && optarg[1] == '8' && optarg[2] == 0) {
+                }
+                else if (optarg[0] == '2' && optarg[1] == '8' && optarg[2] == 0)
+                {
                     cl_S9type = 28;
-                } else if (optarg[0] == '3' && optarg[1] == '7' && optarg[2] == 0) {
+                }
+                else if (optarg[0] == '3' && optarg[1] == '7' && optarg[2] == 0)
+                {
                     cl_S9type = 37;
-                } else {
+                }
+                else
+                {
                     fprintf(stderr, "%s: Invalid S-record type '%s'\n", progname, optarg);
                     usage();
                 }
@@ -5461,40 +6319,49 @@ static void getopts(int argc, char * const argv[])
                 cl_Binbase = 0;
                 cl_Binend = 0xFFFFFFFF;
 
-                if (!isdigit(optarg[0])) {
+                if (!isdigit(optarg[0]))
+                {
                     // -b with no parameter
                     optarg = "";
                     optind--;
-                } else if (*optarg) {
+                }
+                else if (*optarg)
+                {
                     // - b with parameter
                     strncpy(line, optarg, 255);
                     linePtr = line;
 
                     // get start parameter
-                    if (GetWord(word) != -1) {
+                    if (GetWord(word) != -1)
+                    {
                         fprintf(stderr, "%s: Invalid start argument '%s' for -b\n", progname, word);
                         usage();
                     }
                     cl_Binbase = EvalNum(word);
-                    if (errFlag) {
+                    if (errFlag)
+                    {
                         fprintf(stderr, "%s: Invalid number '%s' in -b option\n", progname, word);
                         usage();
                     }
 
                     // get optional end parameter
                     token = GetWord(word);
-                    if (token) {
-                        if (token != '-') {
+                    if (token)
+                    {
+                        if (token != '-')
+                        {
                             fprintf(stderr, "%s: Invalid end argument '%s' for -b\n", progname, word);
                             usage();
                         }
 
-                        if (GetWord(word) != -1) {
+                        if (GetWord(word) != -1)
+                        {
                             fprintf(stderr, "%s: Invalid end argument '%s' for -b\n", progname, word);
                             usage();
                         }
                         cl_Binend = EvalNum(word);
-                        if (errFlag) {
+                        if (errFlag)
+                        {
                             fprintf(stderr, "%s: Invalid number '%s' in -b option\n", progname, word);
                             usage();
                         }
@@ -5503,7 +6370,8 @@ static void getopts(int argc, char * const argv[])
                 break;
 
             case 'c':
-                if (cl_Obj) {
+                if (cl_Obj)
+                {
                     fprintf(stderr, "%s: Conflicting options: -c can not be used with -o\n", progname);
                     usage();
                 }
@@ -5517,19 +6385,23 @@ static void getopts(int argc, char * const argv[])
                 val = 0;
                 setSym = false;
                 token = GetWord(word);
-                if (token == ':') {
+                if (token == ':')
+                {
                     // allow ":="
                     setSym = true;
                     token = GetWord(word);
                 }
-                if (token == '=') {
+                if (token == '=')
+                {
                     neg = 1;
-                    if (GetWord(word) == '-') {
+                    if (GetWord(word) == '-')
+                    {
                         neg = -1;
                         GetWord(word);
                     }
                     val = neg * EvalNum(word);
-                    if (errFlag) {
+                    if (errFlag)
+                    {
                         fprintf(stderr, "%s: Invalid number '%s' in -d option\n", progname, word);
                         usage();
                     }
@@ -5539,7 +6411,8 @@ static void getopts(int argc, char * const argv[])
 
             case 'l':
                 cl_List = true;
-                if (optarg[0] == '-') {
+                if (optarg[0] == '-')
+                {
                     optarg = "";
                     optind--;
                 }
@@ -5547,12 +6420,14 @@ static void getopts(int argc, char * const argv[])
                 break;
 
             case 'o':
-                if (cl_Stdout) {
+                if (cl_Stdout)
+                {
                     fprintf(stderr, "%s: Conflicting options: -o can not be used with -c\n", progname);
                     usage();
                 }
                 cl_Obj = true;
-                if (optarg[0] == '-') {
+                if (optarg[0] == '-')
+                {
                     optarg = "";
                     optind--;
                 }
@@ -5562,7 +6437,8 @@ static void getopts(int argc, char * const argv[])
             case 'C':
                 strncpy(word, optarg, 255);
                 Uprcase(word);
-                if (!FindCPU(word)) {
+                if (!FindCPU(word))
+                {
                     fprintf(stderr, "%s: CPU type '%s' unknown\n", progname, word);
                     usage();
                 }
@@ -5578,14 +6454,16 @@ static void getopts(int argc, char * const argv[])
     argc -= optind;
     argv += optind;
 
-    if (cl_Stdout && cl_ObjType == OBJ_BIN) {
+    if (cl_Stdout && cl_ObjType == OBJ_BIN)
+    {
         fprintf(stderr, "%s: Conflicting options: -b can not be used with -c\n", progname);
         usage();
     }
 
 #if 1
     // -b or -9 or -t must force -o!
-    if (cl_ObjType != OBJ_HEX && !cl_Stdout && !cl_Obj) {
+    if (cl_ObjType != OBJ_HEX && !cl_Stdout && !cl_Obj)
+    {
         cl_Obj = true;
     }
 #endif
@@ -5594,10 +6472,14 @@ static void getopts(int argc, char * const argv[])
     // and argv[0] is the first remaining argument
 
     // error unless exactly one parameter left (for filename)
-    if (argc != 1) {
-        if (argc == 0) {
+    if (argc != 1)
+    {
+        if (argc == 0)
+        {
             fprintf(stderr, "%s: No filename found\n", progname);
-        } else {
+        }
+        else
+        {
             fprintf(stderr, "%s: Unexpected argument '%s'\n", progname, argv[0]);
         }
         usage();
@@ -5607,17 +6489,21 @@ static void getopts(int argc, char * const argv[])
 
     // print help if filename is '?'
     // note: this won't work if there's a single-char filename in the current directory!
-    if (cl_SrcName[0] == '?' && cl_SrcName[1] == 0) {
+    if (cl_SrcName[0] == '?' && cl_SrcName[1] == 0)
+    {
         usage();
     }
 
-    if (cl_List && cl_ListName[0] == 0) {
+    if (cl_List && cl_ListName[0] == 0)
+    {
         strncpy(cl_ListName, cl_SrcName, 255-4);
         strcat (cl_ListName, ".lst");
     }
 
-    if (cl_Obj  && cl_ObjName [0] == 0) {
-        switch (cl_ObjType) {
+    if (cl_Obj  && cl_ObjName [0] == 0)
+    {
+        switch (cl_ObjType)
+        {
             case OBJ_S9:
                 strncpy(cl_ObjName, cl_SrcName, 255-3);
                 sprintf(word, ".s%d", cl_S9type);
@@ -5680,13 +6566,17 @@ int main(int argc, char * const argv[])
     defCPU[0]  = 0;
 
     nInclude  = -1;
-    for (int i = 0; i < MAX_INCLUDE; i++) {
+    for (int i = 0; i < MAX_INCLUDE; i++)
+    {
         include[i] = NULL;
     }
 
-    cl_SrcName [0] = 0;     source  = NULL;
-    cl_ListName[0] = 0;     listing = NULL;
-    cl_ObjName [0] = 0;     object  = NULL;
+    cl_SrcName [0] = 0;
+    source  = NULL;
+    cl_ListName[0] = 0;
+    listing = NULL;
+    cl_ObjName [0] = 0;
+    object  = NULL;
     incbin = NULL;
 
     AsmInit();
@@ -5696,36 +6586,49 @@ int main(int argc, char * const argv[])
     // open files
 
     source = fopen(cl_SrcName, "r");
-    if (source == NULL) {
+    if (source == NULL)
+    {
         fprintf(stderr, "Unable to open source input file '%s'!\n", cl_SrcName);
         exit(1);
     }
 
-    if (cl_List) {
+    if (cl_List)
+    {
         listing = fopen(cl_ListName, "w");
-        if (listing == NULL) {
+        if (listing == NULL)
+        {
             fprintf(stderr, "Unable to create listing output file '%s'!\n", cl_ListName);
-            if (source) {
+            if (source)
+            {
                 fclose(source);
             }
             exit(1);
         }
     }
 
-    if (cl_Stdout) {
+    if (cl_Stdout)
+    {
         object = stdout;
-    } else if (cl_Obj) {
-        if (cl_ObjType == OBJ_BIN || cl_ObjType == OBJ_TRSDOS) {
+    }
+    else if (cl_Obj)
+    {
+        if (cl_ObjType == OBJ_BIN || cl_ObjType == OBJ_TRSDOS)
+        {
             object = fopen(cl_ObjName, "wb");
-        } else {
+        }
+        else
+        {
             object = fopen(cl_ObjName, "w");
         }
-        if (object == NULL) {
+        if (object == NULL)
+        {
             fprintf(stderr, "Unable to create object output file '%s'!\n", cl_ObjName);
-            if (source) {
+            if (source)
+            {
                 fclose(source);
             }
-            if (listing) {
+            if (listing)
+            {
                 fclose(listing);
             }
             exit(1);
@@ -5740,25 +6643,30 @@ int main(int argc, char * const argv[])
     pass = 2;
     DoPass();
 
-    if (cl_edtasm) {
+    if (cl_edtasm)
+    {
         if (cl_List)    fprintf(listing, "\n%.5d Total Error(s)\n\n", errCount);
         if (cl_Err)     fprintf(stderr,  "\n%.5d Total Error(s)\n\n", errCount);
     }
 
-    if (symtabFlag) {
+    if (symtabFlag)
+    {
         if (cl_List)    fprintf(listing, "\n");
         SortSymTab();
         DumpSymTab();
     }
 //  DumpMacroTab();
 
-    if (source) {
+    if (source)
+    {
         fclose(source);
     }
-    if (listing) {
+    if (listing)
+    {
         fclose(listing);
     }
-    if (object && object != stdout) {
+    if (object && object != stdout)
+    {
         fclose(object);
     }
 

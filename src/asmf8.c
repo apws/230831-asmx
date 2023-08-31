@@ -3,7 +3,8 @@
 #define versionName "Fairchild F8 assembler"
 #include "asmx.h"
 
-enum {
+enum
+{
     o_None,         // No operands
     o_Immediate,    // 8-bit immediate operand
     o_Short,        // 4-bit immediate operand
@@ -20,7 +21,8 @@ enum {
 const char F8_regs[] = "A W J H K Q KU KL QU QL IS DC0 PC0 PC1 DC P0 P1 P";
 const char F8_regs_ABSID[] = "A B S I D";
 
-enum regType {  // these are keyed to F8_regs[] above
+enum regType    // these are keyed to F8_regs[] above
+{
     reg_0,          // 0..15 = scratchpad registers
     reg_A = 16,     // 16 - accumulator
     reg_W,          // 17 - status register
@@ -42,7 +44,8 @@ enum regType {  // these are keyed to F8_regs[] above
     reg_P           // 33 - alias for PC1
 };
 
-static const struct OpcdRec F8_opcdTab[] = {
+static const struct OpcdRec F8_opcdTab[] =
+{
     {"PK",  o_None,     0x0C},
     {"LM",  o_None,     0x16},
     {"ST",  o_None,     0x17},
@@ -121,10 +124,14 @@ static int GetParenIS()
     if (GetWord(word) != ')') return 0;
 
     char *oldLine = linePtr;
-    switch (GetWord(word)) {
-        case '+':   return 13; // I: "(IS)+"
-        case '-':   return 14; // D: "(IS)-"
-        default:    break;
+    switch (GetWord(word))
+    {
+        case '+':
+            return 13; // I: "(IS)+"
+        case '-':
+            return 14; // D: "(IS)-"
+        default:
+            break;
     }
     linePtr = oldLine;
     return 12; // S: "(IS)"
@@ -140,12 +147,14 @@ static int Get_S_Reg(void)
     int token = GetWord(word);
 
     // handle special names for registers 10-14
-    if ((reg = FindReg(word, F8_regs_ABSID)) >= 0) {
+    if ((reg = FindReg(word, F8_regs_ABSID)) >= 0)
+    {
         return reg + 10;
     }
 
     // (IS) (IS)+ (IS)- form for regs 12-14
-    if (token == '(') {
+    if (token == '(')
+    {
         int reg = GetParenIS();
         if (reg) return reg;
     }
@@ -168,15 +177,18 @@ static int Get_F8_Reg(void)
     if (reg >= 0) return reg + reg_A;
 
     // handle special names for registers 10-14
-    if ((reg = FindReg(word, F8_regs_ABSID)) >= 0) {
+    if ((reg = FindReg(word, F8_regs_ABSID)) >= 0)
+    {
         // can't use hexadecimal A here!
-        if (reg != 0) {
+        if (reg != 0)
+        {
             return reg + 10;
         }
     }
 
     // (IS) (IS)+ (IS)- form for regs 12-14
-    if (token == '(') {
+    if (token == '(')
+    {
         reg = GetParenIS();
         if (reg) return reg;
     }
@@ -194,7 +206,8 @@ static int F8_DoCPUOpcode(int typ, int parm)
 //  char    *oldLine;
 //  int     token;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_None:
             InstrB(parm);
             break;
@@ -206,18 +219,24 @@ static int F8_DoCPUOpcode(int typ, int parm)
 
         case o_Register:
             val = Get_S_Reg();
-            if (val < 0 || val >= 15) {
+            if (val < 0 || val >= 15)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + val);
             }
             break;
 
         case o_Short:
             val = Eval();
-            if (val < 0 || val > 15 || ((parm == 0x60 || parm == 0x68) && val > 7)) {
+            if (val < 0 || val > 15 || ((parm == 0x60 || parm == 0x68) && val > 7))
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + val);
             }
             break;
@@ -231,9 +250,12 @@ static int F8_DoCPUOpcode(int typ, int parm)
             reg1 = Eval();
             Comma();
             val = EvalBranch(1);
-            if (parm == 0x80 && reg1 > 7) {
+            if (parm == 0x80 && reg1 > 7)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrBB(parm + reg1, val);
             }
             break;
@@ -245,7 +267,8 @@ static int F8_DoCPUOpcode(int typ, int parm)
 
         case o_SLSR:
             val = Eval();
-            switch (val) {
+            switch (val)
+            {
                 case 1:
                     InstrB(parm);
                     break;
@@ -264,15 +287,17 @@ static int F8_DoCPUOpcode(int typ, int parm)
             Comma();
             reg2 = Get_F8_Reg();
 
-            switch (reg1) {
+            switch (reg1)
+            {
                 case reg_A:
                     if (reg2 == reg_KU)     val = 0x00; // LR A,KU
                     if (reg2 == reg_KL)     val = 0x01; // LR A,KL
                     if (reg2 == reg_QU)     val = 0x02; // LR A,QU
                     if (reg2 == reg_QL)     val = 0x03; // LR A,QL
                     if (reg2 == reg_IS)     val = 0x0A; // LR A,IS
-                    if (reg_0 <= reg2 && reg2 <= reg_0+14) {
-                                            val = 0x40 + reg2; // LR A,n
+                    if (reg_0 <= reg2 && reg2 <= reg_0+14)
+                    {
+                        val = 0x40 + reg2; // LR A,n
                     }
                     break;
 
@@ -338,14 +363,18 @@ static int F8_DoCPUOpcode(int typ, int parm)
                     break;
 
                 default:
-                    if (reg_0 <= reg1 && reg1 <= reg_0+14 && reg2 == reg_A) {
-                                            val = 0x50 + reg1;  // LR n,A
+                    if (reg_0 <= reg1 && reg1 <= reg_0+14 && reg2 == reg_A)
+                    {
+                        val = 0x50 + reg1;  // LR n,A
                     }
             }
 
-            if (val < 0) {
+            if (val < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(val);
             }
             break;

@@ -3,7 +3,8 @@
 #define versionName "68HC11 assembler"
 #include "asmx.h"
 
-enum {
+enum
+{
     o_Inherent,     // implied instructions
     o_Inherent_01,  // implied instructions, 6801/6803/6811
     o_Inherent_03,  // implied instructions, 6803 only
@@ -23,11 +24,13 @@ enum {
 //  o_Foo = o_LabelOp,
 };
 
-enum cputype {
+enum cputype
+{
     CPU_6800, CPU_6801, CPU_68HC11, CPU_6303
 };
 
-static const struct OpcdRec M68HC11_opcdTab[] = {
+static const struct OpcdRec M68HC11_opcdTab[] =
+{
     {"TEST",  o_Inherent_11, 0x00}, // 68HC11
     {"NOP",   o_Inherent,    0x01},
     {"IDIV",  o_Inherent_11, 0x02}, // 68HC11
@@ -212,7 +215,8 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
     char    force;
     char    reg;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_Inherent_01: // implied instructions, 6801/6803/6811
             if (typ == o_Inherent_01 && curCPU == CPU_6800) return 0;
             FALLTHROUGH;
@@ -220,9 +224,12 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
             if (typ == o_Inherent_03 && curCPU != CPU_6303) return 0;
             FALLTHROUGH;
         case o_Inherent_11: // implied instructions, 6811 only
-            if (parm == 0x8F && curCPU == CPU_6303) {
+            if (parm == 0x8F && curCPU == CPU_6303)
+            {
                 parm = 0x18;    // 6303 XGDX
-            } else if (typ == o_Inherent_11 && curCPU != CPU_68HC11) {
+            }
+            else if (typ == o_Inherent_11 && curCPU != CPU_68HC11)
+            {
                 return 0;
             }
             FALLTHROUGH;
@@ -240,11 +247,14 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
             // check for "opcd A" or "opcd B"
             oldLine = linePtr;
             GetWord(word);
-            if (word[1] == 0 && (word[0] == 'A' || word[0] == 'B')) {
+            if (word[1] == 0 && (word[0] == 'A' || word[0] == 'B'))
+            {
                 reg = word[0] - 'A'; // 0=A 1=B
                 InstrX(parm + 0x40 + 0x10*reg);
                 break;
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine;
             }
 
@@ -252,35 +262,46 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
             oldLine = linePtr;
             token = GetWord(word);
 
-            if (token == '<' || token == '>') {
+            if (token == '<' || token == '>')
+            {
                 // found < or > before operand
                 force = token;
-            } else if (token == 0) {
+            }
+            else if (token == 0)
+            {
                 // end of line
                 MissingOperand();
-            } else if (token == ',') {
+            }
+            else if (token == ',')
+            {
                 // allow "JMP ,X" etc. instead of "JMP 0,X"
-                switch (GetReg("X Y")) {
+                switch (GetReg("X Y"))
+                {
                     case 0: // ,X
                         InstrXB(parm + 0x60, 0);
                         break;
 
                     case 1: // ,Y
-                        if (curCPU == CPU_68HC11) {
+                        if (curCPU == CPU_68HC11)
+                        {
                             InstrXB(0x1800 + parm + 0x60, 0);
                             break;
                         }
-                        // fall through
+                    // fall through
 
                     default:
                         BadMode();
                 }
                 break;
-            } else if (word[0] == 'X' && word[1] == 0) {
+            }
+            else if (word[0] == 'X' && word[1] == 0)
+            {
                 // for "JMP X" etc. in legacy 6800 syntax
                 InstrXB(parm + 0x60, 0);
                 break;
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine;
             }
 
@@ -288,9 +309,11 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            switch (token) {
+            switch (token)
+            {
                 case 0:
-                    if (force == '<') {
+                    if (force == '<')
+                    {
                         // 16-bit address only!
                         BadMode();
                         break;
@@ -299,22 +322,25 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case ',':
-                    if (force == '>') {
+                    if (force == '>')
+                    {
                         // 8-bit offset only!
                         BadMode();
                         break;
                     }
-                    switch (GetReg("X Y")) {
+                    switch (GetReg("X Y"))
+                    {
                         case 0: // ,X
                             InstrXB(parm + 0x60, val);
                             break;
 
                         case 1: // ,Y
-                            if (curCPU == CPU_68HC11) {
+                            if (curCPU == CPU_68HC11)
+                            {
                                 InstrXB(0x1800 + parm + 0x60, val);
                                 break;
                             }
-                            // fall through
+                        // fall through
 
                         default:
                             BadMode();
@@ -335,22 +361,29 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
             if (typ == o_LArith_11 && curCPU != CPU_68HC11) return 0;
             FALLTHROUGH;
         case o_Arith_AB:
-            if (typ == o_Arith_AB) {
+            if (typ == o_Arith_AB)
+            {
                 // check for "opcd A" or "opcd B"
                 GetWord(word);
-                if (word[1] == 0 && (word[0] == 'A' || word[0] == 'B')) {
+                if (word[1] == 0 && (word[0] == 'A' || word[0] == 'B'))
+                {
                     reg = word[0] - 'A'; // 0=A 1=B
                     // change to o_Arith with parm set for register A or B
                     typ = o_Arith;
                     parm = parm + reg*0x40;
-                } else if (word[0]) {
+                }
+                else if (word[0])
+                {
                     IllegalOperand();
-                } else {
+                }
+                else
+                {
                     MissingOperand();
                 }
             }
             // abort if o_Arith_AB failure
-            if (typ == o_Arith_AB) {
+            if (typ == o_Arith_AB)
+            {
                 break;
             }
             FALLTHROUGH;
@@ -358,43 +391,61 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
         case o_LArith:
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#') {
-                if (parm & 0x10) {  // immediate
+            if (token == '#')
+            {
+                if (parm & 0x10)    // immediate
+                {
                     // don't allow STAA/STAB immediate
                     Error("Invalid addressing mode");
-                } else {
+                }
+                else
+                {
                     val = Eval();
-                    if (typ == o_Arith) {
+                    if (typ == o_Arith)
+                    {
                         InstrXB(parm & ~0x10, val);
-                    } else {
+                    }
+                    else
+                    {
                         InstrXW(parm & ~0x10, val);
                     }
                 }
-            } else {
+            }
+            else
+            {
                 parm = parm & ~0x10;
 
                 // allow "STAA ,X" etc. instead of "STAA 0,X"
-                if (token == ',') {
-                    switch (GetReg("X Y")) {
+                if (token == ',')
+                {
+                    switch (GetReg("X Y"))
+                    {
                         case 0: // ,X
-                            if (parm >> 8 == 0x18) {
+                            if (parm >> 8 == 0x18)
+                            {
                                 InstrXB(0x1A00 + parm + 0x20, 0);
-                            } else {
+                            }
+                            else
+                            {
                                 InstrXB(         parm + 0x20, 0);
                             }
                             break;
 
                         case 1: // ,Y
-                            if (curCPU == CPU_68HC11) {
+                            if (curCPU == CPU_68HC11)
+                            {
                                 if (parm == 0x8C || parm == 0xCE || parm == 0xCF
-                                        || (parm >> 8 == 0x1A)) {
+                                        || (parm >> 8 == 0x1A))
+                                {
                                     InstrXB(0xCD00 + parm + 0x20, 0);
-                                } else {
+                                }
+                                else
+                                {
                                     InstrXB(0x1800 + parm + 0x20, 0);
                                 }
                                 break;
                             }
-                            // fall through
+                        // fall through
 
                         default:
                             BadMode();
@@ -402,20 +453,27 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
                     break;
                 }
 
-                if (word[0] == 'X' && word[1] == 0) {
+                if (word[0] == 'X' && word[1] == 0)
+                {
                     // for "STAA X" etc. in legacy 6800 syntax
-                    if (parm >> 8 == 0x18) {
+                    if (parm >> 8 == 0x18)
+                    {
                         InstrXB(0x1A00 + parm + 0x20, 0);
-                    } else {
+                    }
+                    else
+                    {
                         InstrXB(         parm + 0x20, 0);
                     }
                     break;
                 }
 
                 force = 0;
-                if (token == '<' || token == '>') {
+                if (token == '<' || token == '>')
+                {
                     force = token;
-                } else {
+                }
+                else
+                {
                     linePtr = oldLine;
                 }
 
@@ -423,37 +481,49 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
 
                 oldLine = linePtr;
                 token = GetWord(word);
-                switch (token) {
+                switch (token)
+                {
                     case 0:
                         if (((force != '>' && evalKnown && (val & 0xFF00) >> 8 == 0) || force == '<')
-                                    && (curCPU != CPU_6800 || parm != 0x8D)) {
+                                && (curCPU != CPU_6800 || parm != 0x8D))
+                        {
                             InstrXB(parm + 0x10, val);  // <$xx
-                        } else {
+                        }
+                        else
+                        {
                             InstrXW(parm + 0x30, val);  // >$xxxx
                         }
                         break;
 
                     case ',':
-                        switch (GetReg("X Y")) {
+                        switch (GetReg("X Y"))
+                        {
                             case 0: // ,X
-                                if (parm >> 8 == 0x18) {
+                                if (parm >> 8 == 0x18)
+                                {
                                     InstrXB(0x1A00 + parm + 0x20, val);
-                                } else {
+                                }
+                                else
+                                {
                                     InstrXB(         parm + 0x20, val);
                                 }
                                 break;
 
                             case 1: // ,Y
-                                if (curCPU == CPU_68HC11) {
+                                if (curCPU == CPU_68HC11)
+                                {
                                     if (parm == 0x8C || parm == 0xCE || parm == 0xCF
-                                            || (parm >> 8 == 0x1A)) {
+                                            || (parm >> 8 == 0x1A))
+                                    {
                                         InstrXB(0xCD00 + parm + 0x20, val);
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         InstrXB(0x1800 + parm + 0x20, val);
                                     }
                                     break;
                                 }
-                                // fall through...
+                            // fall through...
 
                             default:
                                 BadMode();
@@ -475,19 +545,28 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
             // opcode #,ofs,X (3 bytes)
             // opcode #,dir  (3 bytes)
 
-            if (GetWord(word) != '#') {
+            if (GetWord(word) != '#')
+            {
                 BadMode();
-            } else {
+            }
+            else
+            {
                 val = Eval();   // get immediate value
                 Comma();
                 val2 = Eval();  // get offset/address
-                if (GetWord(word) == ',') {
-                    if (GetReg("X") == 0) {
+                if (GetWord(word) == ',')
+                {
+                    if (GetReg("X") == 0)
+                    {
                         InstrXBB(parm, val, val2);
-                    } else {
+                    }
+                    else
+                    {
                         BadMode();
                     }
-                } else { // direct mode = +0x10
+                }
+                else     // direct mode = +0x10
+                {
                     InstrXBB(parm + 0x10, val, val2);
                 }
             }
@@ -500,25 +579,33 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
             reg = 0;
 
             oldLine = linePtr;  // if comma present, may signal ,X or ,Y
-            if (GetWord(word) == ',') {
+            if (GetWord(word) == ',')
+            {
                 oldLine = linePtr;
                 GetWord(word);
-                if (word[1] == 0 && (word[0] == 'X' || word[0] == 'Y')) {
+                if (word[1] == 0 && (word[0] == 'X' || word[0] == 'Y'))
+                {
                     reg = word[0];
                     oldLine = linePtr;  // eat optional comma after ,X or ,Y
-                    if (GetWord(word) != ',') {
+                    if (GetWord(word) != ',')
+                    {
                         linePtr = oldLine;
                     }
-                } else {
+                }
+                else
+                {
                     linePtr = oldLine; // not ,X or ,Y so reposition to after comma
                 }
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine; // optional comma not present, bit comes next
             }
 
             val2 = Eval();  // mask
 
-            switch (reg) {
+            switch (reg)
+            {
                 case 'X':
                     InstrXBB(parm +   0x1C, val, val2);
                     break;
@@ -540,32 +627,41 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
             reg = 0;
 
             oldLine = linePtr;  // if comma present, may signal ,X or ,Y
-            if (GetWord(word) == ',') {
+            if (GetWord(word) == ',')
+            {
                 oldLine = linePtr;
                 GetWord(word);
-                if (word[1] == 0 && (word[0] == 'X' || word[0] == 'Y')) {
+                if (word[1] == 0 && (word[0] == 'X' || word[0] == 'Y'))
+                {
                     reg = word[0];
                     oldLine = linePtr;  // eat optional comma after ,X or ,Y
-                    if (GetWord(word) != ',') {
+                    if (GetWord(word) != ',')
+                    {
                         linePtr = oldLine;
                     }
-                } else {
+                }
+                else
+                {
                     linePtr = oldLine; // not ,X or ,Y so reposition to after comma
                 }
-            } else {
+            }
+            else
+            {
                 linePtr = oldLine; // optional comma not present, bit comes next
             }
 
             val2 = Eval();  // bit mask
 
             oldLine = linePtr;  // eat optional comma after bit mask
-            if (GetWord(word) != ',') {
+            if (GetWord(word) != ',')
+            {
                 linePtr = oldLine;
             }
 
             val3 = EvalBranch(4 + (reg == 'Y'));  // offset
 
-            switch (reg) {
+            switch (reg)
+            {
                 case 'X':
                     InstrXBBB(parm +   0x1E, val, val2, val3);
                     break;
@@ -583,12 +679,17 @@ static int M68HC11_DoCPUOpcode(int typ, int parm)
         case o_PSHPUL_AB:
             // check for "opcd A" or "opcd B"
             GetWord(word);
-            if (word[1] == 0 && (word[0] == 'A' || word[0] == 'B')) {
+            if (word[1] == 0 && (word[0] == 'A' || word[0] == 'B'))
+            {
                 reg = word[0] - 'A'; // 0=A 1=B
                 InstrX(parm + reg);
-            } else if (word[0]) {
+            }
+            else if (word[0])
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 MissingOperand();
             }
             break;

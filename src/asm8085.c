@@ -3,19 +3,22 @@
 #define versionName "8085 assembler"
 #include "asmx.h"
 
-enum {
+enum
+{
     CPU_8080,   // Intel 8080 mnemonics
     CPU_8080Z,  // Intel 8080 mnemonics with Z-80 JR and DJNZ opcodes
     CPU_8085,   // Intel 8085 (adds RIM, SIM)
     CPU_8085U   // Intel 8085 with undocumented instructions
 };
 
-enum {
+enum
+{
     I_8085  = 0x100,
     I_8085U = 0x200,
 };
 
-enum instrType {
+enum instrType
+{
     o_None,         // No operands
 
     o_Immediate,    // one-byte immediate operand
@@ -39,7 +42,8 @@ const char I8085_regs1[]      = "B C D E H L M A";
 const char I8085_regs2[]      = "B D H SP";
 static const char conds[]     = "NZ Z NC C PO PE P M";
 
-static const struct OpcdRec I8085_opcdTab[] = {
+static const struct OpcdRec I8085_opcdTab[] =
+{
     {"NOP", o_None, 0x00},
     {"RLC", o_None, 0x07},
     {"RRC", o_None, 0x0F},
@@ -163,7 +167,8 @@ static int I8085_DoCPUOpcode(int typ, int parm)
     char    *oldLine;
 //  int     token;
 
-    switch (typ) {
+    switch (typ)
+    {
         case o_None:
             if ((parm & I_8085)  && curCPU == CPU_8080)  return 0;
             if ((parm & I_8085U) && curCPU != CPU_8085U) return 0;
@@ -188,19 +193,28 @@ static int I8085_DoCPUOpcode(int typ, int parm)
         case o_MOV:
             GetWord(word);
             reg1 = FindReg(word, I8085_regs1);
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 oldLine = linePtr;
-                if (GetWord(word) != ',') {
+                if (GetWord(word) != ',')
+                {
                     linePtr = oldLine;
                     Comma();
-                } else {
+                }
+                else
+                {
                     GetWord(word);
                     reg2 = FindReg(word, I8085_regs1);
-                    if (reg2 < 0 || (reg1 == 6 && reg2 == 6)) {
+                    if (reg2 < 0 || (reg1 == 6 && reg2 == 6))
+                    {
                         IllegalOperand();
-                    } else {
+                    }
+                    else
+                    {
                         InstrB(0x40 + (reg1 << 3) + reg2);
                     }
                 }
@@ -209,9 +223,12 @@ static int I8085_DoCPUOpcode(int typ, int parm)
 
         case o_RST:
             val = Eval();
-            if (0 <= val && val <= 7) {
+            if (0 <= val && val <= 7)
+            {
                 InstrB(0xC7 + val*8);
-            } else {
+            }
+            else
+            {
                 IllegalOperand();
             }
             break;
@@ -219,9 +236,12 @@ static int I8085_DoCPUOpcode(int typ, int parm)
         case o_Arith:
             GetWord(word);
             reg1 = FindReg(word, I8085_regs1);
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + reg1);
             }
             break;
@@ -229,9 +249,12 @@ static int I8085_DoCPUOpcode(int typ, int parm)
         case o_PushPop:
             GetWord(word);
             reg1 = FindReg(word, "B D H PSW");
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + (reg1 << 4));
             }
             break;
@@ -239,14 +262,20 @@ static int I8085_DoCPUOpcode(int typ, int parm)
         case o_MVI:
             GetWord(word);
             reg1 = FindReg(word, I8085_regs1);
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 oldLine = linePtr;
-                if (GetWord(word) != ',') {
+                if (GetWord(word) != ',')
+                {
                     linePtr = oldLine;
                     Comma();
-                } else {
+                }
+                else
+                {
                     val = Eval();
                     InstrBB(parm + (reg1 << 3), val);
                 }
@@ -256,14 +285,20 @@ static int I8085_DoCPUOpcode(int typ, int parm)
         case o_LXI:
             GetWord(word);
             reg1 = FindReg(word, I8085_regs2);
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 oldLine = linePtr;
-                if (GetWord(word) != ',') {
+                if (GetWord(word) != ',')
+                {
                     linePtr = oldLine;
                     Comma();
-                } else {
+                }
+                else
+                {
                     val = Eval();
                     InstrBW(parm + (reg1 << 4), val);
                 }
@@ -273,9 +308,12 @@ static int I8085_DoCPUOpcode(int typ, int parm)
         case o_INR:
             GetWord(word);
             reg1 = FindReg(word, I8085_regs1);
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + (reg1 << 3));
             }
             break;
@@ -283,9 +321,12 @@ static int I8085_DoCPUOpcode(int typ, int parm)
         case o_INX:
             GetWord(word);
             reg1 = FindReg(word, I8085_regs2);
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + (reg1 << 4));
             }
             break;
@@ -293,9 +334,12 @@ static int I8085_DoCPUOpcode(int typ, int parm)
         case o_STAX:
             GetWord(word);
             reg1 = FindReg(word, "B D");
-            if (reg1 < 0) {
+            if (reg1 < 0)
+            {
                 IllegalOperand();
-            } else {
+            }
+            else
+            {
                 InstrB(parm + (reg1 << 4));
             }
             break;
@@ -303,7 +347,8 @@ static int I8085_DoCPUOpcode(int typ, int parm)
         case o_JR:
             if (curCPU != CPU_8080Z)  return 0;
 
-            switch ((reg1 = GetReg(conds))) {
+            switch ((reg1 = GetReg(conds)))
+            {
                 case reg_EOL:
                     break;
 
