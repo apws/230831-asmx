@@ -1,6 +1,9 @@
 # Project: ASMX
 # Makefile created by Embarcadero Dev-C++ 6.3
 
+# This Makefile is written for syntax check!
+# Regenerate it if you want to use this Makefile to build.
+
 CPP      = g++.exe
 CC       = gcc.exe
 WINDRES  = windres.exe
@@ -10,11 +13,11 @@ LIBS     = -L"C:/Users/petra/Apps/Dev-Cpp/TDM-GCC-64/lib" -L"C:/Users/petra/Apps
 INCS     = -I"C:/Users/petra/Apps/Dev-Cpp/TDM-GCC-64/include" -I"C:/Users/petra/Apps/Dev-Cpp/TDM-GCC-64/x86_64-w64-mingw32/include" -I"C:/Users/petra/Apps/Dev-Cpp/TDM-GCC-64/lib/gcc/x86_64-w64-mingw32/9.2.0/include"
 CXXINCS  = -I"C:/Users/petra/Apps/Dev-Cpp/TDM-GCC-64/include" -I"C:/Users/petra/Apps/Dev-Cpp/TDM-GCC-64/x86_64-w64-mingw32/include" -I"C:/Users/petra/Apps/Dev-Cpp/TDM-GCC-64/lib/gcc/x86_64-w64-mingw32/9.2.0/include" -I"C:/Users/petra/Apps/Dev-Cpp/TDM-GCC-64/lib/gcc/x86_64-w64-mingw32/9.2.0/include/c++"
 BIN      = ASMX.exe
-CXXFLAGS = $(CXXINCS) 
-CFLAGS   = $(INCS) 
+CXXFLAGS = $(CXXINCS) -fsyntax-only
+CFLAGS   = $(INCS) -fsyntax-only
 DEL      = C:\Users\petra\Apps\Dev-Cpp\devcpp.exe INTERNAL_DEL
 
-.PHONY: all all-before all-after clean clean-custom
+.PHONY: all all-before all-after clean clean-custom $(OBJ) $(BIN)
 
 all: all-before $(BIN) all-after
 
@@ -22,58 +25,57 @@ clean: clean-custom
 	${DEL} $(OBJ) $(BIN)
 
 $(BIN): $(OBJ)
-	$(CC) $(LINKOBJ) -o $(BIN) $(LIBS)
 
 src/asm68hc11.o: src/asm68hc11.c
-	$(CC) -c src/asm68hc11.c -o src/asm68hc11.o $(CFLAGS)
+	$(CC) -c src/asm68hc11.c $(CFLAGS)
 
 src/asm68hc16.o: src/asm68hc16.c
-	$(CC) -c src/asm68hc16.c -o src/asm68hc16.o $(CFLAGS)
+	$(CC) -c src/asm68hc16.c $(CFLAGS)
 
 src/asm68k.o: src/asm68k.c
-	$(CC) -c src/asm68k.c -o src/asm68k.o $(CFLAGS)
+	$(CC) -c src/asm68k.c $(CFLAGS)
 
 src/asm1802.o: src/asm1802.c
-	$(CC) -c src/asm1802.c -o src/asm1802.o $(CFLAGS)
+	$(CC) -c src/asm1802.c $(CFLAGS)
 
 src/asm6502.o: src/asm6502.c
-	$(CC) -c src/asm6502.c -o src/asm6502.o $(CFLAGS)
+	$(CC) -c src/asm6502.c $(CFLAGS)
 
 src/asm6805.o: src/asm6805.c
-	$(CC) -c src/asm6805.c -o src/asm6805.o $(CFLAGS)
+	$(CC) -c src/asm6805.c $(CFLAGS)
 
 src/asm6809.o: src/asm6809.c
-	$(CC) -c src/asm6809.c -o src/asm6809.o $(CFLAGS)
+	$(CC) -c src/asm6809.c $(CFLAGS)
 
 src/asm8008.o: src/asm8008.c
-	$(CC) -c src/asm8008.c -o src/asm8008.o $(CFLAGS)
+	$(CC) -c src/asm8008.c $(CFLAGS)
 
 src/asm8048.o: src/asm8048.c
-	$(CC) -c src/asm8048.c -o src/asm8048.o $(CFLAGS)
+	$(CC) -c src/asm8048.c $(CFLAGS)
 
 src/asm8051.o: src/asm8051.c
-	$(CC) -c src/asm8051.c -o src/asm8051.o $(CFLAGS)
+	$(CC) -c src/asm8051.c $(CFLAGS)
 
 src/asm8085.o: src/asm8085.c
-	$(CC) -c src/asm8085.c -o src/asm8085.o $(CFLAGS)
+	$(CC) -c src/asm8085.c $(CFLAGS)
 
 src/asmarm.o: src/asmarm.c
-	$(CC) -c src/asmarm.c -o src/asmarm.o $(CFLAGS)
+	$(CC) -c src/asmarm.c $(CFLAGS)
 
 src/asmf8.o: src/asmf8.c
-	$(CC) -c src/asmf8.c -o src/asmf8.o $(CFLAGS)
+	$(CC) -c src/asmf8.c $(CFLAGS)
 
 src/asmjag.o: src/asmjag.c
-	$(CC) -c src/asmjag.c -o src/asmjag.o $(CFLAGS)
+	$(CC) -c src/asmjag.c $(CFLAGS)
 
 src/asmthumb.o: src/asmthumb.c
-	$(CC) -c src/asmthumb.c -o src/asmthumb.o $(CFLAGS)
+	$(CC) -c src/asmthumb.c $(CFLAGS)
 
 src/asmx.o: src/asmx.c
-	$(CC) -c src/asmx.c -o src/asmx.o $(CFLAGS)
+	$(CC) -c src/asmx.c $(CFLAGS)
 
 src/asmz8.o: src/asmz8.c
-	$(CC) -c src/asmz8.c -o src/asmz8.o $(CFLAGS)
+	$(CC) -c src/asmz8.c $(CFLAGS)
 
 src/asmz80.o: src/asmz80.c
-	$(CC) -c src/asmz80.c -o src/asmz80.o $(CFLAGS)
+	$(CC) -c src/asmz80.c $(CFLAGS)
