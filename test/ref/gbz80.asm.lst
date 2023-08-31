@@ -265,7 +265,7 @@
 011E  E2                	LD	(C),A		; E2
 011F  E3                	DB	E3H		; E3
 0120  E4                	DB	E4H		; E4
-0121  E5                	PUSH	HL   		; E5
+0121  E5                	PUSH	HL		; E5
 0122  E6 78             	AND	78H		; E6 78
 0124  E7                	RST	20H		; E7
 

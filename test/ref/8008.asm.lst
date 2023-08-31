@@ -1,0 +1,308 @@
+      = 0042            b	EQU	42H
+      = 1234            w	EQU	1234H
+
+0000  00                	DB	00H	; alias for HLT
+0001  01                	DB	01H	; alias for HLT
+0002  02                	RLC
+0003  03                	RNC
+0004  04 42             	ADI	b
+0006  05                	RST	0
+0007  06 42             	MVI	A,b
+0009  07                	RET
+
+000A  08                	INR	B
+000B  09                	DCR	B
+000C  0A                	RRC
+000D  0B                	RNZ
+000E  0C 42             	ACI	b
+0010  0D                	RST	1
+0011  0E 42             	MVI	B,b
+0013  0F                	DB	0FH	; alias for RET
+
+0014  10                	INR	C
+0015  11                	DCR	C
+0016  12                	RAL
+0017  13                	RP
+0018  14 42             	SUI	b
+001A  15                	RST	2
+001B  16 42             	MVI	C,b
+001D  17                	DB	17H	; alias for RET
+
+001E  18                	INR	D
+001F  19                	DCR	D
+0020  1A                	RAR
+0021  1B                	RPO
+0022  1C 42             	SCI	b
+0024  1D                	RST	3
+0025  1E 42             	MVI	D,b
+0027  1F                	DB	1FH	; alias for RET
+
+
+0028  20                	INR	E
+0029  21                	DCR	E
+002A  22                	DB	22H
+002B  23                	RC
+002C  24 42             	ANI	b
+002E  25                	RST	4
+002F  26 42             	MVI	E,b
+0031  27                	DB	27H	; alias for RET
+
+0032  28                	INR	H
+0033  29                	DCR	H
+0034  2A                	DB	2AH
+0035  2B                	RZ
+0036  2C 42             	XRI	b
+0038  2D                	RST	5
+0039  2E 42             	MVI	H,b
+003B  2F                	DB	2FH	; alias for RET
+
+003C  30                	INR	L
+003D  31                	DCR	L
+003E  32                	DB	32H
+003F  33                	RM
+0040  34 42             	ORI	b
+0042  35                	RST	6
+0043  36 42             	MVI	L,b
+0045  37                	DB	37H	; alias for RET
+
+0046  38                	DB	38H
+0047  39                	DB	39H
+0048  3A                	DB	3AH
+0049  3B                	RPE
+004A  3C 42             	CPI	b
+004C  3D                	RST	7
+004D  3E 42             	MVI	M,b
+004F  3F                	DB	3FH	; alias for RET
+
+0050  40 3412           	JNC	w
+0053  41                	IN	0
+0054  42 3412           	CNC	w
+0057  43                	IN	1
+0058  44 3412           	JMP	w
+005B  45                	IN	2
+005C  46 3412           	CALL	w
+005F  47                	IN	3
+
+0060  48 3412           	JNZ	w
+0063  49                	IN	4
+0064  4A 3412           	CNZ	w
+0067  4B                	IN	5
+0068  4C                	DB	4CH	; alias for JMP
+0069  4D                	IN	6
+006A  4E                	DB	4EH	; alias for CALL
+006B  4F                	IN	7
+
+006C  50 3412           	JP	w
+006F  51                	OUT	8
+0070  52 3412           	CP	w
+0073  53                	OUT	9
+0074  54                	DB	54H	; alias for JMP
+0075  55                	OUT	10
+0076  56                	DB	56H	; alias for CALL
+0077  57                	OUT	11
+
+0078  58 3412           	JPO	w
+007B  59                	OUT	12
+007C  5A 3412           	CPO	w
+007F  5B                	OUT	13
+0080  5C                	DB	5CH	; alias for JMP
+0081  5D                	OUT	14
+0082  5E                	DB	5EH	; alias for CALL
+0083  5F                	OUT	15
+
+0084  60 3412           	JC	w
+0087  61                	OUT	16
+0088  62 3412           	CC	w
+008B  63                	OUT	17
+008C  64                	DB	64H	; alias for JMP
+008D  65                	OUT	18
+008E  66                	DB	66H	; alias for CALL
+008F  67                	OUT	19
+
+0090  68 3412           	JZ	w
+0093  69                	OUT	20
+0094  6A 3412           	CZ	w
+0097  6B                	OUT	21
+0098  6C                	DB	6CH	; alias for JMP
+0099  6D                	OUT	22
+009A  6E                	DB	6EH	; alias for CALL
+009B  6F                	OUT	23
+
+009C  70 3412           	JM	w
+009F  71                	OUT	24
+00A0  72 3412           	CM	w
+00A3  73                	OUT	25
+00A4  74                	DB	74H	; alias for JMP
+00A5  75                	OUT	26
+00A6  76                	DB	76H	; alias for CALL
+00A7  77                	OUT	27
+
+00A8  78 3412           	JPE	w
+00AB  79                	OUT	28
+00AC  7A 3412           	CPE	w
+00AF  7B                	OUT	29
+00B0  7C                	DB	7CH	; alias for JMP
+00B1  7D                	OUT	30
+00B2  7E                	DB	7EH	; alias for CALL
+00B3  7F                	OUT	31
+
+00B4  80                	ADD	A
+00B5  81                	ADD	B
+00B6  82                	ADD	C
+00B7  83                	ADD	D
+00B8  84                	ADD	E
+00B9  85                	ADD	H
+00BA  86                	ADD	L
+00BB  87                	ADD	M
+
+00BC  88                	ADC	A
+00BD  89                	ADC	B
+00BE  8A                	ADC	C
+00BF  8B                	ADC	D
+00C0  8C                	ADC	E
+00C1  8D                	ADC	H
+00C2  8E                	ADC	L
+00C3  8F                	ADC	M
+
+00C4  90                	SUB	A
+00C5  91                	SUB	B
+00C6  92                	SUB	C
+00C7  93                	SUB	D
+00C8  94                	SUB	E
+00C9  95                	SUB	H
+00CA  96                	SUB	L
+00CB  97                	SUB	M
+
+00CC  98                	SBB	A
+00CD  99                	SBB	B
+00CE  9A                	SBB	C
+00CF  9B                	SBB	D
+00D0  9C                	SBB	E
+00D1  9D                	SBB	H
+00D2  9E                	SBB	L
+00D3  9F                	SBB	M
+
+00D4  A0                	ANA	A
+00D5  A1                	ANA	B
+00D6  A2                	ANA	C
+00D7  A3                	ANA	D
+00D8  A4                	ANA	E
+00D9  A5                	ANA	H
+00DA  A6                	ANA	L
+00DB  A7                	ANA	M
+
+00DC  A8                	XRA	A
+00DD  A9                	XRA	B
+00DE  AA                	XRA	C
+00DF  AB                	XRA	D
+00E0  AC                	XRA	E
+00E1  AD                	XRA	H
+00E2  AE                	XRA	L
+00E3  AF                	XRA	M
+
+00E4  B0                	ORA	A
+00E5  B1                	ORA	B
+00E6  B2                	ORA	C
+00E7  B3                	ORA	D
+00E8  B4                	ORA	E
+00E9  B5                	ORA	H
+00EA  B6                	ORA	L
+00EB  B7                	ORA	M
+
+00EC  B8                	CMP	A
+00ED  B9                	CMP	B
+00EE  BA                	CMP	C
+00EF  BB                	CMP	D
+00F0  BC                	CMP	E
+00F1  BD                	CMP	H
+00F2  BE                	CMP	L
+00F3  BF                	CMP	M
+
+00F4  C0                	MOV	A,A
+00F5  C1                	MOV	A,B
+00F6  C2                	MOV	A,C
+00F7  C3                	MOV	A,D
+00F8  C4                	MOV	A,E
+00F9  C5                	MOV	A,H
+00FA  C6                	MOV	A,L
+00FB  C7                	MOV	A,M
+
+00FC  C8                	MOV	B,A
+00FD  C9                	MOV	B,B
+00FE  CA                	MOV	B,C
+00FF  CB                	MOV	B,D
+0100  CC                	MOV	B,E
+0101  CD                	MOV	B,H
+0102  CE                	MOV	B,L
+0103  CF                	MOV	B,M
+
+0104  D0                	MOV	C,A
+0105  D1                	MOV	C,B
+0106  D2                	MOV	C,C
+0107  D3                	MOV	C,D
+0108  D4                	MOV	C,E
+0109  D5                	MOV	C,H
+010A  D6                	MOV	C,L
+010B  D7                	MOV	C,M
+
+010C  D8                	MOV	D,A
+010D  D9                	MOV	D,B
+010E  DA                	MOV	D,C
+010F  DB                	MOV	D,D
+0110  DC                	MOV	D,E
+0111  DD                	MOV	D,H
+0112  DE                	MOV	D,L
+0113  DF                	MOV	D,M
+
+0114  E0                	MOV	E,A
+0115  E1                	MOV	E,B
+0116  E2                	MOV	E,C
+0117  E3                	MOV	E,D
+0118  E4                	MOV	E,E
+0119  E5                	MOV	E,H
+011A  E6                	MOV	E,L
+011B  E7                	MOV	E,M
+
+011C  E8                	MOV	H,A
+011D  E9                	MOV	H,B
+011E  EA                	MOV	H,C
+011F  EB                	MOV	H,D
+0120  EC                	MOV	H,E
+0121  ED                	MOV	H,H
+0122  EE                	MOV	H,L
+0123  EF                	MOV	H,M
+
+0124  F0                	MOV	L,A
+0125  F1                	MOV	L,B
+0126  F2                	MOV	L,C
+0127  F3                	MOV	L,D
+0128  F4                	MOV	L,E
+0129  F5                	MOV	L,H
+012A  F6                	MOV	L,L
+012B  F7                	MOV	L,M
+
+012C  F8                	MOV	M,A
+012D  F9                	MOV	M,B
+012E  FA                	MOV	M,C
+012F  FB                	MOV	M,D
+0130  FC                	MOV	M,E
+0131  FD                	MOV	M,H
+0132  FE                	MOV	M,L
+0133  FF                	HLT
+
+                        ; meta-ops
+0134  16 34 0E 12       	LXI	B,w
+0138  26 34 1E 12       	LXI	D,w
+013C  36 34 2E 12       	LXI	H,w
+
+                        ; should be errors
+                        ;	MOV	M,M
+                        ;	INR	A
+                        ;	DCR	A
+                        ;	INR	M
+                        ;	DCR	M
+                        ;	IN	8
+                        ;	OUT	0
+                        ;	OUT	32
+
+B                  0042 E  W                  1234 E

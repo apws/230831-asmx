@@ -265,7 +265,7 @@
 	LD	(C),A		; E2
 	DB	E3H		; E3
 	DB	E4H		; E4
-	PUSH	HL   		; E5
+	PUSH	HL		; E5
 	AND	78H		; E6 78
 	RST	20H		; E7
 

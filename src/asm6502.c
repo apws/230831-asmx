@@ -1,10 +1,9 @@
-// asm6502.c - copyright 1998-2007 Bruce Tomlin
+// asm6502.c
 
 #define versionName "6502 assembler"
 #include "asmx.h"
 
-enum
-{
+enum {
     o_Implied,          // implied instructions
     o_Implied_65C02,    // implied instructions for 65C02/65C816
     o_Implied_6502U,    // implied instructions for undocumented 6502 only
@@ -22,16 +21,17 @@ enum
     o_BlockMove,        // MVN,MVP for 65C816
     o_COP,              // COP for 65C816
 
-//  o_Foo = o_LabelOp,
+    o_LONGA = o_LabelOp,// .LONGA and .LONGI pseudo-ops for 65816
+    o_LONGI,
 };
 
-enum cputype
-{
+enum cputype {
     CPU_6502, CPU_65C02, CPU_6502U, CPU_65C816
 };
 
-enum addrMode
-{
+bool longa, longi;      // 65816 operand size flags
+
+enum addrMode {
     a_None = -1,// -1 invalid addressing mode
     a_Imm,      //  0 Immediate        #byte
     a_Abs,      //  1 Absolute         word
@@ -52,11 +52,11 @@ enum addrMode
     a_DIY,      // 15 Direct Indirect Y    [d],Y
     a_Stk,      // 16 Stack Relative       d,S
     a_SIY,      // 17 Stack Indirect Y     (d,S),Y
-    a_Max       // 18
+    a_Max,      // 18
+    a_Imm16,    // -- Immediate 16-bit, only generated in a_Imm
 };
 
-enum addrOps
-{
+enum addrOps {
     o_ORA,      //  0
     o_ASL,      //  1
     o_JSR,      //  2
@@ -113,13 +113,12 @@ enum addrOps
     o_PEI,      // 30
     o_PEA,      // 31
 
-    o_Max       // 32
-    
+    o_Max       // 32  
 };
 
 
-const unsigned char mode2op6502[] = // [o_Max * a_Max] =
-{//Imm=0 Abs=1 Zpg=2 Acc=3 Inx=4 Iny=5 Zpx=6 Abx=7 Aby=8 Ind=9 Zpy=10 Zpi=11
+static const uint8_t mode2op6502[] = { // [o_Max * a_Max] =
+// Imm=0 Abs=1 Zpg=2 Acc=3 Inx=4 Iny=5 Zpx=6 Abx=7 Aby=8 Ind=9 Zpy=10 Zpi=11
     0x09, 0x0D, 0x05,    0, 0x01, 0x11, 0x15, 0x1D, 0x19,    0,    0,    0, 0,0,0,0,0,0, //  0 ORA
        0, 0x0E, 0x06, 0x0A,    0,    0, 0x16, 0x1E,    0,    0,    0,    0, 0,0,0,0,0,0, //  1 ASL
        0, 0x20,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, 0,0,0,0,0,0, //  2 JSR
@@ -160,8 +159,8 @@ const unsigned char mode2op6502[] = // [o_Max * a_Max] =
 };
 
 
-const unsigned char mode2op65C02[] = // [o_Max * a_Max] =
-{//Imm=0 Abs=1 Zpg=2 Acc=3 Inx=4 Iny=5 Zpx=6 Abx=7 Aby=8 Ind=9 Zpy=10 Zpi=11
+static const uint8_t mode2op65C02[] = { // [o_Max * a_Max] =
+// Imm=0 Abs=1 Zpg=2 Acc=3 Inx=4 Iny=5 Zpx=6 Abx=7 Aby=8 Ind=9 Zpy=10 Zpi=11
     0x09, 0x0D, 0x05,    0, 0x01, 0x11, 0x15, 0x1D, 0x19,    0,    0, 0x12, 0,0,0,0,0,0, //  0 ORA
        0, 0x0E, 0x06, 0x0A,    0,    0, 0x16, 0x1E,    0,    0,    0,    0, 0,0,0,0,0,0, //  1 ASL
        0, 0x20,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, 0,0,0,0,0,0, //  2 JSR
@@ -192,8 +191,8 @@ const unsigned char mode2op65C02[] = // [o_Max * a_Max] =
 };
 
 
-const unsigned char mode2op65C816[] = // [o_Max * a_Max] =
-{//Imm=0 Abs=1 Zpg=2 Acc=3 Inx=4 Iny=5 Zpx=6 Abx=7 Aby=8 Ind=9 Zpy10 Zpi11 AbL12 ALX13 DIL14 DIY15 Stk16 SIY17
+static const uint8_t mode2op65C816[] = { // [o_Max * a_Max] =
+// Imm=0 Abs=1 Zpg=2 Acc=3 Inx=4 Iny=5 Zpx=6 Abx=7 Aby=8 Ind=9 Zpy10 Zpi11 AbL12 ALX13 DIL14 DIY15 Stk16 SIY17
     0x09, 0x0D, 0x05,    0, 0x01, 0x11, 0x15, 0x1D, 0x19,    0,    0, 0x12, 0x0F, 0x1F, 0x07, 0x17, 0x03, 0x13, //  0 ORA
        0, 0x0E, 0x06, 0x0A,    0,    0, 0x16, 0x1E,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, //  1 ASL
        0, 0x20,    0,    0, 0xFC,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, //  2 JSR note: FC is (abs,X)
@@ -235,8 +234,7 @@ const unsigned char mode2op65C816[] = // [o_Max * a_Max] =
 // 30 D4 PEI zp
 // 31 F4 PEA absolute
 
-struct OpcdRec M6502_opcdTab[] =
-{
+static const struct OpcdRec M6502_opcdTab[] = {
     {"BRK",  o_Implied, 0x00},
     {"PHP",  o_Implied, 0x08},
     {"CLC",  o_Implied, 0x18},
@@ -385,6 +383,11 @@ struct OpcdRec M6502_opcdTab[] =
     {"SEP",  o_Mode_65C816,    o_SEP},
     {"PEA",  o_Mode_65C816,    o_PEA},
 
+    // These set the hint for whether A / X / Y immediate operands
+    // They are OFF for 8-bit or ON for 16-bit
+    {".LONGA", o_LONGA,  0}, // for A (and C)
+    {".LONGI", o_LONGI,  0}, // for X and Y
+
 //  undocumented instructions for original 6502 only
 //  see http://www.s-direktnet.de/homepages/k_nadj/opcodes.html
     {"NOP3", o_Implied_6502U, 0x0400},  // 3-cycle NOP
@@ -408,96 +411,113 @@ struct OpcdRec M6502_opcdTab[] =
 // --------------------------------------------------------------
 
 
-void InstrB3(unsigned char b, unsigned long l)
+static int M6502_DoCPUOpcode(int typ, int parm)
 {
-    InstrClear();
-    InstrAddB(b);
-    InstrAdd3(l);
-}
-
-
-int M6502_DoCPUOpcode(int typ, int parm)
-{
-    int     val;
-    int     i;
+    int     val, i;
     Str255  word;
     char    *oldLine;
     int     token;
-//  char    ch;
-//  bool    done;
-    bool    forceabs;
     int     opcode;
     int     mode;
-    const unsigned char *modes;     // pointer to current o_Mode instruction's opcodes
+    const   uint8_t *modes;     // pointer to current o_Mode instruction's opcodes
 
-    switch(typ)
-    {
+    switch (typ) {
         case o_Implied_65C816:
             if (curCPU != CPU_65C816) return 0;
+            FALLTHROUGH;
         case o_Implied_65C02:
             if (curCPU != CPU_65C02 && curCPU != CPU_65C816) return 0;
+            FALLTHROUGH;
         case o_Implied_6502U:
             if (typ == o_Implied_6502U && curCPU != CPU_6502U) return 0;
+            FALLTHROUGH;
         case o_Implied:
-            if (parm > 256) InstrBB(parm >> 8, parm & 255);
-                    else    InstrB (parm);
+            if (parm > 256) {
+                InstrBB(parm >> 8, parm & 255);
+            } else {
+                InstrB (parm);
+            }
             break;
 
         case o_Branch_65C02:
             if (curCPU == CPU_6502) return 0;
+            FALLTHROUGH;
         case o_Branch:
             val = EvalBranch(2);
-            InstrBB(parm,val);
+            InstrBB(parm, val);
             break;
 
         case o_Mode_65C816:
             if (curCPU != CPU_65C816) return 0;
+            FALLTHROUGH;
         case o_Mode_65C02:
             if (curCPU != CPU_65C02 && curCPU != CPU_65C816) return 0;
+            FALLTHROUGH;
         case o_Mode_6502U:
             if (typ == o_Mode_6502U && curCPU != CPU_6502U) return 0;
+            FALLTHROUGH;
         case o_Mode:
             instrLen = 0;
             oldLine = linePtr;
             token = GetWord(word);
 
-                 if (curCPU == CPU_65C02)  modes = mode2op65C02;
+            if      (curCPU == CPU_65C02)  modes = mode2op65C02;
             else if (curCPU == CPU_65C816) modes = mode2op65C816;
-                                      else modes = mode2op6502;
+            else                           modes = mode2op6502;
             modes = modes + parm * a_Max;
 
+            opcode = 0;
             mode = a_None;
             val  = 0;
 
-            if (!token)
+            if (!token) {
                mode = a_Acc;    // accumulator
-            else
-            {
-                switch(token)
-                {
+            } else {
+                switch (token) {
                     case '#':   // immediate
-                        val  = Eval();
                         mode = a_Imm;
+                        opcode = modes[mode];
+                        // check for 65C816 16-bit immediate
+                        if (curCPU == CPU_65C816) {
+                            // check if opcode can do 16-bit immediate
+                            // longa: 09 29 49 69 89 A9 C9 E9
+                            // longi: A0 A2 C0 E0
+                            bool can_longa = ((opcode & 0x1F) == 0x09);
+                            bool can_longi = (opcode == 0xA0 || opcode == 0xA2 || opcode == 0xC0 || opcode == 0xE0);
+
+                            // peek at next token and check for '<' or '>' address force
+                            oldLine = linePtr;
+                            token = GetWord(word);
+                            if ((can_longa || can_longi) && (token == '<' || token == '>')) {
+                                 // use 16-bit mode if '>' forced
+                                 if (token == '>') {
+                                     mode = a_Imm16;
+                                 }
+                            } else {
+                                linePtr = oldLine;
+                                // if not forced, check for longa/longi flags
+                                // and generate 16-bit immediate if set
+                                if ((longa && can_longa) || (longi && can_longi)) {
+                                    mode = a_Imm16;
+                                }
+                            }
+                        }
+                        val = Eval();
                         break;
 
                     case '(':   // indirect X,Y
                         val   = Eval();
                         token = GetWord(word);
-                        switch (token)
-                        {
+                        switch (token) {
                             case ',':   // (val,X)
-                                token = GetWord(word);
-                                if (!word[1]) token = word[0];
-                                switch(token)
-                                {
-                                    case 'X':
+                                switch (GetReg("X S")) {
+                                    case 0: // ,X
                                         RParen();
                                         mode = a_Inx;
                                         break;
 
-                                    case 'S':
-                                        if (curCPU == CPU_65C816)
-                                        {
+                                    case 1: // ,S
+                                        if (curCPU == CPU_65C816) {
                                             if (RParen()) break;
                                             if (Comma()) break;
                                             if (Expect("Y")) break;
@@ -510,14 +530,15 @@ int M6502_DoCPUOpcode(int typ, int parm)
 
                             case ')':   // (val) -and- (val),Y
                                 token = GetWord(word);
-                                switch(token)
-                                {
+                                switch (token) {
                                     case 0:
                                         mode = a_Ind;
                                         if (val >= 0 && val < 256 && evalKnown &&
-                                            (modes[a_Zpi] != 0))
-                                                    mode = a_Zpi;
-                                            else    mode = a_Ind;
+                                                (modes[a_Zpi] != 0)) {
+                                            mode = a_Zpi;
+                                        } else {
+                                            mode = a_Ind;
+                                        }
                                         break;
                                     case ',':
                                         Expect("Y");
@@ -533,101 +554,128 @@ int M6502_DoCPUOpcode(int typ, int parm)
                         break;
 
                     case '[':   // a_DIL [d] and a_DIY [d],Y
-                        if (curCPU == CPU_65C816)
-                        {
+                        if (curCPU == CPU_65C816) {
                             val = Eval();
                             Expect("]");
                             mode = a_DIL;
                             oldLine = linePtr;
-                            switch(GetWord(word))
-                            {
+                            switch (GetWord(word)) {
                                 default:
                                     linePtr = oldLine;
                                     // fall through to let garbage be handled as too many operands
+                                    FALLTHROUGH;
                                 case 0:
                                     break;
 
                                 case ',':
-                                    GetWord(word);
-                                    if ((toupper(word[0]) == 'Y') && (!word[1]))
+                                    if (GetReg("Y") == 0) {
                                         mode = a_DIY;
-                                    else mode = a_None;
+                                    } else {
+                                        mode = a_None;
+                                    }
                             }
                             break;
                         }
                         // else fall through letting eval() treat the '[' as an open paren
+                        FALLTHROUGH;
 
                     default:    // everything else
-                        if ((!word[1]) && (toupper(word[0]) == 'A'))
-                        {       // accumulator
+                        if (FindReg(word, "A") == 0) {
+                            // accumulator
                             token = GetWord(word);
-                            if (token == 0)     // mustn't have anything after the 'A'
+                            if (token == 0) {
+                                // mustn't have anything after the 'A'
                                 mode = a_Acc;
-                        }
-                        else    // absolute and absolute-indexed
-                        {
+                            }
+                        } else {
+                            // absolute and absolute-indexed
                             // allow '>' in front of address to force absolute addressing
                             // modes instead of zero-page addressing modes
-                            forceabs = FALSE;
-                            if (token == '>')   forceabs = TRUE;
-                                        else    linePtr = oldLine;
+                            bool forceabs = false;  // true = force a mode larger than 8 bits
+                            bool force24 = false;   // true = force a mode larger than 16 bits
+                            if (token == '>') {
+                                forceabs = true;
+
+                                // check for a second '>' to force 24-bit mode
+                                // this will cause no difference if only 16-bit mode is available
+                                oldLine = linePtr;
+                                token = GetWord(word);
+                                if (token == '>') {
+                                    force24 = true;
+                                } else {
+                                    linePtr = oldLine;
+                                }
+
+                            } else {
+                                linePtr = oldLine;
+                            }
 
                             val   = Eval();
                             token = GetWord(word);
 
-                            switch(token)
-                            {
+                            switch (token) {
                                 case 0:     // abs or zpg
                                     if (val >= 0 && val < 256 && !forceabs &&
-                                        evalKnown && (modes[a_Zpg] != 0))
-                                                mode = a_Zpg;
-                                        else    mode = a_Abs;
-                                        if (evalKnown && modes[a_AbL] != 0 && (val & 0xFF0000) != 0)
-                                            mode = a_AbL;
+                                            evalKnown && (modes[a_Zpg] != 0)) {
+                                        mode = a_Zpg;
+                                    } else {
+                                        mode = a_Abs;
+                                    }
+                                    if (evalKnown && modes[a_AbL] != 0 && ((val & 0xFF0000) != 0 || force24)) {
+                                        mode = a_AbL;
+                                    }
                                     break;
 
                                 case ',':   // indexed ,x or ,y or ,s
-                                    token = GetWord(word);
+                                    switch (GetReg("X Y S")) {
+                                        case 0: // ,X
+                                            if (val >= 0 && val < 256 && !forceabs &&
+                                                (evalKnown || modes[a_Abx] == 0)) {
+                                                mode = a_Zpx;
+                                            } else {
+                                                mode = a_Abx;
+                                            }
+                                            if (evalKnown && modes[a_ALX] != 0 && ((val & 0xFF0000) != 0 || force24)) {
+                                                mode = a_ALX;
+                                            }
+                                            break;
 
-                                    if ((toupper(word[0]) == 'X') && (word[1] == 0))
-                                    {
-                                        if (val >= 0 && val < 256 && !forceabs &&
-                                            (evalKnown || modes[a_Abx] == 0))
-                                                    mode = a_Zpx;
-                                            else    mode = a_Abx;
-                                        if (evalKnown && modes[a_ALX] != 0 && (val & 0xFF0000) != 0)
-                                            mode = a_ALX;
+                                        case 1: // ,Y
+                                            if (val >= 0 && val < 256 && !forceabs &&
+                                                (evalKnown || modes[a_Aby] == 0)
+                                                && modes[a_Zpy] != 0) {
+                                                mode = a_Zpy;
+                                            } else {
+                                                mode = a_Aby;
+                                            }
+                                            break;
+
+                                        case 2: // ,S
+                                            if (curCPU == CPU_65C816) {
+                                                if (forceabs) {
+                                                    BadMode();
+                                                } else {
+                                                    mode = a_Stk;
+                                                }
+                                            }
                                     }
-                                    else if ((toupper(word[0]) == 'Y') && (word[1] == 0))
-                                    {
-                                        if (val >= 0 && val < 256 && !forceabs &&
-                                            (evalKnown || modes[a_Aby] == 0)
-                                                && modes[a_Zpy] != 0)
-                                                    mode = a_Zpy;
-                                            else    mode = a_Aby;
-                                    }
-                                    else if (curCPU == CPU_65C816 && // 65C816 ofs,S
-                                             (toupper(word[0]) == 'S') && (word[1] == 0))
-                                    {
-                                        if (forceabs) BadMode();
-                                        else mode = a_Stk;
-                                    }
+                                    break;
                             }
                         }
+                        break;
                 }
             }
 
-            opcode = 0;
-            if (mode != a_None)
-            {
+            // determine opcode if it is isn't known yet
+            if (!opcode && mode != a_None) {
                 opcode = modes[mode];
-                if (opcode == 0)
+                if (opcode == 0) {
                     mode = a_None;
+                }
             }
 
             instrLen = 0;
-            switch(mode)
-            {
+            switch (mode) {
                 case a_None:  
                     Error("Invalid addressing mode");
                     break;
@@ -637,8 +685,8 @@ int M6502_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case a_Inx:
-                    if (opcode == 0x7C || opcode == 0xFC) // 65C02 JMP (abs,X) / 65C816 JSR (abs,X)
-                    {
+                    if (opcode == 0x7C || opcode == 0xFC) {
+                        // 65C02 JMP (abs,X) / 65C816 JSR (abs,X)
                         InstrBW(opcode, val);
                         break;
                     }
@@ -654,16 +702,22 @@ int M6502_DoCPUOpcode(int typ, int parm)
                 case a_DIY:
                 case a_SIY:
                     val = (short) val;
-                    if (!errFlag && (val < 0 || val > 255))
+                    if (!errFlag && (val < 0 || val > 255)) {
                         Error("Byte out of range");
+                    }
                     InstrBB(opcode, val & 0xFF);
                     break;
 
                 case a_Imm:
                     val = (short) val;
-                    if (!errFlag && (val < -128 || val > 255))
+                    if (!errFlag && (val < -128 || val > 255)) {
                         Error("Byte out of range");
+                    }
                     InstrBB(opcode, val & 0xFF);
+                    break;
+
+                case a_Imm16:
+                    InstrBW(opcode, val & 0xFFFF);
                     break;
 
                 case a_Abs:
@@ -676,6 +730,7 @@ int M6502_DoCPUOpcode(int typ, int parm)
                 case a_AbL:
                 case a_ALX:
                     InstrB3(opcode, val);
+                    break;
             }
             break;
 
@@ -684,7 +739,7 @@ int M6502_DoCPUOpcode(int typ, int parm)
 
             // RMB/SMB zpg
             val = Eval();
-            InstrBB(parm,val);
+            InstrBB(parm, val);
             break;
 
         case o_BBRS:        //    BBRn/BBSn instructions
@@ -693,41 +748,83 @@ int M6502_DoCPUOpcode(int typ, int parm)
             i = Eval();
             Expect(",");
             val = EvalBranch(3);
-            InstrBBB(parm,i,val);
+            InstrBBB(parm, i, val);
             break;
 
         case o_BranchW:
             if (curCPU != CPU_65C816) return 0;
 
             val = EvalWBranch(3);
-            InstrBW(parm,val);
+            InstrBW(parm, val);
             break;
 
         case o_BlockMove:
             if (curCPU != CPU_65C816) return 0;
 
             val = Eval();
-            if (!errFlag && (val < 0 || val > 255))
+            if (!errFlag && (val < 0 || val > 255)) {
                 Error("Byte out of range");
+            }
 
             if (Comma()) break;
 
             i = Eval();
-            if (!errFlag && (val < 0 || val > 255))
+            if (!errFlag && (val < 0 || val > 255)) {
                 Error("Byte out of range");
+            }
 
-            InstrBBB(parm,i,val);
-
+            InstrBBB(parm, i, val);
             break;
 
         case o_COP:
             if (curCPU != CPU_65C816) return 0;
 
+            Expect("#");
             val = Eval();
-            if (!errFlag && (val < 0 || val > 255))
+            if (!errFlag && (val < 0 || val > 255)) {
                 Error("Byte out of range");
+            }
 
-            InstrBB(parm,val);
+            InstrBB(parm, val);
+            break;
+
+        default:
+            return 0;
+            break;
+    }
+    return 1;
+}
+
+
+static int M6502_DoCPULabelOp(int typ, int parm, char *labl)
+{
+    Str255  word;
+
+    (void) parm; // unused parameter
+
+    // ignore .LONGA and .LONGI if CPU is not 65C816
+    if (curCPU != CPU_65C816) return 0;
+
+    switch (typ) {
+        case o_LONGA:
+            if (labl[0]) {
+                Error("Label not allowed");
+            }
+            GetWord(word);
+                 if (strcmp(word, "ON") == 0)       longa = true;
+            else if (strcmp(word, "OFF") == 0)      longa = false;
+            else                                    IllegalOperand();
+
+            break;
+
+        case o_LONGI:
+            if (labl[0]) {
+                Error("Label not allowed");
+            }
+            GetWord(word);
+                 if (strcmp(word, "ON") == 0)       longi = true;
+            else if (strcmp(word, "OFF") == 0)      longi = false;
+            else                                    IllegalOperand();
 
             break;
 
@@ -739,14 +836,20 @@ int M6502_DoCPUOpcode(int typ, int parm)
 }
 
 
+static void M6502_PassInit(void)
+{
+    longa = false;
+    longi = false;
+}
+
+
 void Asm6502Init(void)
 {
-    char *p;
+    void *p = AddAsm(versionName, &M6502_DoCPUOpcode, &M6502_DoCPULabelOp, &M6502_PassInit);
 
-    p = AddAsm(versionName, &M6502_DoCPUOpcode, NULL, NULL);
     AddCPU(p, "6502",   CPU_6502,   LITTLE_END, ADDR_16, LIST_24, 8, 0, M6502_opcdTab);
     AddCPU(p, "65C02",  CPU_65C02,  LITTLE_END, ADDR_16, LIST_24, 8, 0, M6502_opcdTab);
     AddCPU(p, "6502U",  CPU_6502U,  LITTLE_END, ADDR_16, LIST_24, 8, 0, M6502_opcdTab);
-    AddCPU(p, "65C816", CPU_65C816, LITTLE_END, ADDR_24, LIST_24, 8, 0, M6502_opcdTab);
+    AddCPU(p, "65816",  CPU_65C816, LITTLE_END, ADDR_24, LIST_24, 8, 0, M6502_opcdTab);
     AddCPU(p, "65C816", CPU_65C816, LITTLE_END, ADDR_24, LIST_24, 8, 0, M6502_opcdTab);
 }

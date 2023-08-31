@@ -1,10 +1,9 @@
-// asm1802.c - copyright 1998-2007 Bruce Tomlin
+// asm1802.c
 
 #define versionName "RCA 1802 assembler"
 #include "asmx.h"
 
-enum
-{
+enum {
     o_None,         // No operands
     o_Register,     // register operand (with optional "R" in front)
     o_Immediate,    // 8-bit immediate operand
@@ -15,8 +14,7 @@ enum
 //  o_Foo = o_LabelOp,
 };
 
-struct OpcdRec RCA1802_opcdTab[] =
-{
+static const struct OpcdRec RCA1802_opcdTab[] = {
     {"IDL", o_None,     0x00},
     {"LDN", o_Register, 0x00},  // note: LDN R0 not allowed
     {"INC", o_Register, 0x10},
@@ -113,26 +111,25 @@ struct OpcdRec RCA1802_opcdTab[] =
 // --------------------------------------------------------------
 
 
-int Get_1802_Reg(void)
+static int Get_1802_Reg(void)
 {
     Str255  word;
-    int     token;
-    char    *oldLine;
 
-    oldLine = linePtr;
-    token = GetWord(word);
-
-    if (word[0]=='R')
-    {
+    char *oldLine = linePtr;
+    /*int token =*/ GetWord(word);
+    if (word[0] == 'R') {
         // R0-R9
-        if ('0'<=word[1] && word[1]<='9' && word[2]==0)
+        if ('0' <= word[1] && word[1] <= '9' && word[2] == 0) {
             return word[1] - '0';
+        }
         // RA-RF
-        if ('A'<=word[1] && word[1]<='F' && word[2]==0)
+        if ('A' <= word[1] && word[1] <= 'F' && word[2] == 0) {
             return word[1] - 'A' + 10;
+        }
         // R10-R15
-        if (word[1]=='1' && '0'<=word[2] && word[2]<='5' && word[3]==0)
+        if (word[1] == '1' && '0' <= word[2] && word[2] <= '5' && word[3] == 0) {
             return word[2] - '0' + 10;
+        }
     }
 
     // otherwise evaluate an expression
@@ -141,54 +138,55 @@ int Get_1802_Reg(void)
 }
 
 
-int RCA1802_DoCPUOpcode(int typ, int parm)
+static int RCA1802_DoCPUOpcode(int typ, int parm)
 {
     int     val;
 //  Str255  word;
 //  char    *oldLine;
 //  int     token;
 
-    switch(typ)
-    {
-
+    switch (typ) {
         case o_None:
             InstrB(parm);
             break;
 
         case o_Register:
             val = Get_1802_Reg();
-            if (val < 0 || val > 15)
+            if (val < 0 || val > 15) {
                 IllegalOperand();
-            else if (val == 0 && parm == 0x00)
+            } else if (val == 0 && parm == 0x00) {
                 IllegalOperand();   // don't allow LDN R0
-            else
+            } else {
                 InstrB(parm+val);
+            }
             break;
 
         case o_Immediate:
             val = EvalByte();
-            InstrBB(parm,val);
+            InstrBB(parm, val);
             break;
 
         case o_Branch:
             val = Eval();
             // branch must go to same page as second byte of instruction
-            if (((locPtr + 1) & 0xFF00) != (val & 0xFF00))
+            if (((locPtr + 1) & 0xFF00) != (val & 0xFF00)) {
                 Error("Branch out of range");
-            InstrBB(parm,val);
+            }
+            InstrBB(parm, val);
             break;
 
         case o_LBranch:
             val = Eval();
-            InstrBW(parm,val);
+            InstrBW(parm, val);
             break;
 
         case o_INPOUT:
             val = Eval();
-            if (val < 1 || val > 7)
+            if (val < 1 || val > 7) {
                 IllegalOperand();
-            else
+            } else {
                 InstrB(parm+val);
+            }
             break;
 
         default:
@@ -201,8 +199,7 @@ int RCA1802_DoCPUOpcode(int typ, int parm)
 
 void Asm1802Init(void)
 {
-    char *p;
+    void *p = AddAsm(versionName, &RCA1802_DoCPUOpcode, NULL, NULL);
 
-    p = AddAsm(versionName, &RCA1802_DoCPUOpcode, NULL, NULL);
     AddCPU(p, "1802", 0, BIG_END, ADDR_16, LIST_24, 8, 0, RCA1802_opcdTab);
 }

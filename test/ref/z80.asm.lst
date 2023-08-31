@@ -255,7 +255,7 @@
 011A  E2 3412           	JP	PO,1234H	; E2 3412
 011D  E3                	EX	(SP),HL		; E3
 011E  E4 3412           	CALL	PO,1234H	; E4 3412
-0121  E5                	PUSH	HL   		; E5
+0121  E5                	PUSH	HL		; E5
 0122  E6 78             	AND	78H		; E6 78
 0124  E7                	RST	20H		; E7
 
@@ -764,7 +764,46 @@
 0588  EDBA              	INDR			; EDBA
 058A  EDBB              	OTDR			; EDBB
 
-058C                    	END
+058C                    	CPU	Z180
 
-00000 Total Error(s)
+058C  ED00 A5           	IN0	B,(A5H)		; ED00 A5
+058F  ED08 A5           	IN0	C,(A5H)		; ED08 A5
+0592  ED10 A5           	IN0	D,(A5H)		; ED10 A5
+0595  ED18 A5           	IN0	E,(A5H)		; ED18 A5
+0598  ED20 A5           	IN0	H,(A5H)		; ED20 A5
+059B  ED28 A5           	IN0	L,(A5H)		; ED28 A5
+059E  ED30 A5           	IN0	F,(A5H)		; ED30 A5
+05A1  ED38 A5           	IN0	A,(A5H)		; ED38 A5
 
+05A4  ED01 A5           	OUT0	(A5H),B		; ED01 A5
+05A7  ED09 A5           	OUT0	(A5H),C		; ED09 A5
+05AA  ED11 A5           	OUT0	(A5H),D		; ED11 A5
+05AD  ED19 A5           	OUT0	(A5H),E		; ED19 A5
+05B0  ED21 A5           	OUT0	(A5H),H		; ED21 A5
+05B3  ED29 A5           	OUT0	(A5H),L		; ED29 A5
+05B6  ED31 A5           	OUT0	(A5H),F		; ED31 A5
+05B9  ED39 A5           	OUT0	(A5H),A		; ED39 A5
+
+05BC  ED04              	TST	B		; ED04
+05BE  ED0C              	TST	C		; ED0C
+05C0  ED14              	TST	D		; ED14
+05C2  ED1C              	TST	E		; ED1C
+05C4  ED24              	TST	H		; ED24
+05C6  ED2C              	TST	L		; ED2C
+05C8  ED34              	TST	(HL)		; ED34
+05CA  ED3C              	TST	A		; ED3C
+05CC  ED64 A5           	TST	(C),A5H		; ED64 A5
+
+05CF  ED4C              	MLT	BC		; ED4C
+05D1  ED5C              	MLT	DE		; ED5C
+05D3  ED6C              	MLT	HL		; ED6C
+05D5  ED7C              	MLT	SP		; ED7C
+
+05D7  ED74 A5           	TSTIO	A5H		; ED74 A5
+
+05DA  ED83              	OTIM			; ED83
+05DC  ED8B              	OTDM			; ED8B
+05DE  ED93              	OTIMR			; ED93
+05E0  ED9B              	OTDMR			; ED9B
+
+05E2                    	END

@@ -244,6 +244,7 @@ Numbers:
   <tr><td>nnnn         <td rowspan=2>decimal constant
   <tr><td>nnnnD
   <tr><td>nnnnO        <td>octal constant
+  <tr><td>aaabbbA      <td>split-octal constant, where aaa and bbb are <br> the high and low bytes (377377A = 0xFFFF)
   <tr><td>%nnnn        <td rowspan=2>binary constant
   <tr><td>nnnnB
 </table>
@@ -345,7 +346,7 @@ NOTE:
 
   This is an alias for <tt>PROCESSOR</tt>.
 
-<H3>DB / BYTE / DC.B / FCB</H3>
+<H3>DB / BYTE / DC.B / FCB / DEFB / DEFM</H3>
 
   Defines one or more constant bytes in the code.  You can use as many
   comma-separated values as you like.  Strings use either single or
@@ -503,10 +504,12 @@ NOTE:
   <tr><td><tt>LIST NOSYM</tt> / <tt>OPT NOSYM</tt>        <td>Turn off symbol table in listing
   <tr><td><tt>LIST TEMP</tt> / <tt>OPT TEMP</tt>          <td>Turn on temp symbols in symbol table listing
   <tr><td><tt>LIST NOTEMP</tt> / <tt>OPT NOTEMP</tt>      <td>Turn off temp symbols in symbol table listing
+  <tr><td><tt>OPT EXACT</tt> / <tt>OPT NOOPT</tt>         <td>Turn off assembler-specific optimizations
+  <tr><td><tt>OPT NOEXACT</tt> / <tt>OPT OPT</tt>         <td>Turn on assembler-specific optimizations (Z80, 68K)
 </table>
 <P>
   The default is listing on, macro expansion off, data expansion on,
-  symbol table on.
+  symbol table on, exact off.
 
 <H3>MACRO / ENDM</H3>
 
@@ -701,6 +704,24 @@ There is also one CPU-specific pseudo-op:
   direct page register, for determining whether to use direct or
   extended mode.  It defaults to zero at the start of each
   assembler pass.
+
+<HR>
+
+<H3>.LONGA ON|OFF</H3>
+
+  With the 65C816 assembler, this sets the data size for immediate
+  instructions that use the A register.  .LONGA OFF generates
+  an 8-bit operand, and .LONGA ON generates a 16-bit operand.  It
+  defaults to OFF at the start of each assembler pass.
+
+<HR>
+
+<H3>.LONGI ON|OFF</H3>
+
+  With the 65C816 assembler, this sets the data size for immediate
+  instructions that use the X and Y registers.  .LONGI OFF generates
+  an 8-bit operand, and .LONGI ON generates a 16-bit operand.  It
+  defaults to OFF at the start of each assembler pass.
 
 <HR>
 
@@ -1207,7 +1228,7 @@ symbol shows its name, value, and flags.  The flags are:
   <LI>Made HTML version of documentation.
   <LI>Started adding ARM and ARM Thumb instruction sets, at the ARM5 level.
       (Thumb is currently complete, ARM is missing LDC/STC and ADR/ADRL.)
-  <LI>Changed 'parm' in opcode table to a unsigned long to handle more complex
+  <LI>Changed 'parm' in opcode table to a u_long to handle more complex
       instruction sets.
   <LI>Changed opcode parser to accept opcodes ending in wildcards.
 </UL>
@@ -1229,12 +1250,69 @@ symbol shows its name, value, and flags.  The flags are:
   <LI>Added 6309 support to 6809 assembler
 </UL>
 
+<H3>Version 2.0b6 changes (2020-12-29)</H3>
+
+<UL>
+  <LI> Lots of source code reformatting and clean-up
+  <LI> now using stdint.h and stdbool.h for integer and bool types
+  <LI> commented out the <tt>TARGET_ARCH</tt> stuff now that I no longer have to care about PPC
+  <LI> Classic EDTASM-style pass/errors messages are now disabled unless the -@ option is used
+  <LI> Added parameter to <tt>-t</tt> to allow choosing TRSDOS binary block size (for easier confirmation of disassembled code).
+  <LI> (r92) Now using <tt>-Wextra</tt> compiler option for more warnings, and fixed a few old bugs that caused warnings
+  <LI> (r98) 8051 assembler now generates correct code
+  <LI> (r98) Added 8051 CPU type variants for 8052 8031 and 8032
+  <LI> (r109) 8048 SEL MBx code bank selection instructions are now tracked
+  <LI> (r110) 68K ADD/CMP/SUB src,Ay did not assemble properly to ADDA/CMPA/SUBA
+  <LI> (r110) Fix for 68K MOVEP with 0(An) addressing mode
+  <LI> (r111) Added Z8 assembler
+  <LI> (r112) Cleaned up assembler test files
+  <LI> (r113) Branch range check now handles address space wrap-around for smaller address bus sizes
+  <LI> (r116) Comments with "*" in column 1 now work
+  <LI> (r117) 68HC11 assembler can now use old-style "LDA A" 6800 opcodes (but only the original 6800 opcodes for registers A and B!)
+  <LI> (r120) INCBIN file is now opened in binary mode, and object output files are opened in binary mode when not Intel or S9 format.
+  <LI> (r123) 68K has a commented "#define EXACT" which disables address mode optimizations like 0(An) -> (An) and branch size warnings. Uncomment it when you are trying to exactly recreate old code. (This needs to become a runtime option.)
+</UL>
+
+<HR>
+
+<H3>Version 2.0b7 changes (since 2020-12-29)</H3>
+
+<UL>
+  <LI>(r126) DS pseudo-op was allowing negative size, also took some time to add comments to the DS code
+  <LI>(r127) 68HC11: o_Logical was not allowing '&lt;' and '&gt;' address size force operators
+  <LI>(r128) 68HC11: add support for for "JMP X", "STAA X" etc. instead of "0,X" in legacy 6800 syntax
+  <LI>(r129) added "A" numeric type which is two octal bytes (377377A=0xFFFF) (from Heath, to match the H-8 front panel display)
+  <LI>(r130) fix for "LD BC,(8)+1" and similar cases where there is confusion between expression parentheses and "LD rp,(addr)"... it's still a bad idea to depend on this, but now it actually works as intended
+  <LI>(r131) 6800: allow "JMP ,X", "STAA ,X", etc. instead of "0,X"
+  <LI>(r132) 68K, Z80: added "OPT EXACT" to disable assembler-specific optimizations and "less than optimal" warnings for exact disassembly source
+  <LI>(r133) added support for Motorola-style "@nnnnnn" octal constants
+  <LI>(r134) Z80: non-Z80GB instructions weren't being properly locked out
+  <LI>(r135) Z80: added support for Z180 instructions
+  <LI>(r136) always define a label even if the opcode is bad
+  <LI>(r140) 6809: make JMP $00xx default to extended without a "<" force
+  <LI>(r141,r143) added support for old Motorola-style unclosed single-quote constants
+  <LI>(r142) a blank line is now put in the listing file before the symbol table dump
+  <LI>(r148) 8085: added a CPU type "8080Z" which adds Z-80 JR and DJNZ opcodes (for some historical Heath source code)
+  <LI>(r150) "Q" can now be used for octal constants
+  <LI>(r151) ".6800:", etc. in column 1 will no longer be parsed as a CPU name followed by an unexpected colon; it will be correctly interpreted as a temporary label
+  <LI>(r152) suppresed "-Wshorten-64-to-32" warning (which appears in Xcode), and confirmed that a default Linux build would have no unexpected warnings
+  <LI>(r153) 6805: fixed branch offset for BRSET/BRCLR, and added "68HC05" as a CPU name alias
+  <LI>(r154) 6805/6808: updated test files
+  <LI>(r155) 68K: AND #n was always being converted to ANDI
+  <LI>(r156) 68K/6805/6808: updated test files
+  <LI>(r157) cleaned up command line error handling to avoid "mystery" errors and to always use stderr
+  <LI>(r157) -b and -t now require their optional parameter(s) to start with a digit, hex numbers starting with A-F now require a leading 0 or 0x
+  <LI>(r158) added -T option to output to TRS-80 .cas format
+  <LI>(r159) many changes to the 65C816 assembler, it should be usable now
+  <LI>(r160) added DEFM pseudo-op as an alias for DB
+  <LI>(r161) added 8008 assembler
+</UL>
+
 <HR>
 
 <H2>To do:</H2>
 
 <UL>
-  <LI>Code needs to be reformatted to Linux kernel style for reliable SCM merges
   <LI>* error or warning if <tt>-b</tt> and data is out of range? (reset warning at <tt>ORG</tt>?)
   <LI>* make test files for assembler pseudo-ops
   <LI><tt>DS</tt> should be scaled by the <tt>WORDSIZE</tt>?
@@ -1246,7 +1324,6 @@ symbol shows its name, value, and flags.  The flags are:
         <LI>negative symbols vs $8000-$FFFF symbols?  maybe <tt>RefSym</tt> should sign-extend from 16 bits?
         <LI>masking or wraparound of values for location counter?  (sign-extend <tt>locPtr</tt> as "<tt>.</tt>" too?)
       </UL>
-  <LI>65C816: need addressing mode force characters
   <LI>add Z80 undocumented instructions
   <LI>double-check 8048 instruction set, and add support for 8048 variants
   <LI>see if it's possible to get labels starting with "<tt>$</tt>" compatible with <tt>$xxxx</tt> hex constants,

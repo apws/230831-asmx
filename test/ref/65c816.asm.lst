@@ -1,0 +1,321 @@
+000000                  	PROCESSOR 65C816
+
+       = 004142         abs	EQU	'AB'
+       = 41424C         absl	EQU	'ABL'
+       = 000044         dir	EQU	'D'	; zero/direct page
+       = 000049         imm	EQU	'I'
+       = 000058         idx	EQU	'X'
+
+                        	.LONGA OFF		; 8-bit A immediate
+                        	.LONGI OFF		; 8-bit X,Y immediate
+
+000000 00               	BRK			; 00
+000001 01 58            	ORA	(idx,X)		; 01 58
+000003 02 FF            	COP	#$FF		; 02 FF
+000005 03 58            	ORA	idx,S		; 03 58
+000007 04 44            	TSB	dir		; 04 44
+000009 05 44            	ORA	dir		; 05 44
+00000B 06 44            	ASL	dir		; 06 44
+00000D 07 44            	ORA	[dir]		; 07 44
+
+00000F 08               	PHP			; 08
+000010 09 49            	ORA	#imm		; 09 49
+000012 0A               	ASL	A		; 0A
+000013 0B               	PHD			; 0B
+000014 0C 4241          	TSB	abs		; 0C 4241
+000017 0D 4241          	ORA	abs		; 0D 4241
+00001A 0E 4241          	ASL	abs		; 0E 4241
+00001D 0F 4C4241        	ORA	absl		; 0F 4C4241
+
+000021 10 FE            	BPL	*		; 10 FE
+000023 11 58            	ORA	(idx),Y		; 11 58
+000025 12 58            	ORA	(idx)		; 12 58
+000027 13 58            	ORA	(idx,S),Y	; 13 58
+000029 14 44            	TRB	dir		; 14 44
+00002B 15 44            	ORA	dir,X		; 15 44
+00002D 16 44            	ASL	dir,X		; 16 44
+00002F 17 44            	ORA	[dir],Y		; 17 44
+
+000031 18               	CLC			; 18
+000032 19 4241          	ORA	abs,Y		; 19 4241
+000035 1A               	INA			; 1A
+000036 1B               	TCS			; 1B
+000037 1C 4241          	TRB	abs		; 1C 4241
+00003A 1D 4241          	ORA	abs,X		; 1D 4241
+00003D 1E 4241          	ASL	abs,X		; 1E 4241
+000040 1F 4C4241        	ORA	absl,X		; 1F 4C4241
+
+000044 20 4241          	JSR	abs		; 20 4241
+000047 21 58            	AND	(idx,X)		; 21 58
+000049 22 4C4241        	JSL	absl		; 22 4C4241
+00004D 23 58            	AND	idx,S		; 23 58
+00004F 24 44            	BIT	dir		; 24 44
+000051 25 44            	AND	dir		; 25 44
+000053 26 44            	ROL	dir		; 26 44
+000055 27 44            	AND	[dir]		; 27 44
+
+000057 28               	PLP			; 28
+000058 29 49            	AND	#imm		; 29 49
+00005A 2A               	ROL	A		; 2A
+00005B 2B               	PLD			; 2B
+00005C 2C 4241          	BIT	abs		; 2C 4241
+00005F 2D 4241          	AND	abs		; 2D 4241
+000062 2E 4241          	ROL	abs		; 2E 4241
+000065 2F 4C4241        	AND	absl		; 2F 4C4241
+
+000069 30 FE            	BMI	*		; 30 FE
+00006B 31 58            	AND	(idx),Y		; 31 58
+00006D 32 58            	AND	(idx)		; 32 58
+00006F 33 58            	AND	(idx,S),Y	; 33 58
+000071 34 44            	BIT	dir,X		; 34 44
+000073 35 44            	AND	dir,X		; 35 44
+000075 36 44            	ROL	dir,X		; 36 44
+000077 37 44            	AND	[dir],Y		; 37 44
+
+000079 38               	SEC			; 38
+00007A 39 4241          	AND	abs,Y		; 39 4241
+00007D 3A               	DEA			; 3A
+00007E 3B               	TSC			; 3B
+00007F 3C 4241          	BIT	abs,X		; 3C 4241
+000082 3D 4241          	AND	abs,X		; 3D 4241
+000085 3E 4241          	ROL	abs,X		; 3E 4241
+000088 3F 4C4241        	AND	absl,X		; 3F 4C4241
+
+00008C 40               	RTI			; 40
+00008D 41 58            	EOR	(idx,X)		; 41 58
+00008F 42               	WDM			; 42
+000090 43 58            	EOR	idx,S		; 43 58
+000092 44 44 53         	MVP	'S','D'		; 44 44 53
+000095 45 44            	EOR	dir		; 45 44
+000097 46 44            	LSR	dir		; 46 44
+000099 47 44            	EOR	[dir]		; 47 44
+
+00009B 48               	PHA			; 48
+00009C 49 49            	EOR	#imm		; 49 49
+00009E 4A               	LSR	A		; 4A
+00009F 4B               	PHK			; 4B
+0000A0 4C 4241          	JMP	abs		; 4C 4241
+0000A3 4D 4241          	EOR	abs		; 4D 4241
+0000A6 4E 4241          	LSR	abs		; 4E 4241
+0000A9 4F 4C4241        	EOR	absl		; 4F 4C4241
+
+0000AD 50 FE            	BVC	*		; 50 FE
+0000AF 51 58            	EOR	(idx),Y		; 51 58
+0000B1 52 58            	EOR	(idx)		; 52 58
+0000B3 53 58            	EOR	(idx,S),Y	; 43 58
+0000B5 54 44 53         	MVN	'S','D'		; 54 44 53
+0000B8 55 44            	EOR	dir,X		; 55 44
+0000BA 56 44            	LSR	dir,X		; 56 44
+0000BC 57 44            	EOR	[dir],Y		; 57 44
+
+0000BE 58               	CLI			; 58
+0000BF 59 4241          	EOR	abs,Y		; 59 4241
+0000C2 5A               	PHY			; 5A
+0000C3 5B               	TCD			; 5B
+0000C4 5C 4C4241        	JMP	absl		; 5C 4C4241
+0000C8 5D 4241          	EOR	abs,X		; 5D 4241
+0000CB 5E 4241          	LSR	abs,X		; 5E 4241
+0000CE 5F 4C4241        	EOR	absl,X		; 5F 4C4241
+
+0000D2 60               	RTS			; 60
+0000D3 61 58            	ADC	(idx,X)		; 61 58
+0000D5 62 FDFF          	PER	*		; 62 FDFF
+0000D8 63 58            	ADC	idx,S		; 63 58
+0000DA 64 44            	STZ	dir		; 64 44
+0000DC 65 44            	ADC	dir		; 65 44
+0000DE 66 44            	ROR	dir		; 66 44
+0000E0 67 44            	ADC	[dir]		; 67 44
+
+0000E2 68               	PLA			; 68
+0000E3 69 49            	ADC	#imm		; 69 49
+0000E5 6A               	ROR	A		; 6A
+0000E6 6B               	RTL			; 6B
+0000E7 6C 4241          	JMP	(abs)		; 6C
+0000EA 6D 4241          	ADC	abs		; 6D 4241
+0000ED 6E 4241          	ROR	abs		; 6E 4241
+0000F0 6F 4C4241        	ADC	absl		; 6F 4C4241
+
+0000F4 70 FE            	BVS	*		; 70 FE
+0000F6 71 58            	ADC	(idx),Y		; 71 58
+0000F8 72 58            	ADC	(idx)		; 72 58
+0000FA 73 58            	ADC	(idx,S),Y	; 73 58
+0000FC 74 44            	STZ	dir,X		; 74 44
+0000FE 75 44            	ADC	dir,X		; 75 44
+000100 76 44            	ROR	dir,X		; 76 44
+000102 77 44            	ADC	[dir],Y		; 77 44
+
+000104 78               	SEI			; 78
+000105 79 4241          	ADC	abs,Y		; 79 4241
+000108 7A               	PLY			; 7A
+000109 7B               	TDC			; 7B
+00010A 7C 4241          	JMP	(abs,X)		; 7C 4241
+00010D 7D 4241          	ADC	abs,X		; 7D 4241
+000110 7E 4241          	ROR	abs,X		; 7E 4241
+000113 7F 4C4241        	ADC	absl,X		; 7F 4C4241
+
+000117 80 FE            	BRA	*		; 80 FE
+000119 81 58            	STA	(idx,X)		; 81 58
+00011B 82 FDFF          	BRL	*		; 82 FDFF
+00011E 83 58            	STA	idx,S		; 83 58
+000120 84 44            	STY	dir		; 84 44
+000122 85 44            	STA	dir		; 85 44
+000124 86 44            	STX	dir		; 86 44
+000126 87 44            	STA	[dir]		; 87 44
+
+000128 88               	DEY			; 88
+000129 89 49            	BIT	#imm		; 89 49
+00012B 8A               	TXA			; 8A
+00012C 8B               	PHB			; 8B
+00012D 8C 4241          	STY	abs		; 8C 4241
+000130 8D 4241          	STA	abs		; 8D 4241
+000133 8E 4241          	STX	abs		; 8E 4241
+000136 8F 4C4241        	STA	absl		; 8F 4C4241
+
+00013A 90 FE            	BCC	*		; 90 FE
+00013C 91 58            	STA	(idx),Y		; 91 58
+00013E 92 58            	STA	(idx)		; 92 58
+000140 93 58            	STA	(idx,S),Y	; 93 58
+000142 94 44            	STY	dir,X		; 94 44
+000144 95 44            	STA	dir,X		; 95 44
+000146 96 44            	STX	dir,Y		; 96 44
+000148 97 44            	STA	[dir],Y		; 97 44
+
+00014A 98               	TYA			; 98
+00014B 99 4241          	STA	abs,Y		; 99 4241
+00014E 9A               	TXS			; 9A
+00014F 9B               	TXY			; 9B
+000150 9C 4241          	STZ	abs		; 9C 4241
+000153 9D 4241          	STA	abs,X		; 9D 4241
+000156 9E 4241          	STZ	abs,X		; 9E 4241
+000159 9F 4C4241        	STA	absl,X		; 9F 4C4241
+
+00015D A0 49            	LDY	#imm		; A0 49
+00015F A1 58            	LDA	(idx,X)		; A1 58
+000161 A2 49            	LDX	#imm		; A2 49
+000163 A3 58            	LDA	idx,S		; A3 58
+000165 A4 44            	LDY	dir		; A4 44
+000167 A5 44            	LDA	dir		; A5 44
+000169 A6 44            	LDX	dir		; A6 44
+00016B A7 44            	LDA	[dir]		; A7 44
+
+00016D A8               	TAY			; A8
+00016E A9 49            	LDA	#imm		; A9 49
+000170 AA               	TAX			; AA
+000171 AB               	PLB			; AB
+000172 AC 4241          	LDY	abs		; AC 4241
+000175 AD 4241          	LDA	abs		; AD 4241
+000178 AE 4241          	LDX	abs		; AE 4241
+00017B AF 4C4241        	LDA	absl		; AF 4C4241
+
+00017F B0 FE            	BCS	*		; B0 FE
+000181 B1 58            	LDA	(idx),Y		; B1 58
+000183 B2 58            	LDA	(idx)		; B2 58
+000185 B3 58            	LDA	(idx,S),Y	; A3 58
+000187 B4 44            	LDY	dir,X		; B4 44
+000189 B5 44            	LDA	dir,X		; B5 44
+00018B B6 44            	LDX	dir,Y		; B6 44
+00018D B7 44            	LDA	[dir],Y		; B7 44
+
+00018F B8               	CLV			; B8
+000190 B9 4241          	LDA	abs,Y		; B9 4241
+000193 BA               	TSX			; BA
+000194 BB               	TYX			; BB
+000195 BC 4241          	LDY	abs,X		; BC 4241
+000198 BD 4241          	LDA	abs,X		; BD 4241
+00019B BE 4241          	LDX	abs,Y		; BE 4241
+00019E BF 4C4241        	LDA	absl,X		; BF 4C4241
+
+0001A2 C0 49            	CPY	#imm		; C0 49
+0001A4 C1 58            	CMP	(idx,X)		; C1 58
+0001A6 C2 49            	REP	#imm		; C2 49
+0001A8 C3 58            	CMP	idx,S		; C3 58
+0001AA C4 44            	CPY	dir		; C4 44
+0001AC C5 44            	CMP	dir		; C5 44
+0001AE C6 44            	DEC	dir		; C6 44
+0001B0 C7 44            	CMP	[dir]		; C7 44
+
+0001B2 C8               	INY			; C8
+0001B3 C9 49            	CMP	#imm		; C9 49
+0001B5 CA               	DEX			; CA
+0001B6 CB               	WAI			; CB
+0001B7 CC 4241          	CPY	abs		; CC 4241
+0001BA CD 4241          	CMP	abs		; CD 4241
+0001BD CE 4241          	DEC	abs		; CE 4241
+0001C0 CF 4C4241        	CMP	absl		; CF 4C4241
+
+0001C4 D0 FE            	BNE	*		; D0 FE
+0001C6 D1 58            	CMP	(idx),Y		; D1 58
+0001C8 D2 58            	CMP	(idx)		; D2 58
+0001CA D3 58            	CMP	(idx,S),Y	; C3 58
+0001CC D4 44            	PEI	dir		; D4 44 - might be "PEI [dir]"
+0001CE D5 44            	CMP	dir,X		; D5 44
+0001D0 D6 44            	DEC	dir,X		; D6 44
+0001D2 D7 44            	CMP	[dir],Y		; D7 44
+
+0001D4 D8               	CLD			; D8
+0001D5 D9 4241          	CMP	abs,Y		; D9 4241
+0001D8 DA               	PHX			; DA
+0001D9 DB               	STP			; DB
+0001DA DC 4241          	JML	(abs)		; DC 4241
+0001DD DD 4241          	CMP	abs,X		; DD 4241
+0001E0 DE 4241          	DEC	abs,X		; DE 4241
+0001E3 DF 4C4241        	CMP	absl,X		; DF 4C4241
+
+0001E7 E0 49            	CPX	#imm		; E0 49
+0001E9 E1 58            	SBC	(idx,X)		; E1 58
+0001EB E2 49            	SEP	#imm		; E2 49
+0001ED E3 58            	SBC	idx,S		; E3 58
+0001EF E4 44            	CPX	dir		; E4 44
+0001F1 E5 44            	SBC	dir		; E5 44
+0001F3 E6 44            	INC	dir		; E6 44
+0001F5 E7 44            	SBC	[dir]		; E7 44
+
+0001F7 E8               	INX			; E8
+0001F8 E9 49            	SBC	#imm		; E9 49
+0001FA EA               	NOP			; EA
+0001FB EB               	XBA			; EB
+0001FC EC 4241          	CPX	abs		; EC 4241
+0001FF ED 4241          	SBC	abs		; ED 4241
+000202 EE 4241          	INC	abs		; EE 4241
+000205 EF 4C4241        	SBC	absl		; EF 4C4241
+
+000209 F0 FE            	BEQ	*		; F0 FE
+00020B F1 58            	SBC	(idx),Y		; F1 58
+00020D F2 58            	SBC	(idx)		; F2 58
+00020F F3 58            	SBC	(idx,S),Y	; E3 58
+000211 F4 4241          	PEA	abs		; F4 4241
+000214 F5 44            	SBC	dir,X		; F5 44
+000216 F6 44            	INC	dir,X		; F6 44
+000218 F7 44            	SBC	[dir],Y		; F7 44
+
+00021A F8               	SED			; F8
+00021B F9 4241          	SBC	abs,Y		; F9 4241
+00021E FA               	PLX			; FA
+00021F FB               	XCE			; FB
+000220 FC 4241          	JSR	(abs,X)		; FC 4241
+000223 FD 4241          	SBC	abs,X		; FD 4241
+000226 FE 4241          	INC	abs,X		; FE 4241
+000229 FF 4C4241        	SBC	absl,X		; FF 4C4241
+
+                        	.LONGA ON		; 16-bit A immediate
+
+00022D 09 4900          	ORA	#imm		; 09 4900
+000230 29 4900          	AND	#imm		; 29 4900
+000233 49 4900          	EOR	#imm		; 49 4900
+000236 69 4900          	ADC	#imm		; 69 4900
+000239 89 4900          	BIT	#imm		; 89 4900
+00023C A9 4900          	LDA	#imm		; A9 4900
+00023F C9 4900          	CMP	#imm		; C9 4900
+000242 E9 4900          	SBC	#imm		; E9 4900
+
+                        	.LONGI ON		; 16-bit X,Y immediate
+
+000245 A0 4900          	LDY	#imm		; A0 4900
+000248 A2 4900          	LDX	#imm		; A2 4900
+00024B C0 4900          	CPY	#imm		; C0 4900
+00024E E0 4900          	CPX	#imm		; E0 4900
+
+000251                  	END
+
+ABS                00004142 E  ABSL               0041424C E  DIR                00000044 E
+IDX                00000058 E  IMM                00000049 E

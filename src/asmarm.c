@@ -1,10 +1,9 @@
-// asmarm.c - copyright 2007 Bruce Tomlin
+// asmarm.c
 
 #define versionName "ARM assembler"
 #include "asmx.h"
 
-enum
-{
+enum {
     o_Branch,       // Bcc / BLcc
     o_OneReg,       // Rm (only used for BX?)
     o_OneRegShift,  // Rd,shifter
@@ -36,8 +35,16 @@ const char pregs[] = "P0 P1 P2 P3 P4 P5 P6 P7 P8 P9 P10 P11 P12 P13 P14 P15";
 const char cregs[] = "CR0 CR1 CR2 CR3 CR4 CR5 CR6 CR7 CR8 CR9 CR10 CR11 CR12 CR13 CR14 CR15";
 const char shifts[] = "LSL LSR ASR ROR RRX ASL";
 
-struct OpcdRec ARM_opcdTab[] =
-{
+enum { // shifts
+    TYP_LSL = 0,
+    TYP_LSR = 1,
+    TYP_ASR = 2,
+    TYP_ROR = 3,
+    TYP_RRX = 4,
+    TYP_ASL = 5, // same as 0
+};
+
+static const struct OpcdRec ARM_opcdTab[] = {
     // B and BL don't use wildcards to avoid false matches with BL, BLX, and BX
     {"B",       o_Branch,       0xEA000000},
     {"BEQ",     o_Branch,       0x0A000000},
@@ -146,14 +153,13 @@ struct OpcdRec ARM_opcdTab[] =
 // --------------------------------------------------------------
 
 
-long ARMImmed(unsigned long val)
+static long ARMImmed(uint32_t val)
 {
     // note: can't abort assembling instruction because it may cause phase errors
 
-    if ((val & 0xFFFFFF00) == 0)
+    if ((val & 0xFFFFFF00) == 0) {
         return (val & 0xFF);
-    else
-    {
+    } else {
         // FIXME: need to handle shifts
         // bit 25 (I) = 1
         // bits 8-11 = rotate (immed8 is rotated right by 2 * this value)
@@ -166,9 +172,9 @@ long ARMImmed(unsigned long val)
 }
 
 
-bool ARMShifter(unsigned long *shift)
+static bool ARMShifter(uint32_t *shift)
 {
-    int     reg1,reg2,typ;
+    int     reg1, reg2, typ;
     Str255  word;
     char    *oldLine;
     int     token;
@@ -177,50 +183,38 @@ bool ARMShifter(unsigned long *shift)
     *shift = 0;
 
     token = GetWord(word);
-    if (token == '#')
-    {
+    if (token == '#') {
         val = Eval();
         *shift = (1 << 25) | ARMImmed(val);
-    }
-//  else if (token == '=')
-//  {
-//  }
-    else
-    {
-        reg1 = FindReg(word,regs);
+//  } else if (token == '=') {
+//      // I think this is where "=value" for deferred constants needs to go
+//
+    } else {
+        reg1 = FindReg(word, regs);
         if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
         if (CheckReg(reg1)) return 1;
 
         oldLine = linePtr;
         token = GetWord(word);
-        if (token != ',')
-        {
+        if (token != ',') {
             linePtr = oldLine;
             *shift = reg1;
-        }
-        else
-        {
+        } else {
             // shifts and rotates
             typ = GetReg(shifts);
-            if (typ == 5) typ = 0; // ASL -> LSL
-            if (typ < 0)
+            if (typ == TYP_ASL) typ = TYP_LSL;
+            if (typ < 0) {
                 IllegalOperand();
-            else if (typ == 4)
-            {
-                *shift = 0x60 | reg1; // RRX
-            }
-            else
-            {
+            } else if (typ == TYP_RRX) {
+                *shift = 0x60 | reg1;
+            } else {
                 token = GetWord(word);
-                if (token == '#')
-                {
+                if (token == '#') {
                     val = Eval();
                     // FIXME: need to range check immed5
                     *shift = (typ << 5) | reg1 | ((val & 0x1F) << 7);
-                }
-                else
-                {
-                    reg2 = FindReg(word,regs);
+                } else {
+                    reg2 = FindReg(word, regs);
                     if (reg2 > 15) reg2 = reg2 - 3; // SP LR PC -> R13 R14 R15
                     if (CheckReg(reg2)) return 1;
 
@@ -234,7 +228,7 @@ bool ARMShifter(unsigned long *shift)
 }
 
 
-int ARMPlusMinus(void)
+static int ARMPlusMinus(void)
 {
     Str255  word;
     char    *oldLine;
@@ -242,8 +236,7 @@ int ARMPlusMinus(void)
 
     oldLine = linePtr;
     token = GetWord(word);
-    switch(token)
-    {
+    switch (token) {
         case '+':
             return 1;
 
@@ -257,7 +250,7 @@ int ARMPlusMinus(void)
 }
 
 
-int ARMWriteback(void)
+static int ARMWriteback(void)
 {
     Str255  word;
     char    *oldLine;
@@ -272,10 +265,10 @@ int ARMWriteback(void)
 }
 
 
-// addressing mode for LDR/STR/B/T/BT (post flag is TRUE for T opcode)
-bool ARMAddrMode2(unsigned long *mode, bool post)
+// addressing mode for LDR/STR/B/T/BT (post flag is true for T opcode)
+static bool ARMAddrMode2(uint32_t *mode, bool post)
 {
-    int     reg1,reg2;
+    int     reg1, reg2;
     Str255  word;
     char    *oldLine;
     int     token;
@@ -294,31 +287,28 @@ bool ARMAddrMode2(unsigned long *mode, bool post)
 
     oldLine = linePtr;
     token = GetWord(word);
-    if (token == ',')
-    {
-        if (post)
-        {
+    if (token == ',') {
+        if (post) {
             BadMode();
             return 1; // these modes not allowed for post-addrmode
         }
 
         oldLine = linePtr;
         token = GetWord(word);
-        if (token == '#')
-        {   // [Rn, #+/- ofs12
+        if (token == '#') {
+            // [Rn, #+/- ofs12
             val = Eval();
             if (Expect("]")) return 1;
             wb = ARMWriteback();
 
             // FIXME: need to check range
 
-            if (val < 0)
+            if (val < 0) {
                 *mode = (reg1 << 16) | (1 << 24) | (wb << 21) | (-val & 0x0FFF);
-            else
+            } else {
                 *mode = (reg1 << 16) | (1 << 24) | (1 << 23) | (wb << 21) | (val & 0x0FFF);
-        }
-        else
-        {
+            }
+        } else {
             linePtr = oldLine;
             sign = ARMPlusMinus();
 
@@ -328,23 +318,18 @@ bool ARMAddrMode2(unsigned long *mode, bool post)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == ',')
-            {
+            if (token == ',') {
                 // FIXME ,shift #immed5
                 typ = GetReg(shifts);
-                if (typ == 5) typ = 0; // ASL -> LSL
-                if (typ < 0)
+                if (typ == TYP_ASL) typ = TYP_LSL;
+                if (typ < 0) {
                     IllegalOperand();
-                else if (typ == 4)
-                {
-                    // RRX
+                } else if (typ == TYP_RRX) {
                     if (Expect("]")) return 1;
                     wb = ARMWriteback();
 
                     *mode = (1 << 25) | (1 << 24) | (sign << 23) | (wb << 21) | (reg1 << 16) | (3 << 5) | reg2;
-                }
-                else
-                {
+                } else {
                     Expect("#");
                     val = Eval();
                     // FIXME need to range check immed5, must be != 0
@@ -353,9 +338,7 @@ bool ARMAddrMode2(unsigned long *mode, bool post)
 
                     *mode = (1 << 25) | (1 << 24) | (sign << 23) | (wb << 21) | (reg1 << 16) | ((val & 31) << 7) | (typ << 5) | reg2;
                 }
-            }
-            else
-            {
+            } else {
                 linePtr = oldLine;
                 if (Expect("]")) return 1;
                 wb = ARMWriteback();
@@ -363,18 +346,14 @@ bool ARMAddrMode2(unsigned long *mode, bool post)
                 *mode = (1 << 25) | (1 << 24) | (sign << 23) | (wb << 21) | (reg1 << 16) | reg2;
             }
 
-
             // FIXME need to set bits
         }
-    }
-    else
-    {
+    } else {
         linePtr = oldLine;
         if (Expect("]")) return 1;
         oldLine = linePtr;
         token = GetWord(word);
-        if (!token)
-        {
+        if (!token) {
             // various possible ways of representing this
             // [Rn] => [Rn,#0]
             //*mode = (reg1 << 16) | (1 << 24) | (1 << 23);
@@ -382,37 +361,30 @@ bool ARMAddrMode2(unsigned long *mode, bool post)
             //*mode = (1 << 23) | (reg1 << 16);
             // [Rn] => [Rn,#-0]
             *mode = (reg1 << 16) | (1 << 24);
-        }
-        else if (token == '!')
-        {
-            if (post)
-            {
+        } else if (token == '!') {
+            if (post) {
                 BadMode();
                 return 1; // writeback modes not allowed for post-addrmode
             }
 
             // [Rn]! => [Rn,#0]!
             *mode = (1 << 24) | (1 << 23) | (1 << 21) | (reg1 << 16);
-        }
-        else
-        {
+        } else {
             linePtr = oldLine;
             if (Comma()) return 1;
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#')
-            {
+            if (token == '#') {
                 val = Eval();
                 // FIXME: need to check range
 
-                if (val < 0)
+                if (val < 0) {
                     *mode = (reg1 << 16) | (-val & 0x0FFF);
-                else
+                } else {
                     *mode = (1 << 23) | (reg1 << 16) | (val & 0x0FFF);
-            }
-            else
-            {
+                }
+            } else {
                 linePtr = oldLine;
                 sign = ARMPlusMinus();
 
@@ -422,29 +394,21 @@ bool ARMAddrMode2(unsigned long *mode, bool post)
 
                 oldLine = linePtr;
                 token = GetWord(word);
-                if (token == ',')
-                {
+                if (token == ',') {
                     // FIXME ,shift #immed5
                     typ = GetReg(shifts);
-                    if (typ == 5) typ = 0; // ASL -> LSL
-                    if (typ < 0)
+                    if (typ == TYP_ASL) typ = TYP_LSL;
+                    if (typ < 0) {
                         IllegalOperand();
-                    else if (typ == 4)
-                    {
-                        // RRX
-
+                    } else if (typ == TYP_RRX) {
                         *mode = (1 << 25) | (sign << 23) | (reg1 << 16) | (3 << 5) | reg2;
-                    }
-                    else
-                    {
+                    } else {
                         Expect("#");
                         val = Eval();
                         // FIXME need to range check immed5
                         *mode = (1 << 25) | (sign << 23) | (reg1 << 16) | ((val & 31) << 7) | (typ << 5) | reg2;
                     }
-                }
-                else
-                {
+                } else {
                     linePtr = oldLine;
 
                     *mode = (1 << 25) | (sign << 23) | (reg1 << 16) | reg2;
@@ -460,9 +424,9 @@ bool ARMAddrMode2(unsigned long *mode, bool post)
 
 
 // addressing mode for LDRH/LDRSB/LDRSH/STRH
-bool ARMAddrMode3(unsigned long *mode)
+static bool ARMAddrMode3(uint32_t *mode)
 {
-    int     reg1,reg2;
+    int     reg1, reg2;
     Str255  word;
     char    *oldLine;
     int     token;
@@ -480,24 +444,21 @@ bool ARMAddrMode3(unsigned long *mode)
 
     oldLine = linePtr;
     token = GetWord(word);
-    if (token == ',')
-    {
+    if (token == ',') {
         oldLine = linePtr;
         token = GetWord(word);
-        if (token == '#')
-        {
+        if (token == '#') {
             val = Eval();
             if (Expect("]")) return 1;
             wb = ARMWriteback();
 
             // FIXME: need to check range
-            if (val < 0)
+            if (val < 0) {
                 *mode = (1 << 24) | (1 << 22) | (wb << 21) | (reg1 << 16) | ((-val & 0xF0) << 4) | (-val & 0x0F);
-            else
+            } else {
                 *mode = (1 << 24) | (1 << 23) | (1 << 22) | (wb << 21) | (reg1 << 16) | ((val & 0xF0) << 4) | (val & 0x0F);
-        }
-        else
-        {
+            }
+        } else {
             linePtr = oldLine;
             sign = ARMPlusMinus();
 
@@ -511,16 +472,13 @@ bool ARMAddrMode3(unsigned long *mode)
 
             *mode = (1 << 24) | (sign << 23) | (wb << 21) | (reg1 << 16) | reg2;
         }
-    }
-    else
-    {
+    } else {
         linePtr = oldLine;
         if (Expect("]")) return 1;
 
         oldLine = linePtr;
         token = GetWord(word);
-        if (!token)
-        {
+        if (!token) {
             // various possible ways of representing this
             // [Rn] => [Rn,#0]
             //*mode = (1 << 24) | (1 << 23) | (1 << 22) | (reg1 << 16);
@@ -528,31 +486,25 @@ bool ARMAddrMode3(unsigned long *mode)
             //*mode = (1 << 23) | (1 << 22) | (reg1 << 16);
             // [Rn] => [Rn,#-0]
             *mode = (1 << 24) | (1 << 22) | (reg1 << 16);
-        }
-        else if (token == '!')
-        {
+        } else if (token == '!') {
             // [Rn]! => [Rn,#0]!
             *mode = (1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) | (reg1 << 16);
-        }
-        else
-        {
+        } else {
             linePtr = oldLine;
             if (Comma()) return 1;
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#')
-            {
+            if (token == '#') {
                 val = Eval();
                 // FIXME: need to check range
 
-                if (val < 0)
+                if (val < 0) {
                     *mode = (1 << 22) | (reg1 << 16) | ((-val & 0xF0) << 4) | (-val & 0x0F);
-                else
+                } else {
                     *mode = (1 << 23) | (1 << 22) | (reg1 << 16) | ((val & 0xF0) << 4) | (val & 0x0F);
-            }
-            else
-            {
+                }
+            } else {
                 linePtr = oldLine;
                 sign = ARMPlusMinus();
 
@@ -570,13 +522,13 @@ bool ARMAddrMode3(unsigned long *mode)
 
 
 // addressing mode for LDC/STC
-bool ARMAddrMode5(unsigned long *mode)
+static bool ARMAddrMode5(uint32_t *mode)
 {
-    int     reg1;//,reg2;
+    int     reg1;//, reg2;
     Str255  word;
     char    *oldLine;
     int     token;
-//    int     sign;
+//  int     sign;
     int     wb;
     int     val;
 
@@ -590,29 +542,26 @@ bool ARMAddrMode5(unsigned long *mode)
 
     oldLine = linePtr;
     token = GetWord(word);
-    if (token == ',')
-    {
+    if (token == ',') {
         if (Expect("#")) return 1;
 
         val = Eval();
         if (Expect("]")) return 1;
         wb = ARMWriteback();
 
-            // FIXME: need to check range
-            if (val < 0)
-                *mode = (1 << 24) | (wb << 21) | (reg1 << 16) | (((-val) >> 2) & 0xFF);
-            else
-                *mode = (1 << 24) | (1 << 23) | (wb << 21) | (reg1 << 16) | ((val >> 2) & 0xFF);
-    }
-    else
-    {
+        // FIXME: need to check range
+        if (val < 0) {
+            *mode = (1 << 24) | (wb << 21) | (reg1 << 16) | (((-val) >> 2) & 0xFF);
+        } else {
+            *mode = (1 << 24) | (1 << 23) | (wb << 21) | (reg1 << 16) | ((val >> 2) & 0xFF);
+        }
+    } else {
         linePtr = oldLine;
         if (Expect("]")) return 1;
 
         oldLine = linePtr;
         token = GetWord(word);
-        if (!token)
-        {
+        if (!token) {
             // various possible ways of representing this
             // [Rn] => [Rn],#0
             //*mode = (1 << 23) | (1 << 21) | (reg1 << 16);
@@ -620,40 +569,36 @@ bool ARMAddrMode5(unsigned long *mode)
             //*mode = (1 << 21) | (reg1 << 16);
             // [Rn] => [Rn,#-0]
             *mode = (1 << 24) | (reg1 << 16);
-        }
-        else if (token == '!')
-        {
+        } else if (token == '!') {
             // [Rn]! => [Rn,#0]!
             *mode = (1 << 24) | (1 << 23) | (1 << 21) | (reg1 << 16);
-        }
-        else
-        {
+        } else {
             linePtr = oldLine;
 
             if (Comma()) return 1;
 
             token = GetWord(word);
-            if (token == '#')
-            {
-                val = Eval();
-                // FIXME: need to check range
-                if (val < 0)
-                    *mode = (1 << 21) | (reg1 << 16) | ((-val >> 2) & 0xFF);
-                else
-                    *mode = (1 << 23) | (1 << 21) | (reg1 << 16) | ((val >> 2) & 0xFF);
-            }
-        else if (token == '{')
-            {
-                val = Eval();
-                if (Expect("}")) return 1;
+            switch (token) {
+                case '#':
+                    val = Eval();
+                    // FIXME: need to check range
+                    if (val < 0) {
+                        *mode = (1 << 21) | (reg1 << 16) | ((-val >> 2) & 0xFF);
+                    } else {
+                        *mode = (1 << 23) | (1 << 21) | (reg1 << 16) | ((val >> 2) & 0xFF);
+                    }
+                    break;
 
-                // FIXME: need to check range
-                *mode = (1 << 23) | (reg1 << 16) | (val & 0xFF);
-            }
-            else
-            {
-                Error("\"#\" or \"{\" expected");
-                return 1;
+                case '{':
+                    val = Eval();
+                    if (Expect("}")) return 1;
+                    // FIXME: need to check range
+                    *mode = (1 << 23) | (reg1 << 16) | (val & 0xFF);
+                    break;
+
+                default:
+                    Error("\"#\" or \"{\" expected");
+                    return 1;
             }
         }
     }
@@ -662,27 +607,26 @@ bool ARMAddrMode5(unsigned long *mode)
 }
 
 
-void SetARMMultiReg(int reg, unsigned short *regbits, bool *warned)
+static void SetARMMultiReg(int reg, uint16_t *regbits, bool *warned)
 {
-    if (!*warned && *regbits & (1 << reg))
-    {
+    if (!*warned && *regbits & (1 << reg)) {
         Warning("register specified twice");
-        *warned = TRUE;
+        *warned = true;
     }
     *regbits |= 1 << reg;
 }
 
 
-int ARMGetMultiRegs(unsigned short *regbits)
+static int ARMGetMultiRegs(uint16_t *regbits)
 {
-    int     reg1,reg2,i;
+    int     reg1, reg2;
     Str255  word;
     char    *oldLine;
     int     token;
     bool    warned;
 
     *regbits = 0;
-    warned = FALSE;
+    warned = false;
 
     // looking for {r0,r2-r5,r6,lr}
 
@@ -692,13 +636,11 @@ int ARMGetMultiRegs(unsigned short *regbits)
 
     oldLine = linePtr;
     token = ',';
-    while (token == ',')
-    {
+    while (token == ',') {
         reg1 = GetReg(regs);
         if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
 
-        if (reg1 < 0)
-        {
+        if (reg1 < 0) {
             IllegalOperand();      // abort if not valid register
             break;
         }
@@ -710,32 +652,30 @@ int ARMGetMultiRegs(unsigned short *regbits)
         oldLine = linePtr;
         token = GetWord(word);
 
-        if (token == '-')       // register range
-        {
+        if (token == '-') {     // register range
             oldLine = linePtr;  // commit line position
             reg2 = GetReg(regs); // check for second register
             if (reg2 > 15) reg2 = reg2 - 3; // SP LR PC -> R13 R14 R15
 
-            if (reg2 < 0)
-            {
+            if (reg2 < 0) {
                 IllegalOperand();      // abort if not valid register
                 break;
             }
-            if (reg1 < reg2)
-            {
-                for (i = reg1 + 1 ; i <= reg2; i++)
+            if (reg1 < reg2) {
+                for (int i = reg1 + 1; i <= reg2; i++) {
                     SetARMMultiReg(i, regbits, &warned);
-            }
-            else if (reg1 > reg2)
-            {
-                for (i = reg1 - 1 ; i >= reg2; i--)
+                }
+            } else if (reg1 > reg2) {
+                for (int i = reg1 - 1; i >= reg2; i--) {
                     SetARMMultiReg(i, regbits, &warned);
+                }
             }
             oldLine = linePtr;  // commit line position
             token = GetWord(word);
         }
-        if (token == ',')  // is there another register?
+        if (token == ',') { // is there another register?
             oldLine = linePtr;  // commit line position
+        }
     }
     linePtr = oldLine;
 
@@ -747,29 +687,29 @@ int ARMGetMultiRegs(unsigned short *regbits)
 
 // returns the LDM/STM type string
 // returns -1 if invalid type string
-// returns 0-3 for DA/IA/DB/IB, 4-7 for FAEA/FD/ED, (value & 3) << 23 to opcode
+// returns 0-3 for DA/IA/DB/IB, 4-7 for FA/EA/FD/ED, (value & 3) << 23 to opcode
 // if LDM and return >= 4, XOR result by 3 first
-int ARMGetLDMType(char *word)
+static int ARMGetLDMType(char *word)
 {
-    char types[] = "DAIADBIBEDEAFDFA";
-    int i,ofs;
+    int i, ofs;
 
     ofs = 0;
 
-    if (!word[0] || !word[1]) // type string less than 2 bytes
+    if (!word[0] || !word[1]) { // type string less than 2 bytes
         return -1;
+    }
 
-    if (word[2] && word[3] && !word[4]) // 4-char type
+    if (word[2] && word[3] && !word[4]) { // 4-char type
         ofs = 2;
-//    else if (word[2]) // not a 2-char type
-//        return -1;
+//  } else if (word[2]) { // not a 2-char type
+//      return -1;
+    }
 
-    for (i=0; i<8; i++)
-        if (word[ofs] == types[i*2] && word[ofs+1] == types[i*2+1] && !word[ofs+2])
-        {
-            word[ofs] = 0; // remove LDM/STM type and leave condition code intact
-            return i;
-        }
+    i = FindReg(word + ofs, "DA IA DB IB ED EA FD FA");
+    if (i >= 0) {
+        word[ofs] = 0; // remove LDM/STM type and leave condition code intact
+        return i;
+    }
 
     return -1;
 }
@@ -777,44 +717,42 @@ int ARMGetLDMType(char *word)
 
 enum { LDR_none, LDR_B, LDR_BT, LDR_H, LDR_SB, LDR_SH, LDR_T };
 
-int ARMGetLDRType(char *word)
+static int ARMGetLDRType(char *word)
 {
-    char types[] = "B\000BTH\000SBSHT\000";
-    int i,ofs;
+    int i, ofs;
 
     ofs = 0;
 
     if (!word[0]) return 0; // empty type string
 
-    if (word[1] && word[2]) // 3- or 4-char type
+    if (word[1] && word[2]) { // 3- or 4-char type
         ofs = 2;
+    }
 
-    for (i=0; i<6; i++)
-        if (word[ofs] == types[i*2] && word[ofs+1] == types[i*2+1] && !(types[i*2+1] && word[ofs+2]))
-        {
-            word[ofs] = 0; // remove LDM/STM type and leave condition code intact
-            return i+1;
-        }
+    i = FindReg(word + ofs, "B BT H SB SH T");
+    if (i >= 0) {
+        word[ofs] = 0; // remove LDR type and leave condition code intact
+        return i + 1;
+    }
 
     return 0;
 }
 
 
-long ARMGetMSRReg(char *word)
+static long ARMGetMSRReg(char *word)
 {
     char *p;
     int  bit;
     long mask;
 
+    // CPSR_flags or SPSR_flags
     if (word[0] != 'C' && word[0] != 'S') return -1;
     if (word[1] != 'P' || word[2] != 'S' || word[3] != 'R' || word[4] != '_' || !word[5]) return -1;
 
     mask = 0;
-    p = word+5;
-    while (*p)
-    {
-        switch(*p++)
-        {
+    p = word + 5;
+    while (*p) {
+        switch (*p++) {
             case 'C': bit = 16; break;
             case 'X': bit = 17; break;
             case 'S': bit = 18; break;
@@ -829,39 +767,35 @@ long ARMGetMSRReg(char *word)
 }
 
 
-bool ARMCond(int *cond, char *word)
+static bool ARMCond(int *cond, char *word)
 {
     int reg1;
 
     *cond = 14; // default to ALways
-    if (word[0])
-    {
-        reg1 = FindReg(word,"EQ NE CS CC MI PL VS VC HI LS GE LT GT LE AL HS LO");
-        if (reg1 < 0) return TRUE;
+    if (word[0]) {
+        reg1 = FindReg(word, "EQ NE CS CC MI PL VS VC HI LS GE LT GT LE AL HS LO");
+        if (reg1 < 0) return true;
         if (reg1 > 14) reg1 = reg1 - 14 + 2; // HS -> CS / LO -> CC
         *cond = reg1;
     }
 
-    return FALSE;
+    return false;
 }
 
 
-bool ARMOpcodeFlag(char *word, char flag)
+static bool ARMOpcodeFlag(char *word, char flag)
 {
-    if ((word[0]==flag) && (word[1]==0))
-    {
+    if ((word[0] == flag) && (word[1] == 0)) {
         word[0] = 0;
         return 1;
     }
 
-    if (word[0] && word[1] && (word[2]==flag) && (word[3]==0))
-    {
+    if (word[0] && word[1] && (word[2] == flag) && (word[3] == 0)) {
         word[2] = 0;
         return 1;
     }
 
-    if (word[0] && word[1] && word[2] && (word[3]==flag) && (word[4]==0))
-    {
+    if (word[0] && word[1] && word[2] && (word[3] == flag) && (word[4] == 0)) {
         word[2] = 0;
         return 1;
     }
@@ -870,7 +804,7 @@ bool ARMOpcodeFlag(char *word, char flag)
 }
 
 
-int ARMEvalBranch(int width, int instrLen) // instrLen should be 8
+static int ARMEvalBranch(int width, int instrLen) // instrLen should be 8
 {
     long val;
     long limit;
@@ -879,39 +813,39 @@ int ARMEvalBranch(int width, int instrLen) // instrLen should be 8
 
     val = Eval();
     val = val - locPtr - instrLen;
-    if (!errFlag && ((val & 3) || val < ~limit || val > limit))
+    if (!errFlag && ((val & 3) || val < ~limit || val > limit)) {
         Error("Long branch out of range");
+    }
 
     return val;
 }
 
 
-int ARM_DoCPUOpcode(int typ, int parm)
+static int ARM_DoCPUOpcode(int typ, int parm)
 {
-    int     val,val2;
-    int     i;
+    int     val, val2, i;
     Str255  word;
     char    *oldLine;
     int     token;
-    int     reg1,reg2,reg3,reg4;
+    int     reg1, reg2, reg3, reg4;
     int     cond;
-    unsigned long  mode;
-    unsigned short regbits;
+    uint32_t mode;
+    uint16_t regbits;
 
     // get condition from opcode wildcard
-    word[0]=0;
-    if (isalnum(*linePtr))
+    word[0] = 0;
+    if (isalnum(*linePtr)) {
         GetWord(word);
+    }
 
-    switch(typ)
-    {
+    switch (typ) {
         case o_Branch:       // Bcc / BLcc
-            val = ARMEvalBranch(24,8);
+            val = ARMEvalBranch(24, 8);
             InstrL(parm | ((val >> 2) & 0x00FFFFFF));
             break;
 
         case o_OneReg:       // Rm
-            if (ARMCond(&cond,word)) return 0;
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -921,8 +855,8 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_OneRegShiftS: // Rd,shifter with optional S
-            val = ARMOpcodeFlag(word,'S');
-            if (ARMCond(&cond,word)) return 0;
+            val = ARMOpcodeFlag(word, 'S');
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -936,7 +870,7 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_OneRegShift:  // Rd,shifter
-            if (ARMCond(&cond,word)) return 0;
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -950,8 +884,8 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_TwoRegShiftS: // Rd,Rn,shifter with optional S
-            val = ARMOpcodeFlag(word,'S');
-            if (ARMCond(&cond,word)) return 0;
+            val = ARMOpcodeFlag(word, 'S');
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -971,7 +905,7 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_SWI:          // SWI immed24
-            if (ARMCond(&cond,word)) return 0;
+            if (ARMCond(&cond, word)) return 0;
 
             val = Eval();
             // FIXME: need to check immed24 range
@@ -987,31 +921,28 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_BLX:          // BLX
-            if (ARMCond(&cond,word)) return 0;
+            if (ARMCond(&cond, word)) return 0;
 
             oldLine = linePtr;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
 
-            if (reg1 >= 0)
-            {
+            if (reg1 >= 0) {
                 InstrL(parm | (cond << 28) | reg1);
-            }
-            else
-            {
+            } else {
                 linePtr = oldLine;
 
                 if (cond != 14) return 0; // this form of BLX is always unconditional
 
-                val = ARMEvalBranch(25,8);
+                val = ARMEvalBranch(25, 8);
                 InstrL(0xFA000000 | ((val << 23) & 0x01000000) | ((val >> 2) & 0x00FFFFFF));
             }
 
             break;
 
         case o_CLZ:          // CLZ
-            if (ARMCond(&cond,word)) return 0;
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -1027,8 +958,8 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_MUL:          // MUL
-            val = ARMOpcodeFlag(word,'S');
-            if (ARMCond(&cond,word)) return 0;
+            val = ARMOpcodeFlag(word, 'S');
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -1050,8 +981,8 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_SWP:          // SWP
-            val = ARMOpcodeFlag(word,'B');
-            if (ARMCond(&cond,word)) return 0;
+            val = ARMOpcodeFlag(word, 'B');
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -1077,7 +1008,7 @@ int ARM_DoCPUOpcode(int typ, int parm)
 
         case o_LDM_STM:      // LDM/STM
             if ((reg2 = ARMGetLDMType(word)) < 0) return 0;
-            if (ARMCond(&cond,word)) return 0;
+            if (ARMCond(&cond, word)) return 0;
 
             if (reg2 > 4 && parm) reg2 = reg2 ^ 3; // invert ED/FD/EA/MA for LDM
             reg2 = reg2 & 3; // mask off IB/IA/DB/DA bits
@@ -1090,9 +1021,11 @@ int ARM_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '!')
+            if (token == '!') {
                 val = 1 << 21;
-            else linePtr = oldLine;
+            } else {
+                linePtr = oldLine;
+            }
 
             if (Comma()) break;
 
@@ -1100,17 +1033,16 @@ int ARM_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '^')
-            {
-                if (parm && (!val || (regbits & 0x8000)))
+            if (token == '^') {
+                if (parm && (!val || (regbits & 0x8000))) {
                     val |= (1 << 22);
-                else
-                {
+                } else {
                     IllegalOperand();
                     break;
                 }
+            } else {
+                linePtr = oldLine;
             }
-            else linePtr = oldLine;
 
             InstrL(parm | 0x08000000 | (cond << 28) | (reg2 << 23) | (reg1 << 16) | val | regbits);
 
@@ -1119,7 +1051,7 @@ int ARM_DoCPUOpcode(int typ, int parm)
         case o_LDR_STR:      // LDR/STR
             if ((reg2 = ARMGetLDRType(word)) < 0) return 0;
             if (!parm && (reg2 == LDR_SB || reg2 == LDR_SH)) return 0; // STRSB and STRSH are invalid
-            if (ARMCond(&cond,word)) return 0;
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -1127,14 +1059,14 @@ int ARM_DoCPUOpcode(int typ, int parm)
 
             if (Comma()) break;
 
-            if (reg2 == LDR_H || reg2 == LDR_SB || reg2 == LDR_SH)
+            if (reg2 == LDR_H || reg2 == LDR_SB || reg2 == LDR_SH) {
                 val = ARMAddrMode3(&mode);
-            else
-                val = ARMAddrMode2(&mode,reg2 == LDR_BT || reg2 == LDR_T);
+            } else {
+                val = ARMAddrMode2(&mode, reg2 == LDR_BT || reg2 == LDR_T);
+            }
             if (val) break;
 
-            switch(reg2)
-            {
+            switch (reg2) {
                 case LDR_none:
                     InstrL(parm | (cond << 28) | 0x04000000 | (reg1 << 12) | mode);
                     break;
@@ -1163,11 +1095,10 @@ int ARM_DoCPUOpcode(int typ, int parm)
                     InstrL(parm | (cond << 28) | 0x04200000 | (reg1 << 12) | mode);
                     break;
             }
-
             break;
 
         case o_MRS:          // MRS
-            if (ARMCond(&cond,word)) return 0;
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -1182,16 +1113,14 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_MSR:          // MSR
-            if (ARMCond(&cond,word)) return 0;
+            if (ARMCond(&cond, word)) return 0;
 
-            if (!GetWord(word))
-            {
+            if (!GetWord(word)) {
                 MissingOperand();
                 break;
             }
             reg1 = ARMGetMSRReg(word);
-            if (reg1 < 0)
-            {
+            if (reg1 < 0) {
                 IllegalOperand();
                 break;
             }
@@ -1199,14 +1128,11 @@ int ARM_DoCPUOpcode(int typ, int parm)
             if (Comma()) break;
 
             token = GetWord(word);
-            if (token == '#')
-            {
+            if (token == '#') {
                 val = Eval();
                 InstrL(parm | (cond << 28) | (1 << 25) | reg1 | ARMImmed(val));
-            }
-            else
-            {
-                reg2 = FindReg(word,regs);
+            } else {
+                reg2 = FindReg(word, regs);
                 if (reg2 > 15) reg2 = reg2 - 3; // SP LR PC -> R13 R14 R15
                 if (CheckReg(reg2)) break;
 
@@ -1216,8 +1142,8 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_MLA:          // MLA
-            val = ARMOpcodeFlag(word,'S');
-            if (ARMCond(&cond,word)) return 0;
+            val = ARMOpcodeFlag(word, 'S');
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -1245,8 +1171,8 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_MLAL:         // MLAL
-            val = ARMOpcodeFlag(word,'S');
-            if (ARMCond(&cond,word)) return 0;
+            val = ARMOpcodeFlag(word, 'S');
+            if (ARMCond(&cond, word)) return 0;
 
             reg1 = GetReg(regs);
             if (reg1 > 15) reg1 = reg1 - 3; // SP LR PC -> R13 R14 R15
@@ -1274,10 +1200,11 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_CDP:          // CDP
-            if (word[0] == '2' && !word[1])
+            if (word[0] == '2' && !word[1]) {
                 cond = 15;
-            else
-                if (ARMCond(&cond,word)) return 0;
+            } else {
+                if (ARMCond(&cond, word)) return 0;
+            }
 
             val = GetReg(pregs);
             if (CheckReg(val)) break;
@@ -1286,8 +1213,9 @@ int ARM_DoCPUOpcode(int typ, int parm)
             if (Comma()) break;
 
             val2 = Eval();
-            if (val2 < 0 || val2 > 15)
+            if (val2 < 0 || val2 > 15) {
                 IllegalOperand();
+            }
             mode |= (val2 & 15) << 20;
 
             if (Comma()) break;
@@ -1311,18 +1239,18 @@ int ARM_DoCPUOpcode(int typ, int parm)
             if (Comma()) break;
 
             val = Eval();
-            if (val < 0 || val > 7)
-                IllegalOperand();
+            if (val < 0 || val > 7) IllegalOperand();
             mode |= (val & 7) << 5;
 
             InstrL(parm | (cond << 28) | mode | (reg2 << 16) | (reg1 << 12) | reg3);
             break;
 
         case o_MCR_MRC:      // MCR/MRC
-            if (word[0] == '2' && !word[1])
+            if (word[0] == '2' && !word[1]) {
                 cond = 15;
-            else
-                if (ARMCond(&cond,word)) return 0;
+            } else {
+                if (ARMCond(&cond, word)) return 0;
+            }
 
             val = GetReg(pregs);
             if (CheckReg(val)) break;
@@ -1331,8 +1259,7 @@ int ARM_DoCPUOpcode(int typ, int parm)
             if (Comma()) break;
 
             val2 = Eval();
-            if (val2 < 0 || val2 > 7)
-                IllegalOperand();
+            if (val2 < 0 || val2 > 7) IllegalOperand();
             mode |= (val2 & 7) << 21;
 
             if (Comma()) break;
@@ -1355,15 +1282,11 @@ int ARM_DoCPUOpcode(int typ, int parm)
 
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == ',')
-            {
+            if (token == ',') {
                 val = Eval();
-                if (val < 0 || val > 7)
-                    IllegalOperand();
+                if (val < 0 || val > 7) IllegalOperand();
                 mode |= (val & 7) << 5;
-            }
-            else
-            {
+            } else {
                 linePtr = oldLine;
                 if (token && Comma()) break;
             }
@@ -1372,21 +1295,18 @@ int ARM_DoCPUOpcode(int typ, int parm)
             break;
 
         case o_LDC_STC:      // LDC/STC
-            if (word[0] == '2')
-            {
+            if (word[0] == '2') {
                 val = 0;
                 cond = 15;
-                if (word[1] == 'L')
-                {
+                if (word[1] == 'L') {
                     val = 1;
                     if (word[2]) return 0;
+                } else if (word[1]) {
+                    return 0;
                 }
-                else if (word[1]) return 0;
-            }
-            else
-            {
-                val = ARMOpcodeFlag(word,'L');
-                if (ARMCond(&cond,word)) return 0;
+            } else {
+                val = ARMOpcodeFlag(word, 'L');
+                if (ARMCond(&cond, word)) return 0;
             }
 
             reg1 = GetReg(pregs);
@@ -1408,14 +1328,11 @@ int ARM_DoCPUOpcode(int typ, int parm)
 
         case o_ADR:          // ADR/ADRL
 // ADRL Rn,address
-            if (word[0] == 'L')
-            {
+            if (word[0] == 'L') {
                 parm = 1;
-                if (ARMCond(&cond,word+1)) return 0;
-            }
-            else
-            {
-                if (ARMCond(&cond,word)) return 0;
+                if (ARMCond(&cond, word+1)) return 0;
+            } else {
+                if (ARMCond(&cond, word)) return 0;
             }
 
             reg1 = GetReg(regs);
@@ -1427,15 +1344,14 @@ int ARM_DoCPUOpcode(int typ, int parm)
 
             i = parm + 1; // number of longwords
 
-            if (evalKnown && parm)
-            {
+            if (evalKnown && parm) {
                 // *** determine auto size for ADRL
-                if (-0xFF <= val && val <= 0xFF)
+                if (-0xFF <= val && val <= 0xFF) {
                     i = 1;
+                }
             }
 
-            switch(i)
-            {
+            switch (i) {
                 case 4:
                     break;
 
@@ -1443,19 +1359,21 @@ int ARM_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case 2:
-                    if (val < 0)
+                    if (val < 0) {
                         InstrLL(0x028F0000 | (cond << 28) | (reg1 << 12) | (-val & 0xFF),
                                 0x02800400 | (cond << 28) | (reg1 << 16) | (reg1 << 12) | ((-val >> 8) & 0xFF));
-                    else
+                    } else {
                         InstrLL(0x024F0000 | (cond << 28) | (reg1 << 12) | (val & 0xFF),
                                 0x02400000 | (cond << 28) | (reg1 << 16) | (reg1 << 12) | ((val >> 8) & 0xFF));
+                    }
                     break;
 
                 default:
-                    if (val < 0)
+                    if (val < 0) {
                         InstrL(0x028F0000 | (cond << 28) | (reg1 << 12) | (-val & 0xFF));
-                    else
+                    } else {
                         InstrL(0x024F0000 | (cond << 28) | (reg1 << 12) | (val & 0xFF));
+                    }
                     break;
             }
 
@@ -1467,11 +1385,9 @@ int ARM_DoCPUOpcode(int typ, int parm)
 //   ADRL    R1,.+$100000    ; E28F1FFE E2811BFF E2811703
 //   ADRL    R1,.+$10000000  ; E28F1FFE E2811BFF E28117FF E2811303
 
-if (pass == 2)
-{
-    printf("*** %.8X *** %s\n",val,line);
-}
-
+//if (pass == 2) {
+//    printf("*** %.8X *** %s\n", val, line);
+//}
 //            InstrL(   (cond << 28) | (val & 0x0FFF));
             break;
 
@@ -1484,12 +1400,12 @@ if (pass == 2)
             break;
     }
 
-    if (locPtr & 3)
-    {
+    if (locPtr & 3) {
         Error("Code at non-longword-aligned address");
         // deposit extra bytes to reset alignment and prevent further errors
-        for (i=locPtr & 3; i<4; i++)
+        for (int i = locPtr & 3; i < 4; i++) {
             InstrAddB(0);
+        }
         // note: Inserting bytes in front won't work because offsets have already been assembled.
         // The line could be re-assembled by recursively calling DoCPUOpcode, but then
         // the label before the instruction would still be at the odd address.
@@ -1501,9 +1417,8 @@ if (pass == 2)
 
 void AsmARMInit(void)
 {
-    char *p;
+    void *p = AddAsm(versionName, &ARM_DoCPUOpcode, NULL, NULL);
 
-    p = AddAsm(versionName, &ARM_DoCPUOpcode, NULL, NULL);
     AddCPU(p, "ARM",    0, LITTLE_END, ADDR_24, LIST_24, 8, 0, ARM_opcdTab);
     AddCPU(p, "ARM_BE", 0, BIG_END,    ADDR_24, LIST_24, 8, 0, ARM_opcdTab);
     AddCPU(p, "ARM_LE", 0, LITTLE_END, ADDR_24, LIST_24, 8, 0, ARM_opcdTab);

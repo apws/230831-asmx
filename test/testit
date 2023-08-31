@@ -21,32 +21,35 @@ function testit()
 
 echo ""
 
-testit 65c02
-testit 68hc11
-testit 68hc16
-testit 68000
-testit 68010
 testit 1802
 testit 6303
+testit 6309
 testit 6502
 testit 6502u
 testit 65c02
 testit 65c816
 testit 6800
+testit 68000
 testit 6801
+testit 68010
 testit 6805
-testit 68hcs08
 testit 6809
-testit 6309
+testit 68hc11
+testit 68hc16
+testit 68hcs08
+#testit 68k # already tested by 68000 / 68010
 testit 8048
 testit 8051
+#testit 8085 # already tested by 8085u
 testit 8085u
+testit 8008
 #testit arm
 testit f8
-testit jerry
-testit thumb
-testit tom
 testit gbz80
+testit jerry
+#testit thumb
+testit tom
 testit z80
+testit z8
 
 echo ""

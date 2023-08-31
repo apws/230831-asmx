@@ -1,16 +1,14 @@
-// asm6809.c - copyright 1998-2007 Bruce Tomlin
+// asm6809.c
 
 #define versionName "6809 assembler"
 #include "asmx.h"
 
-enum cputype
-{
+enum cputype {
     CPU_6809,        // 6809 instructions only
     CPU_6309         // 6309 instructions enabled
 };
 
-enum
-{
+enum {
     o_Inherent,     // implied instructions
     o_Immediate,    // immediate instructions
     o_Relative,     // branch instructions
@@ -30,8 +28,7 @@ enum
     o_SETDP = o_LabelOp // SETDP pseudo-op
 };
 
-struct OpcdRec M6809_opcdTab[] =
-{
+static const struct OpcdRec M6809_opcdTab[] = {
     {"NOP" ,  o_Inherent, 0x12},
     {"SYNC",  o_Inherent, 0x13},
     {"DAA" ,  o_Inherent, 0x19},
@@ -333,7 +330,7 @@ const char pshRegs[] = "CC A B DP X Y U PC D S";
 const char idxRegs[] = "X Y U S";
 const char idxRegsW[] = "X Y U S W";
 
-unsigned char dpReg;
+uint8_t dpReg;
 
 
 // --------------------------------------------------------------
@@ -345,118 +342,99 @@ static void M6809_Indexed(int idxOp, int dirOp, int extOp)
 //  if dirOp == 0, use extOp
 //  if extOp == 0, use idxOp
 
-    int     indirect;
-    char    *oldLine;
-    int     token;
     Str255  word;
     int     reg;
-    int     val;
-    char    force;
 
-    indirect = 0;
-    force = 0;
+    int indirect = 0;
+    char force = 0;
 
-    oldLine = linePtr;
-    token = GetWord(word);
-    if (token == '[')
-    {
+    char *oldLine = linePtr;
+    int token = GetWord(word);
+    if (token == '[') {
         indirect = 0x10;
         oldLine = linePtr;
         token = GetWord(word);
     }
 
     // handle A, B, D as tokens
-    if (token == -1 && word[1] == 0 && (word[0] == 'A' || word[0] == 'B' || word[0] == 'D'))
-    {
+    if (token == -1 && word[1] == 0 && (word[0] == 'A' || word[0] == 'B' || word[0] == 'D')) {
         token = word[0];
     }
 
     // handle E, F, W as tokens
     if (curCPU == CPU_6309 &&
-        token == -1 && word[1] == 0 && (word[0] == 'E' || word[0] == 'F' || word[0] == 'W'))
-    {
+        token == -1 && word[1] == 0 && (word[0] == 'E' || word[0] == 'F' || word[0] == 'W')) {
         token = word[0];
     }
 
-    switch(token)
-    {
+    switch (token) {
         case ',':
             token = GetWord(word);
-            if (token == '-')
-            {
-                if (*linePtr == '-')
-                {
+            if (token == '-') {
+                if (*linePtr == '-') {
                     linePtr++;
                     GetWord(word);
                     reg = FindReg(word, idxRegsW);
-                    if (curCPU == CPU_6309 && reg == 4)
-                    {
+                    if (curCPU == CPU_6309 && reg == 4) {
                         // ,--W
                         InstrXB(idxOp, 0xEF + !!indirect);  // ,--X
-                    }
-                    else if (reg < 0 || reg > 3)
+                    } else if (reg < 0 || reg > 3) {
                         BadMode();
-                    else
+                    } else {
                         InstrXB(idxOp, reg * 0x20 + 0x83 + indirect);  // ,--X
-                }
-                else
-                {
+                    }
+                } else {
                     GetWord(word);
                     reg = FindReg(word, idxRegs);
-                    if (reg < 0)
+                    if (reg < 0) {
                         BadMode();
-                    else
+                    } else {
                         InstrXB(idxOp, reg * 0x20 + 0x82 + indirect);  // ,-X
+                    }
                 }
-            }
-            else
-            {
+            } else {
                 reg = FindReg(word, idxRegsW);
-                if (curCPU == CPU_6309 && reg == 4)
-                {
+                if (curCPU == CPU_6309 && reg == 4) {
                     // ,W / ,W++
                     oldLine = linePtr;
                     token = GetWord(word);
-                    switch(token)
-                    {
+                    switch (token) {
                         case ']':
                             linePtr = oldLine;
+                            FALLTHROUGH;
                         case 0: // ,W
                             InstrXB(idxOp, 0x8F + !!indirect);  // ,X
                             break;
                         case '+': // ,W++
-                            if (*linePtr == '+')
-                            {
+                            if (*linePtr == '+') {
                                 linePtr++;
                                 InstrXB(idxOp, 0xCF + !!indirect);  // ,W++
                                 break;
                             }
+                            FALLTHROUGH;
                         default:
                             BadMode();
                             break;
                     }
-                }
-                else if (reg < 0 || reg > 3)
+                } else if (reg < 0 || reg > 3) {
                     BadMode();
-                else
-                {
+                } else {
                     oldLine = linePtr;
                     token = GetWord(word);
-                    switch(token)
-                    {
+                    switch (token) {
                         case ']':
                             linePtr = oldLine;
+                            FALLTHROUGH;
                         case 0:
                             InstrXB(idxOp, reg * 0x20 + 0x84 + indirect);  // ,X
                             break;
                         case '+':
-                            if (*linePtr == '+')
-                            {
+                            if (*linePtr == '+') {
                                 linePtr++;
                                 InstrXB(idxOp, reg * 0x20 + 0x81 + indirect);  // ,X++
-                            }
-                            else
+                            } else {
                                 InstrXB(idxOp, reg * 0x20 + 0x80 + indirect);  // ,X+
+                            }
                             break;
                         default:
                             BadMode();
@@ -475,12 +453,10 @@ static void M6809_Indexed(int idxOp, int dirOp, int extOp)
             Comma();
             GetWord(word);
             reg = FindReg(word, idxRegs);
-            if (reg < 0)
+            if (reg < 0) {
                 BadMode();
-            else
-            {
-                switch(token)
-                {
+            } else {
+                switch (token) {
                     case 'A':   InstrXB(idxOp, reg * 0x20 + 0x86 + indirect); break;        // A,X
                     case 'B':   InstrXB(idxOp, reg * 0x20 + 0x85 + indirect); break;        // B,X
                     case 'D':   InstrXB(idxOp, reg * 0x20 + 0x8B + indirect); break;        // D,X
@@ -495,80 +471,82 @@ static void M6809_Indexed(int idxOp, int dirOp, int extOp)
         case '<':
         case '>':
             force = token;
+            FALLTHROUGH;
         default:
-            if (!force)
+            if (!force) {
                 linePtr = oldLine;
-            val = Eval();
+            }
+            int val = Eval();
             oldLine = linePtr;
             token = GetWord(word);
-            switch(token)
-            {
+            switch (token) {
                 case ']':
                     linePtr = oldLine;
+                    FALLTHROUGH;
                 case 0:     // value
-                    if (!indirect && (dirOp >= 0 || extOp >= 0))
-                    {
-                        if (((force != '>' && evalKnown && (val & 0xFF00) >> 8 == dpReg) || force == '<') && dirOp >= 0)
-                        {
+                    if (!indirect && (dirOp >= 0 || extOp >= 0)) {
+                        if (((force != '>' && evalKnown &&
+                             (dirOp != 0x0e || force == '<') && // make JMP $00xx be ext!
+                             (val & 0xFF00) >> 8 == dpReg) || force == '<')
+                                && dirOp >= 0) {
 //                          if ((val & 0xFF00) >> 8 != 0 && (val & 0xFF00) >> 8 != dpReg && force == '<')
 //                              Warning("High byte of operand does not match SETDP value");
                             InstrXB(dirOp, val);    // <$xx
-                        }
-                        else
+                        } else {
                             InstrXW(extOp, val);   // >$xxxx
-                    }
-                    else
+                        }
+                    } else {
                         InstrXBW(idxOp, 0x8F + indirect, val);  // $xxxx
+                    }
                     break;
                 case ',':   // value,
                     GetWord(word);
                     reg = FindReg(word, idxRegsW);
-                    if (curCPU == CPU_6309 && reg == 4)
-                    {
+                    if (curCPU == CPU_6309 && reg == 4) {
                         // nnnn,W
-                        if (force == '<')
+                        if (force == '<') {
                             BadMode();
-                        else
+                        } else {
                             InstrXBW(idxOp, 0xAF + !!indirect, val); // nnnn,W
-                    }
-                    else if (reg < 0 || reg > 3)
-                    {
-                        if (strcmp(word,"PC") == 0 || strcmp(word,"PCR") == 0)
-                        {
-                            val = val - locPtr - 3 - (idxOp > 255);
-                            if ((force != '>' && evalKnown && -128 <= val && val <= 127) || force == '<')
-                                InstrXBB(idxOp, 0x8C + indirect, val);       // nn,PCR
-                            else
-                                InstrXBW(idxOp, 0x8D + indirect, val - 1); // nnnn,PCR
                         }
-                        else
+                    } else if (reg < 0 || reg > 3) {
+                        if (strcmp(word, "PC") == 0 || strcmp(word, "PCR") == 0) {
+                            val = val - locPtr - 3 - (idxOp > 255);
+                            if ((force != '>' && evalKnown && -128 <= val && val <= 127)
+                                    || force == '<') {
+                                InstrXBB(idxOp, 0x8C + indirect, val);       // nn,PCR
+                            } else {
+                                InstrXBW(idxOp, 0x8D + indirect, val - 1); // nnnn,PCR
+                            }
+                        } else {
                             BadMode();
-                    }
-                    else
-                    {
-                        if (force != '>' && evalKnown && !indirect && -16 <= val && val <= 15)
+                        }
+                    } else {
+                        if (force != '>' && evalKnown && !indirect && -16 <= val && val <= 15) {
                             InstrXB(idxOp, reg * 0x20 + (val & 0x1F));  // n,X
-                        else if (evalKnown && -128 <= val && val <= 127)
+                        } else if (evalKnown && -128 <= val && val <= 127) {
                             InstrXBB(idxOp, reg * 0x20 + 0x88 + indirect, val);  // nn,X
-                        else
+                        } else {
                             InstrXBW(idxOp, reg * 0x20 + 0x89 + indirect, val); // nnnn,X
+                        }
                     }
                     break;
 
                 default:
                     BadMode();
+                    break;
             }
     }
 
-    if (indirect)
+    if (indirect) {
         if (!errFlag) Expect("]");  // if we've already had an error, don't bother checking
+    }
 }
 
 
-int M6809_DoCPUOpcode(int typ, int parm)
+static int M6809_DoCPUOpcode(int typ, int parm)
 {
-    int     val;
-    int     reg1,reg2;
+    int     val, reg1, reg2;
     Str255  word;
     char    *oldLine;
     const char *regs;
@@ -578,23 +556,22 @@ int M6809_DoCPUOpcode(int typ, int parm)
     if ((parm & o_6309) && curCPU != CPU_6309) return 0;
     parm &= ~o_6309;
 
-    switch(typ)
-    {
+    switch (typ) {
         case o_Inherent:
-            if ((parm & 0xF0FF) == 0xA0E0)  InstrXW(0x3504,parm);
-                                    else    InstrX (parm);
+            if ((parm & 0xF0FF) == 0xA0E0) {
+                InstrXW(0x3504, parm);
+            } else {
+                InstrX (parm);
+            }
             break;
 
         case o_Immediate:
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#')
-            {
+            if (token == '#') {
                 val = Eval();
                 InstrXB(parm, val);
-            }
-            else
-            {
+            } else {
                 linePtr = oldLine;
                 Expect("#");
             }
@@ -602,13 +579,16 @@ int M6809_DoCPUOpcode(int typ, int parm)
 
         case o_Relative:
             val = EvalBranch(2);
-            InstrXB(parm,val);
+            InstrXB(parm, val);
             break;
 
         case o_LRelative:
             val = Eval();
-            if (parm < 256) val = val - locPtr - 3;
-                    else    val = val - locPtr - 4;
+            if (parm < 256) {
+                val = val - locPtr - 3;
+            } else {
+                val = val - locPtr - 4;
+            }
             InstrXW(parm, val);
             break;
 
@@ -620,35 +600,33 @@ int M6809_DoCPUOpcode(int typ, int parm)
             reg1 = 0;
 
             token = GetWord(word);
-            while (token)
-            {
+            while (token) {
                 reg2 = FindReg(word, pshRegs);
+                // don't allow same stack pointer register
                 if (reg2 < 0 || ((parm & 0xFE) == 0x34 && reg2 == 9)
-                             || ((parm & 0xFE) == 0x36 && reg2 == 6))
-                {
+                             || ((parm & 0xFE) == 0x36 && reg2 == 6)) {
                     Error("Invalid register");
                     break;
-                }
-                else
-                {
-                         if (reg2 == 8) reg2 = 0x06;    // D
-                    else if (reg2 == 9) reg2 = 0x40;    // S
-                    else                reg2 = 1 << reg2;
-                    if (reg1 & reg2)
+                } else {
+                    switch (reg2) {
+                        case 8:  reg2 = 0x06; break; // D
+                        case 9:  reg2 = 0x40; break; // S
+                        default: reg2 = 1 << reg2; break;
+                    }
+                    if (reg1 & reg2) {
                         Warning("Repeated register");
+                    }
                     reg1 = reg1 | reg2;
                 }
 
                 token = GetWord(word);
-                if (token)
-                {
-                    if (token != ',')
-                    {
+                if (token) {
+                    if (token != ',') {
                         Error("\",\" expected");
                         token = 0;
-                    }
-                    else
+                    } else {
                         token = GetWord(word);
+                    }
                 }
             }
 
@@ -657,14 +635,14 @@ int M6809_DoCPUOpcode(int typ, int parm)
 
         case o_ExgTfr:
             regs = tfrRegs;
-            if (curCPU == CPU_6309)
+            if (curCPU == CPU_6309) {
                 regs = tfrRegs6309;
+            }
 
             // get first register
             GetWord(word);
-            reg1 = FindReg(word,regs);
-            if (reg1 < 0)
-            {
+            reg1 = FindReg(word, regs);
+            if (reg1 < 0) {
                 Error("Invalid register");
                 break;
             }
@@ -673,20 +651,18 @@ int M6809_DoCPUOpcode(int typ, int parm)
 
             // get second register
             GetWord(word);
-            reg2 = FindReg(word,regs);
-            if (reg2 < 0)
-            {
+            reg2 = FindReg(word, regs);
+            if (reg2 < 0) {
                 Error("Invalid register");
                 break;
             }
 
-            if (curCPU != CPU_6309 && (reg1 & 8) != (reg2 & 8))
-            {
+            if (curCPU != CPU_6309 && (reg1 & 8) != (reg2 & 8)) {
                 Error("Register size mismatch");
                 break;
             }
 
-            InstrXB(parm, reg1 * 16 + reg2);
+            InstrXB(parm, reg1*16 + reg2);
             break;
 
         case o_Logical:
@@ -698,25 +674,20 @@ int M6809_DoCPUOpcode(int typ, int parm)
         case o_QArith:
             oldLine = linePtr;
             token = GetWord(word);
-            if (token == '#')
-            {
-                if (parm & 0x10)    // immediate
-                {
+            if (token == '#') {
+                if (parm & 0x10) {  // immediate
                     Error("Invalid addressing mode");
                     break;
                 }
 
                 val = Eval();
-                switch(typ)
-                {
+                switch (typ) {
                     default:
                     case o_Arith:   InstrXB(parm & ~0x10, val);    break;
                     case o_LArith:  InstrXW(parm & ~0x10, val);    break;
                     case o_QArith:  InstrX(0xCD); InstrAddL(val);  break;
                 }
-            }
-            else
-            {
+            } else {
                 linePtr = oldLine;
                 M6809_Indexed((parm & ~0x10) | 0x20, (parm & ~0x10) | 0x10, (parm & ~0x10) | 0x30);
             }
@@ -724,14 +695,14 @@ int M6809_DoCPUOpcode(int typ, int parm)
 
         case o_TFM: // works like o_ExgTfr except for allowing + and - after registers
             regs = tfrRegs;
-            if (curCPU == CPU_6309)
+            if (curCPU == CPU_6309) {
                 regs = tfrRegs6309;
+            }
 
             // get first register
             GetWord(word);
-            reg1 = FindReg(word,regs);
-            if (reg1 < 0)
-            {
+            reg1 = FindReg(word, regs);
+            if (reg1 < 0) {
                 Error("Invalid register");
                 break;
             }
@@ -739,8 +710,7 @@ int M6809_DoCPUOpcode(int typ, int parm)
             val = -1;
 
             token = GetWord(word);
-            switch(token)
-            {
+            switch (token) {
                 case '+': // R+,R+ and R+,R
                     val = 0;
                     if (Comma()) return 1;
@@ -763,19 +733,16 @@ int M6809_DoCPUOpcode(int typ, int parm)
 
             // get second register
             GetWord(word);
-            reg2 = FindReg(word,regs);
-            if (reg2 < 0)
-            {
+            reg2 = FindReg(word, regs);
+            if (reg2 < 0) {
                 Error("Invalid register");
                 break;
             }
 
             token = GetWord(word);
-            switch(token)
-            {
+            switch (token) {
                 case '+': // R,R+ and R+,R+
-                    switch(val)
-                    {
+                    switch (val) {
                         case 0: // R+,R+
                         case 3: // R,R+
                             break;
@@ -787,16 +754,14 @@ int M6809_DoCPUOpcode(int typ, int parm)
                     break;
 
                 case '-': // R-,R- only
-                    if (val != 1)
-                    {
+                    if (val != 1) {
                         IllegalOperand();
                         return 1;
                     }
                     break;
 
                 case 0: // R+,R only
-                    if (val != 0)
-                    {
+                    if (val != 0) {
                         IllegalOperand();
                         return 1;
                     }
@@ -808,15 +773,14 @@ int M6809_DoCPUOpcode(int typ, int parm)
                     return 1;
             }
 
-            InstrXB(parm + val, reg1 * 16 + reg2);
+            InstrXB(parm + val, reg1*16 + reg2);
             break;
 
         case o_Bit:
             // first register = CC, A, B
             token = GetWord(word);
-            val = FindReg(word,pshRegs);
-            if (val < 0 || val > 2)
-            {
+            val = FindReg(word, pshRegs);
+            if (val < 0 || val > 2) {
                 Error("Invalid register");
                 break;
             }
@@ -826,8 +790,7 @@ int M6809_DoCPUOpcode(int typ, int parm)
 
             // source bit = 0..7
             val = Eval();
-            if (val < 0 || val > 7)
-            {
+            if (val < 0 || val > 7) {
                 IllegalOperand();
                 break;
             }
@@ -837,8 +800,7 @@ int M6809_DoCPUOpcode(int typ, int parm)
 
             // destination bit = 0..7
             val = Eval();
-            if (val < 0 || val > 7)
-            {
+            if (val < 0 || val > 7) {
                 IllegalOperand();
                 break;
             }
@@ -849,8 +811,9 @@ int M6809_DoCPUOpcode(int typ, int parm)
             // allow '<' force character for direct addressing mode
             oldLine = linePtr;
             token = GetWord(word);
-            if (token != '<')
+            if (token != '<') {
                 linePtr = oldLine;
+            }
 
             // direct page address
             val = Eval() & 0xFF;
@@ -866,34 +829,31 @@ int M6809_DoCPUOpcode(int typ, int parm)
 }
 
 
-int M6809_DoCPULabelOp(int typ, int parm, char *labl)
+static int M6809_DoCPULabelOp(int typ, int parm, char *labl)
 {
-//  int     i;
-    int     val;
 //  Str255  word;
-    char    *p;
 
-    switch(typ)
-    {
+    (void) parm; // unused parameter
+
+    switch (typ) {
         case o_SETDP:
-            if (labl[0])
+            if (labl[0]) {
                 Error("Label not allowed");
+            }
 
-            val = Eval();
-            if (!errFlag)
-            {
-                if ((val & 0xFF) == 0)
+            int val = Eval();
+            if (!errFlag) {
+                if ((val & 0xFF) == 0) {
                     val = val >> 8;     // handle $XX00 as $00XX
-                if (val < 0 || val > 255)
+                }
+                if (val < 0 || val > 255) {
                     Error("Operand out of range");
-                else
-                {
+                } else {
                     dpReg = val;
 
-                    if (pass == 2)
-                    {
-                        p = listLine + 2;
-                        p = ListByte(p,val);
+                    if (pass == 2) {
+                        char *p = listLine + 2;
+                        p = ListByte(p, val);
                     }
                 }
             }
@@ -907,7 +867,7 @@ int M6809_DoCPULabelOp(int typ, int parm, char *labl)
 }
 
 
-void M6809_PassInit(void)
+static void M6809_PassInit(void)
 {
     dpReg = 0;
 }
@@ -915,9 +875,8 @@ void M6809_PassInit(void)
 
 void Asm6809Init(void)
 {
-    char *p;
+    void *p = AddAsm(versionName, &M6809_DoCPUOpcode, &M6809_DoCPULabelOp, &M6809_PassInit);
 
-    p = AddAsm(versionName, &M6809_DoCPUOpcode, &M6809_DoCPULabelOp, &M6809_PassInit);
     AddCPU(p, "6809", CPU_6809, BIG_END, ADDR_16, LIST_24, 8, 0, M6809_opcdTab);
     AddCPU(p, "6309", CPU_6309, BIG_END, ADDR_16, LIST_24, 8, 0, M6809_opcdTab);
 }

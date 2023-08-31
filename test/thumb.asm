@@ -129,5 +129,5 @@ B
 	SUB	SP,#4	; B081
 
 	SWI	'I'	; DF49
- 
+
 	TST	R1,R2	; 4211

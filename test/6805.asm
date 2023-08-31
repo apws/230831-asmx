@@ -6,22 +6,22 @@ ix1	EQU	'X'
 ix2	EQU	'X2'
 ext	EQU	'EX'
 
-	BRSET	0 dir .	; 00 44 FE
-	BRCLR	0 dir .	; 01 44 FE
-	BRSET	1 dir .	; 02 44 FE
-	BRCLR	1 dir .	; 03 44 FE
-	BRSET	2 dir .	; 04 44 FE
-	BRCLR	2 dir .	; 05 44 FE
-	BRSET	3 dir .	; 06 44 FE
-	BRCLR	3 dir .	; 07 44 FE
-	BRSET	4 dir .	; 08 44 FE
-	BRCLR	4 dir .	; 09 44 FE
-	BRSET	5 dir .	; 0A 44 FE
-	BRCLR	5 dir .	; 0B 44 FE
-	BRSET	6 dir .	; 0C 44 FE
-	BRCLR	6 dir .	; 0D 44 FE
-	BRSET	7 dir .	; 0E 44 FE
-	BRCLR	7 dir .	; 0F 44 FE
+	BRSET	0 dir .	; 00 44 FD
+	BRCLR	0 dir .	; 01 44 FD
+	BRSET	1 dir .	; 02 44 FD
+	BRCLR	1 dir .	; 03 44 FD
+	BRSET	2 dir .	; 04 44 FD
+	BRCLR	2 dir .	; 05 44 FD
+	BRSET	3 dir .	; 06 44 FD
+	BRCLR	3 dir .	; 07 44 FD
+	BRSET	4 dir .	; 08 44 FD
+	BRCLR	4 dir .	; 09 44 FD
+	BRSET	5 dir .	; 0A 44 FD
+	BRCLR	5 dir .	; 0B 44 FD
+	BRSET	6 dir .	; 0C 44 FD
+	BRCLR	6 dir .	; 0D 44 FD
+	BRSET	7 dir .	; 0E 44 FD
+	BRCLR	7 dir .	; 0F 44 FD
 
 	BSET	0 dir	; 10 44
 	BCLR	0 dir	; 11 44
@@ -60,8 +60,8 @@ ext	EQU	'EX'
 	BIH	.	; 2F FE
 
 	NEG	dir	; 30 44
-	FCB	$31	; 31 44
-	FCB	$32	; 32 44
+	FCB	$31	; 31
+	FCB	$32	; 32
 	COM	dir	; 33 44
 	LSR	dir	; 34 44
 	FCB	$35	; 35
@@ -74,7 +74,7 @@ ext	EQU	'EX'
 	FCB	$3B	; 3B 44
 	INC	dir	; 3C 44
 	TST	dir	; 3D 44
-	FCB	$3E	; 3E 44
+	FCB	$3E	; 3E
 	CLR	dir	; 3F 44
 
 	NEGA		; 40

@@ -9,22 +9,22 @@
       = 0053            sp1	EQU	'S'
       = 5332            sp2	EQU	'S2'
 
-0000  00 44 FE          	BRSET	0 dir .	; 00 44 FE
-0003  01 44 FE          	BRCLR	0 dir .	; 01 44 FE
-0006  02 44 FE          	BRSET	1 dir .	; 02 44 FE
-0009  03 44 FE          	BRCLR	1 dir .	; 03 44 FE
-000C  04 44 FE          	BRSET	2 dir .	; 04 44 FE
-000F  05 44 FE          	BRCLR	2 dir .	; 05 44 FE
-0012  06 44 FE          	BRSET	3 dir .	; 06 44 FE
-0015  07 44 FE          	BRCLR	3 dir .	; 07 44 FE
-0018  08 44 FE          	BRSET	4 dir .	; 08 44 FE
-001B  09 44 FE          	BRCLR	4 dir .	; 09 44 FE
-001E  0A 44 FE          	BRSET	5 dir .	; 0A 44 FE
-0021  0B 44 FE          	BRCLR	5 dir .	; 0B 44 FE
-0024  0C 44 FE          	BRSET	6 dir .	; 0C 44 FE
-0027  0D 44 FE          	BRCLR	6 dir .	; 0D 44 FE
-002A  0E 44 FE          	BRSET	7 dir .	; 0E 44 FE
-002D  0F 44 FE          	BRCLR	7 dir .	; 0F 44 FE
+0000  00 44 FD          	BRSET	0 dir .	; 00 44 FD
+0003  01 44 FD          	BRCLR	0 dir .	; 01 44 FD
+0006  02 44 FD          	BRSET	1 dir .	; 02 44 FD
+0009  03 44 FD          	BRCLR	1 dir .	; 03 44 FD
+000C  04 44 FD          	BRSET	2 dir .	; 04 44 FD
+000F  05 44 FD          	BRCLR	2 dir .	; 05 44 FD
+0012  06 44 FD          	BRSET	3 dir .	; 06 44 FD
+0015  07 44 FD          	BRCLR	3 dir .	; 07 44 FD
+0018  08 44 FD          	BRSET	4 dir .	; 08 44 FD
+001B  09 44 FD          	BRCLR	4 dir .	; 09 44 FD
+001E  0A 44 FD          	BRSET	5 dir .	; 0A 44 FD
+0021  0B 44 FD          	BRCLR	5 dir .	; 0B 44 FD
+0024  0C 44 FD          	BRSET	6 dir .	; 0C 44 FD
+0027  0D 44 FD          	BRCLR	6 dir .	; 0D 44 FD
+002A  0E 44 FD          	BRSET	7 dir .	; 0E 44 FD
+002D  0F 44 FD          	BRCLR	7 dir .	; 0F 44 FD
 
 0030  10 44             	BSET	0 dir	; 10 44
 0032  11 44             	BCLR	0 dir	; 11 44
@@ -364,8 +364,6 @@
 0297                    	JSR	sp1,SP
 
 0297                    	END
-
-00006 Total Error(s)
 
 DIR                0044 E  EXT                4558 E  IMM                0049 E
 IMM16              494D E  IX1                0058 E  IX2                5832 E

@@ -1,0 +1,290 @@
+0000  00                	NOP
+0001  01 FFFF           	LXI	B,-1
+0004  02                	STAX	B
+0005  03                	INX	B
+0006  04                	INR	B
+0007  05                	DCR	B
+0008  06 FF             	MVI	B,-1
+000A  07                	RLC
+
+000B  08                	DB	08H
+000C  09                	DAD	B
+000D  0A                	LDAX	B
+000E  0B                	DCX	B
+000F  0C                	INR	C
+0010  0D                	DCR	C
+0011  0E FF             	MVI	C,-1
+0013  0F                	RRC
+
+0014  10                	DB	10H
+0015  11 FFFF           	LXI	D,-1
+0018  12                	STAX	D
+0019  13                	INX	D
+001A  14                	INR	D
+001B  15                	DCR	D
+001C  16 FF             	MVI	D,-1
+001E  17                	RAL
+
+001F  18                	DB	18H
+0020  19                	DAD	D
+0021  1A                	LDAX	D
+0022  1B                	DCX	D
+0023  1C                	INR	E
+0024  1D                	DCR	E
+0025  1E FF             	MVI	E,-1
+0027  1F                	RAR
+
+0028  20                	RIM
+0029  21 FFFF           	LXI	H,-1
+002C  22 2C00           	SHLD	.
+002F  23                	INX	H
+0030  24                	INR	H
+0031  25                	DCR	H
+0032  26 FF             	MVI	H,-1
+0034  27                	DAA
+
+0035  28                	DB	28H
+0036  29                	DAD	H
+0037  2A 3700           	LHLD	.
+003A  2B                	DCX	H
+003B  2C                	INR	L
+003C  2D                	DCR	L
+003D  2E FF             	MVI	L,-1
+003F  2F                	CMA
+
+0040  30                	SIM
+0041  31 FFFF           	LXI	SP,-1
+0044  32 4400           	STA	.
+0047  33                	INX	SP
+0048  34                	INR	M
+0049  35                	DCR	M
+004A  36 FF             	MVI	M,-1
+004C  37                	STC
+
+004D  38                	DB	38H
+004E  39                	DAD	SP
+004F  3A 4F00           	LDA	.
+0052  3B                	DCX	SP
+0053  3C                	INR	A
+0054  3D                	DCR	A
+0055  3E FF             	MVI	A,-1
+0057  3F                	CMC
+
+0058  40                	MOV	B,B
+0059  41                	MOV	B,C
+005A  42                	MOV	B,D
+005B  43                	MOV	B,E
+005C  44                	MOV	B,H
+005D  45                	MOV	B,L
+005E  46                	MOV	B,M
+005F  47                	MOV	B,A
+
+0060  48                	MOV	C,B
+0061  49                	MOV	C,C
+0062  4A                	MOV	C,D
+0063  4B                	MOV	C,E
+0064  4C                	MOV	C,H
+0065  4D                	MOV	C,L
+0066  4E                	MOV	C,M
+0067  4F                	MOV	C,A
+
+0068  50                	MOV	D,B
+0069  51                	MOV	D,C
+006A  52                	MOV	D,D
+006B  53                	MOV	D,E
+006C  54                	MOV	D,H
+006D  55                	MOV	D,L
+006E  56                	MOV	D,M
+006F  57                	MOV	D,A
+
+0070  58                	MOV	E,B
+0071  59                	MOV	E,C
+0072  5A                	MOV	E,D
+0073  5B                	MOV	E,E
+0074  5C                	MOV	E,H
+0075  5D                	MOV	E,L
+0076  5E                	MOV	E,M
+0077  5F                	MOV	E,A
+
+0078  60                	MOV	H,B
+0079  61                	MOV	H,C
+007A  62                	MOV	H,D
+007B  63                	MOV	H,E
+007C  64                	MOV	H,H
+007D  65                	MOV	H,L
+007E  66                	MOV	H,M
+007F  67                	MOV	H,A
+
+0080  68                	MOV	L,B
+0081  69                	MOV	L,C
+0082  6A                	MOV	L,D
+0083  6B                	MOV	L,E
+0084  6C                	MOV	L,H
+0085  6D                	MOV	L,L
+0086  6E                	MOV	L,M
+0087  6F                	MOV	L,A
+
+0088  70                	MOV	M,B
+0089  71                	MOV	M,C
+008A  72                	MOV	M,D
+008B  73                	MOV	M,E
+008C  74                	MOV	M,H
+008D  75                	MOV	M,L
+008E  76                	HLT
+008F  77                	MOV	M,A
+
+0090  78                	MOV	A,B
+0091  79                	MOV	A,C
+0092  7A                	MOV	A,D
+0093  7B                	MOV	A,E
+0094  7C                	MOV	A,H
+0095  7D                	MOV	A,L
+0096  7E                	MOV	A,M
+0097  7F                	MOV	A,A
+
+0098  80                	ADD	B
+0099  81                	ADD	C
+009A  82                	ADD	D
+009B  83                	ADD	E
+009C  84                	ADD	H
+009D  85                	ADD	L
+009E  86                	ADD	M
+009F  87                	ADD	A
+
+00A0  88                	ADC	B
+00A1  89                	ADC	C
+00A2  8A                	ADC	D
+00A3  8B                	ADC	E
+00A4  8C                	ADC	H
+00A5  8D                	ADC	L
+00A6  8E                	ADC	M
+00A7  8F                	ADC	A
+
+00A8  90                	SUB	B
+00A9  91                	SUB	C
+00AA  92                	SUB	D
+00AB  93                	SUB	E
+00AC  94                	SUB	H
+00AD  95                	SUB	L
+00AE  96                	SUB	M
+00AF  97                	SUB	A
+
+00B0  98                	SBB	B
+00B1  99                	SBB	C
+00B2  9A                	SBB	D
+00B3  9B                	SBB	E
+00B4  9C                	SBB	H
+00B5  9D                	SBB	L
+00B6  9E                	SBB	M
+00B7  9F                	SBB	A
+
+00B8  A0                	ANA	B
+00B9  A1                	ANA	C
+00BA  A2                	ANA	D
+00BB  A3                	ANA	E
+00BC  A4                	ANA	H
+00BD  A5                	ANA	L
+00BE  A6                	ANA	M
+00BF  A7                	ANA	A
+
+00C0  A8                	XRA	B
+00C1  A9                	XRA	C
+00C2  AA                	XRA	D
+00C3  AB                	XRA	E
+00C4  AC                	XRA	H
+00C5  AD                	XRA	L
+00C6  AE                	XRA	M
+00C7  AF                	XRA	A
+
+00C8  B0                	ORA	B
+00C9  B1                	ORA	C
+00CA  B2                	ORA	D
+00CB  B3                	ORA	E
+00CC  B4                	ORA	H
+00CD  B5                	ORA	L
+00CE  B6                	ORA	M
+00CF  B7                	ORA	A
+
+00D0  B8                	CMP	B
+00D1  B9                	CMP	C
+00D2  BA                	CMP	D
+00D3  BB                	CMP	E
+00D4  BC                	CMP	H
+00D5  BD                	CMP	L
+00D6  BE                	CMP	M
+00D7  BF                	CMP	A
+
+00D8  C0                	RNZ
+00D9  C1                	POP	B
+00DA  C2 DA00           	JNZ	.
+00DD  C3 DD00           	JMP	.
+00E0  C4 E000           	CNZ	.
+00E3  C5                	PUSH	B
+00E4  C6 FF             	ADI	-1
+00E6  C7                	RST	0
+
+00E7  C8                	RZ
+00E8  C9                	RET
+00E9  CA E900           	JZ	.
+00EC  CB                	DB	0CBH
+00ED  CC ED00           	CZ	.
+00F0  CD F000           	CALL	.
+00F3  CE FF             	ACI	-1
+00F5  CF                	RST	1
+
+00F6  D0                	RNC
+00F7  D1                	POP	D
+00F8  D2 F800           	JNC	.
+00FB  D3 FF             	OUT	255
+00FD  D4 FD00           	CNC	.
+0100  D5                	PUSH	D
+0101  D6 FF             	SUI	-1
+0103  D7                	RST	2
+
+0104  D8                	RC
+0105  D9                	DB	0D9H
+0106  DA 0601           	JC	.
+0109  DB FF             	IN	255
+010B  DC 0B01           	CC	.
+010E  DD                	DB	0DDH
+010F  DE FF             	SBI	-1
+0111  DF                	RST	3
+
+0112  E0                	RPO
+0113  E1                	POP	H
+0114  E2 1401           	JPO	.
+0117  E3                	XTHL
+0118  E4 1801           	CPO	.
+011B  E5                	PUSH	H
+011C  E6 FF             	ANI	-1
+011E  E7                	RST	4
+
+011F  E8                	RPE
+0120  E9                	PCHL
+0121  EA 2101           	JPE	.
+0124  EB                	XCHG
+0125  EC 2501           	CPE	.
+0128  ED                	DB	0EDH
+0129  EE FF             	XRI	-1
+012B  EF                	RST	5
+
+012C  F0                	RP
+012D  F1                	POP	PSW
+012E  F2 2E01           	JP	.
+0131  F3                	DI
+0132  F4 3201           	CP	.	
+0135  F5                	PUSH	PSW
+0136  F6 FF             	ORI	-1
+0138  F7                	RST	6
+
+0139  F8                	RM
+013A  F9                	SPHL
+013B  FA 3B01           	JM	.
+013E  FB                	EI
+013F  FC 3F01           	CM	.
+0142  FD                	DB	0FDH
+0143  FE FF             	CPI	-1
+0145  FF                	RST	7
+
+00000 Total Error(s)
+

@@ -1,0 +1,378 @@
+0000                    	CPU	Z8
+
+  00                    	RP	0x00
+      = 0052            rr	EQU	'R'
+      = 0049            ii	EQU	'I'
+      = 0053            ss	EQU	'S'
+      = 0044            dd	EQU	'D'
+      = 004F            oo	EQU	'O'
+      = 1234            aaaa	EQU	1234H
+
+0000  00 52             	DEC	rr	; 00 52
+0002  01 52             	DEC	@rr	; 01 52
+0004  02 01             	ADD	R0,R1	; 02 01
+0006  03 01             	ADD	R0,@R1	; 03 01
+0008  04 53 44          	ADD	dd,ss	; 04 53 44
+000B  05 53 44          	ADD	dd,@ss	; 05 53 44
+000E  06 52 49          	ADD	rr,#ii	; 06 52 49
+0011  07 52 49          	ADD	@rr,#ii	; 07 52 49
+0014  08 52             	LD	R0,rr	; 08 52
+0016  09 52             	LD	rr,R0	; 09 52
+0018  0A FE             	DJNZ	R0,.	; 0A FE
+001A  0B FE             	JR	F,.	; 0B FE
+001C  0C 49             	LD	R0,#ii	; 0C 49
+001E  0D 1234           	JP	F,aaaa	; 0D 1234
+0021  0E                	INC	R0	; 0E
+0022  0F                	DB	0FH	; 0F undefined
+
+0023  10 52             	RLC	rr	; 10 52
+0025  11 52             	RLC	@rr	; 11 52
+0027  12 01             	ADC	R0,R1	; 12 01
+0029  13 01             	ADC	R0,@R1	; 13 01
+002B  14 53 44          	ADC	dd,ss	; 14 53 44
+002E  15 53 44          	ADC	dd,@ss	; 15 53 44
+0031  16 52 49          	ADC	rr,#ii	; 16 52 49
+0034  17 52 49          	ADC	@rr,#ii	; 17 52 49
+0037  18 52             	LD	R1,rr	; 18 52
+0039  19 52             	LD	rr,R1	; 19 52
+003B  1A FE             	DJNZ	R1,.	; 1A FE
+003D  1B FE             	JR	LT,.	; 1B FE
+003F  1C 49             	LD	R1,#ii	; 1C 49
+0041  1D 1234           	JP	LT,aaaa	; 1D 1234
+0044  1E                	INC	R1	; 1E
+0045  1F                	DB	01FH	; 1F undefined
+
+0046  20 52             	INC	rr	; 20 52
+0048  21 52             	INC	@rr	; 21 52
+004A  22 01             	SUB	R0,R1	; 22 01
+004C  23 01             	SUB	R0,@R1	; 23 01
+004E  24 53 44          	SUB	dd,ss	; 24 53 44
+0051  25 53 44          	SUB	dd,@ss	; 25 53 44
+0054  26 52 49          	SUB	rr,#ii	; 26 52 49
+0057  27 52 49          	SUB	@rr,#ii	; 27 52 49
+005A  28 52             	LD	R2,rr	; 28 52
+005C  29 52             	LD	rr,R2	; 29 52
+005E  2A FE             	DJNZ	R2,.	; 2A FE
+0060  2B FE             	JR	LE,.	; 2B FE
+0062  2C 49             	LD	R2,#ii	; 2C 49
+0064  2D 1234           	JP	LE,aaaa	; 2D 1234
+0067  2E                	INC	R2	; 2E
+0068  2F                	DB	02FH	; 2F undefined
+
+0069  30 52             	JP	@rr	; 30 52
+006B  31 49             	SRP	#ii	; 31 49
+006D  32 01             	SBC	R0,R1	; 32 01
+006F  33 01             	SBC	R0,@R1	; 33 01
+0071  34 53 44          	SBC	dd,ss	; 34 53 44
+0074  35 53 44          	SBC	dd,@ss	; 35 53 44
+0077  36 52 49          	SBC	rr,#ii	; 36 52 49
+007A  37 52 49          	SBC	@rr,#ii	; 37 52 49
+007D  38 52             	LD	R3,rr	; 38 52
+007F  39 52             	LD	rr,R3	; 39 52
+0081  3A FE             	DJNZ	R3,.	; 3A FE
+0083  3B FE             	JR	ULE,.	; 3B FE
+0085  3C 49             	LD	R3,#ii	; 3C 49
+0087  3D 1234           	JP	ULE,aaaa; 3D 1234
+008A  3E                	INC	R3	; 3E
+008B  3F                	DB	03FH	; 3F undefined
+
+008C  40 52             	DA	rr	; 40 52
+008E  41 52             	DA	@rr	; 41 52
+0090  42 01             	OR	R0,R1	; 42 01
+0092  43 01             	OR	R0,@R1	; 43 01
+0094  44 53 44          	OR	dd,ss	; 44 53 44
+0097  45 53 44          	OR	dd,@ss	; 45 53 44
+009A  46 52 49          	OR	rr,#ii	; 46 52 49
+009D  47 52 49          	OR	@rr,#ii	; 47 52 49
+00A0  48 52             	LD	R4,rr	; 48 52
+00A2  49 52             	LD	rr,R4	; 49 52
+00A4  4A FE             	DJNZ	R4,.	; 4A FE
+00A6  4B FE             	JR	OV,.	; 4B FE
+00A8  4C 49             	LD	R4,#ii	; 4C 49
+00AA  4D 1234           	JP	OV,aaaa	; 4D 1234
+00AD  4E                	INC	R4	; 4E
+00AE  4F                	WDH		; 4F
+
+00AF  50 52             	POP	rr	; 50 52
+00B1  51 52             	POP	@rr	; 51 52
+00B3  52 01             	AND	R0,R1	; 52 01
+00B5  53 01             	AND	R0,@R1	; 53 01
+00B7  54 53 44          	AND	dd,ss	; 54 53 44
+00BA  55 53 44          	AND	dd,@ss	; 55 53 44
+00BD  56 52 49          	AND	rr,#ii	; 56 52 49
+00C0  57 52 49          	AND	@rr,#ii	; 57 52 49
+00C3  58 52             	LD	R5,rr	; 58 52
+00C5  69 52             	LD	rr,R6	; 69 52
+00C7  5A FE             	DJNZ	R5,.	; 5A FE
+00C9  5B FE             	JR	MI,.	; 5B FE
+00CB  5C 49             	LD	R5,#ii	; 5C 49
+00CD  5D 1234           	JP	MI,aaaa	; 5D 1234
+00D0  5E                	INC	R5	; 5E
+00D1  5F                	WDT		; 5F
+
+00D2  60 52             	COM	rr	; 60 52
+00D4  61 52             	COM	@rr	; 61 52
+00D6  62 01             	TCM	R0,R1	; 62 01
+00D8  63 01             	TCM	R0,@R1	; 63 01
+00DA  64 53 44          	TCM	dd,ss	; 64 53 44
+00DD  65 53 44          	TCM	dd,@ss	; 65 53 44
+00E0  66 52 49          	TCM	rr,#ii	; 66 52 49
+00E3  67 52 49          	TCM	@rr,#ii	; 67 52 49
+00E6  68 52             	LD	R6,rr	; 68 52
+00E8  69 52             	LD	rr,R6	; 69 52
+00EA  6A FE             	DJNZ	R6,.	; 6A FE
+00EC  6B FE             	JR	EQ,.	; 6B FE
+00EE  6C 49             	LD	R6,#ii	; 6C 49
+00F0  6D 1234           	JP	EQ,aaaa	; 6D 1234
+00F3  6E                	INC	R6	; 6E
+00F4  6F                	STOP		; 6F
+
+00F5  70 52             	PUSH	rr	; 70 52
+00F7  71 52             	PUSH	@rr	; 71 52
+00F9  72 01             	TM	R0,R1	; 72 01
+00FB  73 01             	TM	R0,@R1	; 73 01
+00FD  74 53 44          	TM	dd,ss	; 74 53 44
+0100  75 53 44          	TM	dd,@ss	; 75 53 44
+0103  76 52 49          	TM	rr,#ii	; 76 52 49
+0106  77 52 49          	TM	@rr,#ii	; 77 52 49
+0109  78 52             	LD	R7,rr	; 78 52
+010B  79 52             	LD	rr,R7	; 79 52
+010D  7A FE             	DJNZ	R7,.	; 7A FE
+010F  7B FE             	JR	C,.	; 7B FE
+0111  7C 49             	LD	R7,#ii	; 7C 49
+0113  7D 1234           	JP	C,aaaa	; 7D 1234
+0116  7E                	INC	R7	; 7E
+0117  7F                	HALT		; 7F
+
+0118  80 52             	DECW	rr	; 80 52
+011A  81 52             	DECW	@rr	; 81 52
+011C  82 42             	LDE	R4,@RR2	; 82 42
+011E  83 42             	LDEI	@R4,@RR2; 83 42
+0120  84                	DB	84H	; 84 undefined
+0121  85                	DB	85H	; 85 undefined
+0122  86                	DB	86H	; 86 undefined
+0123  87                	DB	87H	; 87 undefined
+0124  88 52             	LD	R8,rr	; 88 52
+0126  89 52             	LD	rr,R8	; 89 52
+0128  8A FE             	DJNZ	R8,.	; 8A FE
+012A  8B FE             	JR	.	; 8B FE
+012C  8C 49             	LD	R8,#ii	; 8C 49
+012E  8D 1234           	JP	aaaa	; 8D 1234
+0131  8E                	INC	R8	; 8E
+0132  8F                	DI		; 8F
+
+0133  90 52             	RL	rr	; 90 52
+0135  91 52             	RL	@rr	; 91 52
+0137  92 24             	LDE	@RR4,R2	; 92 24
+0139  93 24             	LDEI	@RR4,@R2; 93 24
+013B  94                	DB	94H	; 94 undefined
+013C  95                	DB	95H	; 95 undefined
+013D  96                	DB	96H	; 96 undefined
+013E  97                	DB	97H	; 97 undefined
+013F  98 52             	LD	R9,rr	; 98 52
+0141  99 52             	LD	rr,R9	; 99 52
+0143  9A FE             	DJNZ	R9,.	; 9A FE
+0145  9B FE             	JR	GE,.	; 9B FE
+0147  9C 49             	LD	R9,#ii	; 9C 49
+0149  9D 1234           	JP	GE,aaaa	; 9D 1234
+014C  9E                	INC	R9	; 9E
+014D  9F                	EI		; 9F
+
+014E  A0 52             	INCW	rr	; A0 52
+0150  A1 52             	INCW	@rr	; A1 52
+0152  A2 01             	CP	R0,R1	; A2 01
+0154  A3 01             	CP	R0,@R1	; A3 01
+0156  A4 53 44          	CP	dd,ss	; A4 53 44
+0159  A5 53 44          	CP	dd,@ss	; A5 53 44
+015C  A6 52 49          	CP	rr,#ii	; A6 52 49
+015F  A7 52 49          	CP	@rr,#ii	; A7 52 49
+0162  A8 52             	LD	R10,rr	; A8 52
+0164  A9 52             	LD	rr,R10	; A9 52
+0166  AA FE             	DJNZ	R10,.	; AA FE
+0168  AB FE             	JR	GT,.	; AB FE
+016A  AC 49             	LD	R10,#ii	; AC 49
+016C  AD 1234           	JP	GT,aaaa	; AD 1234
+016F  AE                	INC	R10	; AE
+0170  AF                	RET		; AF
+
+0171  B0 52             	CLR	rr	; B0 52
+0173  B1 52             	CLR	@rr	; B1 52
+0175  B2 01             	XOR	R0,R1	; B2 01
+0177  B3 01             	XOR	R0,@R1	; B3 01
+0179  B4 53 44          	XOR	dd,ss	; B4 53 44
+017C  B5 53 44          	XOR	dd,@ss	; B5 53 44
+017F  B6 52 49          	XOR	rr,#ii	; B6 52 49
+0182  B7 52 49          	XOR	@rr,#ii	; B7 52 49
+0185  B8 52             	LD	R11,rr	; B8 52
+0187  B9 52             	LD	rr,R11	; B9 52
+0189  BA FE             	DJNZ	R11,.	; BA FE
+018B  BB FE             	JR	UGT,.	; BB FE
+018D  BC 49             	LD	R11,#ii	; BC 49
+018F  BD 1234           	JP	UGT,aaaa; BD 1234
+0192  BE                	INC	R11	; BE
+0193  BF                	IRET		; BF
+
+0194  C0 52             	RRC	rr	; C0 52
+0196  C1 52             	RRC	@rr	; C1 52
+0198  C2 42             	LDC	R4,@RR2	; C2 42
+019A  C3 42             	LDCI	@R4,@RR2; C3 42
+019C  C4                	DB	C4H	; C4 undefined
+019D  C5                	DB	C5H	; C5 undefined
+019E  C6                	DB	C6H	; C6 undefined
+019F  C7 21 4F          	LD	R2,oo(R1);C7 21 4F
+01A2  C8 52             	LD	R12,rr	; C8 52
+01A4  C9 52             	LD	rr,R12	; C9 52
+01A6  CA FE             	DJNZ	R12,.	; CA FE
+01A8  CB FE             	JR	NOV,.	; CB FE
+01AA  CC 49             	LD	R12,#ii	; CC 49
+01AC  CD 1234           	JP	NOV,aaaa; CD 1234
+01AF  CE                	INC	R12	; CE
+01B0  CF                	RCF		; CF
+
+01B1  D0 52             	SRA	rr	; D0 52
+01B3  D1 52             	SRA	@rr	; D1 52
+01B5  D2 24             	LDC	@RR4,R2	; D2 24
+01B7  D3 24             	LDCI	@RR4,@R2; D3 24
+01B9  D4 52             	CALL	@rr	; D4 52
+01BB  D5                	DB	0D5H	; D5 undefined
+01BC  D6 1234           	CALL	aaaa	; D6 1234
+01BF  D7 12 4F          	LD	oo(R2),R1;D7 12 4F
+01C2  D8 52             	LD	R13,rr	; D8 52
+01C4  D9 52             	LD	rr,R13	; D9 52
+01C6  DA FE             	DJNZ	R13,.	; DA FE
+01C8  DB FE             	JR	PL,.	; DB FE
+01CA  DC 49             	LD	R13,#ii	; DC 49
+01CC  DD 1234           	JP	PL,aaaa	; DD 1234
+01CF  DE                	INC	R13	; DE
+01D0  DF                	SCF		; DF
+
+01D1  E0 52             	RR	rr	; E0 52
+01D3  E1 52             	RR	@rr	; E1 52
+01D5  E2                	DB	0E2H	; E2 undefined
+01D6  E3 21             	LD	R2,@R1	; E3 21
+01D8  E4 53 44          	LD	dd,ss	; E4 53 44
+01DB  E5 53 44          	LD	dd,@ss	; E5 53 44
+01DE  E6 52 49          	LD	rr,#ii	; E6 52 49
+01E1  E7 52 49          	LD	@rr,#ii	; E7 52 49
+01E4  E8 52             	LD	R14,rr	; E8 52
+01E6  E9 52             	LD	rr,R14	; E9 52
+01E8  EA FE             	DJNZ	R14,.	; EA FE
+01EA  EB FE             	JR	NZ,.	; EB FE
+01EC  EC 49             	LD	R14,#ii	; EC 49
+01EE  ED 1234           	JP	NZ,aaaa	; ED 1234
+01F1  EE                	INC	R14	; EE
+01F2  EF                	CCF		; EF
+
+01F3  F0 52             	SWAP	rr	; F0 52
+01F5  F1 52             	SWAP	@rr	; F1 52
+01F7  F2                	DB	0F2H	; F2 undefined
+01F8  F3 21             	LD	@R2,R1	; F3 21
+01FA  F4                	DB	0F4H	; F4 undefined
+01FB  F5 53 44          	LD	@dd,ss	; F5 53 44
+01FE  F6                	DB	0F6H	; F6 undefined
+01FF  F7                	DB	0F7H	; F7 undefined
+0200  F8 52             	LD	R15,rr	; F8 52
+0202  F9 52             	LD	rr,R15	; F9 52
+0204  FA FE             	DJNZ	R15,.	; FA FE
+0206  FB FE             	JR	NC,.	; FB FE
+0208  FC 49             	LD	R15,#ii	; FC 49
+020A  FD 1234           	JP	NC,aaaa	; FD 1234
+020D  FE                	INC	R15	; FE
+020E  FF                	NOP		; FF
+
+                        ; instruction variations
+
+020F  00 E0             	DEC	R0	; 00 E0
+0211  08 E0             	LD	R0,R0	; 08 E0
+0213  09 E0             	LD	0xE0,R0	; 09 E0 - this form does not use Ex for RP
+0215  04 52 E0          	ADD	R0,rr	; 04 52 E0
+0218  04 E0 52          	ADD	rr,R0	; 04 E0 52
+021B  05 52 E0          	ADD	R0,@rr	; 05 52 E0
+021E  05 E0 52          	ADD	rr,@R0	; 05 E0 52
+0221  06 E0 49          	ADD	R0,#ii	; 06 E0 49
+0224  07 E0 49          	ADD	@R0,#ii	; 07 E0 49
+0227  21 E0             	INC	@R0	; 21 E0
+0229  30 E0             	JP	@R0	; 30 E0
+022B  30 E0             	JP	@RR0	; 30 E0
+022D  7B FE             	JR	ULT,.	; 7B FE
+022F  7D 1234           	JP	ULT,aaaa; 7D 1234
+0232  80 E0             	DECW	R0	; 80 E0
+0234  80 E0             	DECW	RR0	; 80 E0
+0236  81 E0             	DECW	@R0	; 81 E0
+0238  81 E0             	DECW	@RR0	; 81 E0
+023A  8B FE             	JR	T,.	; 8B FE
+023C  8D 1234           	JP	T,aaaa	; 8D 1234
+023F  A0 E0             	INCW	R0	; A0 E0
+0241  A0 E0             	INCW	RR0	; A0 E0
+0243  A1 E0             	INCW	@R0	; A1 E0
+0245  A1 E0             	INCW	@RR0	; A1 E0
+0247  D4 E0             	CALL	@R0	; D4 E0
+0249  D4 E0             	CALL	@RR0	; D4 E0
+024B  E5 E0 52          	LD	rr,@R0	; E5 E0 52
+024E  E5 52 E0          	LD	R0,@rr	; E5 52 E0
+0251  E7 E0 49          	LD	@R0,#ii	; E7 E0 49
+0254  F5 52 E0          	LD	@R0,rr	; F5 52 E0
+0257  FB FE             	JR	UGE,.	; FB FE
+0259  FD 1234           	JP	UGE,aaaa; FD 1234
+
+                        ; odd register pair tests
+
+025C  00 E0             	DEC	R0	; 00 E0
+025E  01 E0             	DEC	@R0	; 01 E0
+0260  00 00             	DEC	0x00	; 00 00
+0262  01 00             	DEC	@0x00	; 01 00
+0264  00 E1             	DEC	R1	; 00 E1
+0266  01 E1             	DEC	@R1	; 01 E1
+0268  00 01             	DEC	0x01	; 00 01
+026A  01 01             	DEC	@0x01	; 01 01
+
+026C  80 E0             	DECW	R0	; 80 E0
+026E  81 E0             	DECW	@R0	; 81 E0
+0270  80 00             	DECW	0x00	; 80 00
+0272  81 00             	DECW	@0x00	; 81 00
+z8.asm:333: *** Error:  Register must be even ***
+0274  80 E1             	DECW	R1	; INVALID
+z8.asm:334: *** Error:  Register must be even ***
+0276  81 E1             	DECW	@R1	; INVALID
+z8.asm:335: *** Error:  Register must be even ***
+0278  80 01             	DECW	0x01	; INVALID
+z8.asm:336: *** Error:  Register must be even ***
+027A  81 01             	DECW	@0x01	; INVALID
+
+027C  30 00             	JP	@0x00	; 30 00
+027E  30 01             	JP	@0x01	; INVALID
+
+0280  D4 00             	CALL	@0x00	; D4 00
+z8.asm:342: *** Error:  Register must be even ***
+0282  D4 01             	CALL	@0x01	; INVALID
+
+                        ; RP optimization tests
+
+  --                    	RP	OFF
+0284  04 53 52          	ADD	rr,ss	; 04 53 52
+0287  05 53 52          	ADD	rr,@ss	; 05 53 52
+028A  E4 10 52          	LD	rr,16	; E4 10 52
+028D  E4 53 52          	LD	rr,ss	; E4 53 52
+0290  E4 52 10          	LD	16,rr	; E4 52 10
+0293  E5 53 52          	LD	rr,@ss	; E5 53 52
+0296  E5 E2 52          	LD	rr,@R2	; E5 E2 52
+0299  E5 52 E2          	LD	R2,@rr	; E5 52 E2
+029C  E6 52 49          	LD	rr,#ii	; E6 52 49
+029F  F5 53 52          	LD	@rr,ss	; F5 53 52
+
+  50                    	RP	0x50
+02A2  02 23             	ADD	rr,ss	; 02 23
+02A4  03 23             	ADD	rr,@ss	; 03 23
+02A6  28 10             	LD	rr,16	; 28 10
+02A8  28 53             	LD	rr,ss	; could be either 28 53 or 39 52
+02AA  29 10             	LD	16,rr	; 29 10
+02AC  E3 23             	LD	rr,@ss	; E3 23
+02AE  E3 23             	LD	rr,@R3	; E3 23
+02B0  E3 23             	LD	R2,@ss	; E3 23
+02B2  2C 49             	LD	rr,#ii	; 2C 49
+02B4  F3 23             	LD	@rr,ss	; F3 23
+
+00005 Total Error(s)
+
+AAAA               1234 E  DD                 0044 E  II                 0049 E
+OO                 004F E  RR                 0052 E  SS                 0053 E
