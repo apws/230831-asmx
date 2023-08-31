@@ -1,87 +1,44 @@
-#
-# Compiler flags
-#
-CC = gcc
-CFLAGS = -Wall
-LDFLAGS = 
+# this makefile just passes the buck to src/Makefile
 
-#
-# Project files
-#
-EXT = .c
-SRCDIR = src
-SRCS = $(wildcard $(SRCDIR)/*$(EXT))
+.PHONY: all
+all:
+	cd src && $(MAKE) all
 
-#
-# Debug build settings
-#
-DBGDIR = debug
-DBGEXE = $(addprefix $(DBGDIR)\, $(APPNAME))
-DBGOBJS = $(SRCS:$(SRCDIR)/%$(EXT)=$(DBGDIR)/%.o)
-DBGCFLAGS = -ggdb -O0
+.PHONY: asmx
+asmx:
+	cd src && $(MAKE) asmx
 
-#
-# Release build settings
-#
-RELDIR = release
-RELEXE = $(addprefix $(RELDIR)\, $(APPNAME))
-RELOBJS = $(SRCS:$(SRCDIR)/%$(EXT)=$(RELDIR)/%.o)
-RELCFLAGS = -O2
+.PHONY: strip
+strip:
+	cd src && $(MAKE) strip
 
-ifeq ($(OS),Windows_NT)
-RM = del /Q /F /S
-APPNAME = asmx.exe
-# thanks for being dumb mkdir on windows
-MKDIRDBG = @dir $(DBGDIR) >nul 2>nul || @mkdir $(DBGDIR) >nul 2>nul
-MKDIRREL = @dir $(RELDIR) >nul 2>nul || @mkdir $(RELDIR) >nul 2>nul
-else
-RM = rm -rf
-APPNAME = asmx
-MKDIRDBG = @mkdir -p $(DBGDIR)
-MKDIRREL = @mkdir -p $(RELDIR)
-endif
+.PHONY: install
+install:
+	cd src && $(MAKE) install
 
-.PHONY: all clean debug release
+.PHONY: install-strip
+install-strip:
+	cd src && $(MAKE) install-strip
 
-# Default build
-all: release
+.PHONY: uninstall
+uninstall:
+	cd src && $(MAKE) uninstall
 
-#
-# Debug rules
-#
+.PHONY: it
+it:
+	cd src && $(MAKE) it
 
-debug: $(DBGEXE)
-$(DBGEXE): $(DBGOBJS)
-	$(CC) -o $(DBGEXE) $^ $(DBGCFLAGS) $(CFLAGS)
+.PHONY: zip
+zip: dist
+ 
+.PHONY: dist
+dist:
+	cd src && $(MAKE) dist
 
-$(DBGDIR)/%.o: $(SRCDIR)/%$(EXT)
-	$(MKDIRDBG)
-	$(CC) -o $@ -c $< $(DBGCFLAGS) $(CFLAGS)
+.PHONY: test
+test:
+	cd src && $(MAKE) test
 
-#
-# Release rules
-#
-release: $(RELEXE)
-$(RELEXE): $(RELOBJS)
-	$(CC) -o $(RELEXE) $^ $(RELCFLAGS) $(CFLAGS)
-
-$(RELDIR)/%.o: $(SRCDIR)/%$(EXT)
-	$(MKDIRREL)
-	$(CC) -o $@ -c $< $(RELCFLAGS) $(CFLAGS)
-
-#
-# Other rules
-#
-
-remake: clean all
-
-ifeq ($(OS),Windows_NT)
-DELOBJS = $(addprefix $(RELDIR)\, *.o)
-DELOBJS += $(addprefix $(DBGDIR)\, *.o)
-else
-DELOBJS = $(RELOBJS)
-DELOBJS += $(DBGOBJS)
-endif
-
+.PHONY: clean
 clean:
-	$(RM) $(RELEXE) $(DBGEXE) $(DELOBJS)
+	cd src && $(MAKE) clean
