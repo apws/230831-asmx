@@ -18,8 +18,8 @@
 
 enum {
     IHEX_SIZE   = 32,       // max number of data bytes per line in hex object file
-    MAXSYMLEN   = 19,       // max symbol length (only used in DumpSym())
-    symTabCols  = 3,        // number of columns for symbol table dump
+    MAXSYMLEN   = 32,       // max symbol length (only used in DumpSym())
+    symTabCols  = 1,        // number of columns for symbol table dump
     MAXMACPARMS = 30,       // maximum macro parameters
     MAX_INCLUDE = 10,       // maximum INCLUDE nesting level
 //  MAX_BYTSTR  = 1024,     // size of bytStr[] (moved to asmx.h)
@@ -1438,7 +1438,7 @@ static MacroRec *NewMacro(const char *name)
 
     return p;
 }
-    
+
 
 static MacroRec *AddMacro(const char *name)
 {
@@ -1450,7 +1450,7 @@ static MacroRec *AddMacro(const char *name)
 
     return p;
 }
-    
+
 
 static void AddMacroParm(MacroRec *macro, const char *name)
 {
@@ -2807,7 +2807,7 @@ void write_bin(uint32_t addr, uint8_t *buf, uint32_t len, int rectype)
         fwrite(buf, 1, len, object);
 
         // update EOF of object file
-        long i = ftell(object);
+        uint32_t i = ftell(object); //MIXWORX
         if (i > bin_eof) {
             bin_eof = i;
         }
