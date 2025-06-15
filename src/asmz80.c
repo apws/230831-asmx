@@ -54,7 +54,7 @@ const char conds[] = "NZ Z NC C PO PE P M";
 // NZ=0 Z=1 NC=2 C=3 PO=4 PE=5 P=6 M=7
 
 // note: L is in Z80_regs[] twice as a placeholder for (HL)
-const char Z80_regs[] = "B C D E H L L A I R BC DE HL SP IX IY AF HLD HLI (";
+const char Z80_regs[] = "B C D E H L L A I R BC DE HL SP IX IY AF HLD HLI ("; //mw L L => L M ????
 
 const char Z80_IN0_OUT0_regs[] = "B C D E H L F A";
 
