@@ -1,6 +1,6 @@
-// asm68000.c
+// asmM68K.c
 
-#define versionName "68000 assembler"
+#define versionName "M68K assembler"
 #include "asmx.h"
 
 // set false to allow ADD/AND/SUB/CMP #n to become ADDI etc.
@@ -14,39 +14,39 @@ enum
 
 enum
 {
-    o_Inherent,     // implied instructions
-    o_DBcc,         // DBcc instructions
-    o_Branch,       // relative branch instructions
-    o_TRAP,         // TRAP
-    o_BKPT,         // BKPT
-    o_Imm16,        // 16-bit immediate
-    o_LEA,          // LEA opcode
-    o_JMP,          // JMP/JSR/PEA (load-EA allowed except for immediate)
-    o_OneEA,        // single operand store-EA
-    o_DIVMUL,       // DIVS/DIVU/MULS/MULU
-    o_MOVE,         // MOVE opcode, two EAs
-    o_Bit,          // BCHG/BCLR/BSET/BTST
-    o_MOVEQ,        // MOVEQ
-    o_ArithA,       // MOVEA/ADDA/CMPA/SUBA
-    o_Arith,        // ADD/AND/CMP/EOR/OR/SUB
-    o_ArithI,       // ADDI/CMPI/SUBI
-    o_LogImm,       // ANDI/EORI/ORI
-    o_MOVEM,        // MOVEM
-    o_ADDQ,         // ADDQ/SUBQ
-    o_Shift,        // ASx/LSx/ROx/ROXx
-    o_CHK,          // CHK
-    o_CMPM,         // CMPM
-    o_MOVEP,        // MOVEP
-    o_EXG,          // EXG
-    o_ABCD,         // ABCD,SBCD
-    o_ADDX,         // ADDX,SUBX
-    o_LINK,         // LINK
-    o_OneA,         // UNLK
-    o_OneD,         // SWAP/EXT
-    o_MOVEC,        // 68010 MOVEC
-    o_MOVES,        // 68010 MOVES
+    OP_Inherent,     // implied instructions
+    OP_DBcc,         // DBcc instructions
+    OP_Branch,       // relative branch instructions
+    OP_TRAP,         // TRAP
+    OP_BKPT,         // BKPT
+    OP_Imm16,        // 16-bit immediate
+    OP_LEA,          // LEA opcode
+    OP_JMP,          // JMP/JSR/PEA (load-EA allowed except for immediate)
+    OP_OneEA,        // single operand store-EA
+    OP_DIVMUL,       // DIVS/DIVU/MULS/MULU
+    OP_MOVE,         // MOVE opcode, two EAs
+    OP_Bit,          // BCHG/BCLR/BSET/BTST
+    OP_MOVEQ,        // MOVEQ
+    OP_ArithA,       // MOVEA/ADDA/CMPA/SUBA
+    OP_Arith,        // ADD/AND/CMP/EOR/OR/SUB
+    OP_ArithI,       // ADDI/CMPI/SUBI
+    OP_LogImm,       // ANDI/EORI/ORI
+    OP_MOVEM,        // MOVEM
+    OP_ADDQ,         // ADDQ/SUBQ
+    OP_Shift,        // ASx/LSx/ROx/ROXx
+    OP_CHK,          // CHK
+    OP_CMPM,         // CMPM
+    OP_MOVEP,        // MOVEP
+    OP_EXG,          // EXG
+    OP_ABCD,         // ABCD,SBCD
+    OP_ADDX,         // ADDX,SUBX
+    OP_LINK,         // LINK
+    OP_OneA,         // UNLK
+    OP_OneD,         // SWAP/EXT
+    OP_MOVEC,        // 68010 MOVEC
+    OP_MOVES,        // 68010 MOVES
 
-//  o_Foo = o_LabelOp,
+//  o_Foo = OP_LabelOp,
 };
 
 enum
@@ -69,253 +69,253 @@ const char A_PC_regs[] = "A0 A1 A2 A3 A4 A5 A6 A7 SP PC";
 
 static const struct OpcdRec M68K_opcdTab[] =
 {
-    {"ILLEGAL", o_Inherent, 0x4AFC},
-    {"NOP",     o_Inherent, 0x4E71},
-    {"RESET",   o_Inherent, 0x4E70},
-    {"RTE",     o_Inherent, 0x4E73},
-    {"RTR",     o_Inherent, 0x4E77},
-    {"RTS",     o_Inherent, 0x4E75},
-    {"TRAPV",   o_Inherent, 0x4E76},
+    {"ILLEGAL", OP_Inherent, 0x4AFC},
+    {"NOP",     OP_Inherent, 0x4E71},
+    {"RESET",   OP_Inherent, 0x4E70},
+    {"RTE",     OP_Inherent, 0x4E73},
+    {"RTR",     OP_Inherent, 0x4E77},
+    {"RTS",     OP_Inherent, 0x4E75},
+    {"TRAPV",   OP_Inherent, 0x4E76},
 
-    {"DBT",     o_DBcc,     0x50C8},
-    {"DBRA",    o_DBcc,     0x51C8},
-    {"DBF",     o_DBcc,     0x51C8},
-    {"DBHI",    o_DBcc,     0x52C8},
-    {"DBLS",    o_DBcc,     0x53C8},
-    {"DBCC",    o_DBcc,     0x54C8},
-    {"DBHS",    o_DBcc,     0x54C8},
-    {"DBCS",    o_DBcc,     0x55C8},
-    {"DBLO",    o_DBcc,     0x55C8},
-    {"DBNE",    o_DBcc,     0x56C8},
-    {"DBEQ",    o_DBcc,     0x57C8},
-    {"DBVC",    o_DBcc,     0x58C8},
-    {"DBVS",    o_DBcc,     0x59C8},
-    {"DBPL",    o_DBcc,     0x5AC8},
-    {"DBMI",    o_DBcc,     0x5BC8},
-    {"DBGE",    o_DBcc,     0x5CC8},
-    {"DBLT",    o_DBcc,     0x5DC8},
-    {"DBGT",    o_DBcc,     0x5EC8},
-    {"DBLE",    o_DBcc,     0x5FC8},
+    {"DBT",     OP_DBcc,     0x50C8},
+    {"DBRA",    OP_DBcc,     0x51C8},
+    {"DBF",     OP_DBcc,     0x51C8},
+    {"DBHI",    OP_DBcc,     0x52C8},
+    {"DBLS",    OP_DBcc,     0x53C8},
+    {"DBCC",    OP_DBcc,     0x54C8},
+    {"DBHS",    OP_DBcc,     0x54C8},
+    {"DBCS",    OP_DBcc,     0x55C8},
+    {"DBLO",    OP_DBcc,     0x55C8},
+    {"DBNE",    OP_DBcc,     0x56C8},
+    {"DBEQ",    OP_DBcc,     0x57C8},
+    {"DBVC",    OP_DBcc,     0x58C8},
+    {"DBVS",    OP_DBcc,     0x59C8},
+    {"DBPL",    OP_DBcc,     0x5AC8},
+    {"DBMI",    OP_DBcc,     0x5BC8},
+    {"DBGE",    OP_DBcc,     0x5CC8},
+    {"DBLT",    OP_DBcc,     0x5DC8},
+    {"DBGT",    OP_DBcc,     0x5EC8},
+    {"DBLE",    OP_DBcc,     0x5FC8},
 
-    {"BRA",     o_Branch,   0x6000 + WID_X},
-    {"BRA.B",   o_Branch,   0x6000 + WID_B},
-    {"BRA.W",   o_Branch,   0x6000 + WID_W},
-    {"BSR",     o_Branch,   0x6100 + WID_X},
-    {"BSR.B",   o_Branch,   0x6100 + WID_B},
-    {"BSR.W",   o_Branch,   0x6100 + WID_W},
-    {"BHI",     o_Branch,   0x6200 + WID_X},
-    {"BHI.B",   o_Branch,   0x6200 + WID_B},
-    {"BHI.W",   o_Branch,   0x6200 + WID_W},
-    {"BLS",     o_Branch,   0x6300 + WID_X},
-    {"BLS.B",   o_Branch,   0x6300 + WID_B},
-    {"BLS.W",   o_Branch,   0x6300 + WID_W},
-    {"BCC",     o_Branch,   0x6400 + WID_X},
-    {"BCC.B",   o_Branch,   0x6400 + WID_B},
-    {"BCC.W",   o_Branch,   0x6400 + WID_W},
-    {"BHS",     o_Branch,   0x6400 + WID_X},
-    {"BHS.B",   o_Branch,   0x6400 + WID_B},
-    {"BHS.W",   o_Branch,   0x6400 + WID_W},
-    {"BCS",     o_Branch,   0x6500 + WID_X},
-    {"BCS.B",   o_Branch,   0x6500 + WID_B},
-    {"BCS.W",   o_Branch,   0x6500 + WID_W},
-    {"BLO",     o_Branch,   0x6500 + WID_X},
-    {"BLO.B",   o_Branch,   0x6500 + WID_B},
-    {"BLO.W",   o_Branch,   0x6500 + WID_W},
-    {"BNE",     o_Branch,   0x6600 + WID_X},
-    {"BNE.B",   o_Branch,   0x6600 + WID_B},
-    {"BNE.W",   o_Branch,   0x6600 + WID_W},
-    {"BEQ",     o_Branch,   0x6700 + WID_X},
-    {"BEQ.B",   o_Branch,   0x6700 + WID_B},
-    {"BEQ.W",   o_Branch,   0x6700 + WID_W},
-    {"BVC",     o_Branch,   0x6800 + WID_X},
-    {"BVC.B",   o_Branch,   0x6800 + WID_B},
-    {"BVC.W",   o_Branch,   0x6800 + WID_W},
-    {"BVS",     o_Branch,   0x6900 + WID_X},
-    {"BVS.B",   o_Branch,   0x6900 + WID_B},
-    {"BVS.W",   o_Branch,   0x6900 + WID_W},
-    {"BPL",     o_Branch,   0x6A00 + WID_X},
-    {"BPL.B",   o_Branch,   0x6A00 + WID_B},
-    {"BPL.W",   o_Branch,   0x6A00 + WID_W},
-    {"BMI",     o_Branch,   0x6B00 + WID_X},
-    {"BMI.B",   o_Branch,   0x6B00 + WID_B},
-    {"BMI.W",   o_Branch,   0x6B00 + WID_W},
-    {"BGE",     o_Branch,   0x6C00 + WID_X},
-    {"BGE.B",   o_Branch,   0x6C00 + WID_B},
-    {"BGE.W",   o_Branch,   0x6C00 + WID_W},
-    {"BLT",     o_Branch,   0x6D00 + WID_X},
-    {"BLT.B",   o_Branch,   0x6D00 + WID_B},
-    {"BLT.W",   o_Branch,   0x6D00 + WID_W},
-    {"BGT",     o_Branch,   0x6E00 + WID_X},
-    {"BGT.B",   o_Branch,   0x6E00 + WID_B},
-    {"BGT.W",   o_Branch,   0x6E00 + WID_W},
-    {"BLE",     o_Branch,   0x6F00 + WID_X},
-    {"BLE.B",   o_Branch,   0x6F00 + WID_B},
-    {"BLE.W",   o_Branch,   0x6F00 + WID_W},
-    {"BRA.S",   o_Branch,   0x6000 + WID_B},
-    {"BSR.S",   o_Branch,   0x6100 + WID_B},
-    {"BHI.S",   o_Branch,   0x6200 + WID_B},
-    {"BLS.S",   o_Branch,   0x6300 + WID_B},
-    {"BCC.S",   o_Branch,   0x6400 + WID_B},
-    {"BHS.S",   o_Branch,   0x6400 + WID_B},
-    {"BCS.S",   o_Branch,   0x6500 + WID_B},
-    {"BLO.S",   o_Branch,   0x6500 + WID_B},
-    {"BNE.S",   o_Branch,   0x6600 + WID_B},
-    {"BEQ.S",   o_Branch,   0x6700 + WID_B},
-    {"BVC.S",   o_Branch,   0x6800 + WID_B},
-    {"BVS.S",   o_Branch,   0x6900 + WID_B},
-    {"BPL.S",   o_Branch,   0x6A00 + WID_B},
-    {"BMI.S",   o_Branch,   0x6B00 + WID_B},
-    {"BGE.S",   o_Branch,   0x6C00 + WID_B},
-    {"BLT.S",   o_Branch,   0x6D00 + WID_B},
-    {"BGT.S",   o_Branch,   0x6E00 + WID_B},
-    {"BLE.S",   o_Branch,   0x6F00 + WID_B},
+    {"BRA",     OP_Branch,   0x6000 + WID_X},
+    {"BRA.B",   OP_Branch,   0x6000 + WID_B},
+    {"BRA.W",   OP_Branch,   0x6000 + WID_W},
+    {"BSR",     OP_Branch,   0x6100 + WID_X},
+    {"BSR.B",   OP_Branch,   0x6100 + WID_B},
+    {"BSR.W",   OP_Branch,   0x6100 + WID_W},
+    {"BHI",     OP_Branch,   0x6200 + WID_X},
+    {"BHI.B",   OP_Branch,   0x6200 + WID_B},
+    {"BHI.W",   OP_Branch,   0x6200 + WID_W},
+    {"BLS",     OP_Branch,   0x6300 + WID_X},
+    {"BLS.B",   OP_Branch,   0x6300 + WID_B},
+    {"BLS.W",   OP_Branch,   0x6300 + WID_W},
+    {"BCC",     OP_Branch,   0x6400 + WID_X},
+    {"BCC.B",   OP_Branch,   0x6400 + WID_B},
+    {"BCC.W",   OP_Branch,   0x6400 + WID_W},
+    {"BHS",     OP_Branch,   0x6400 + WID_X},
+    {"BHS.B",   OP_Branch,   0x6400 + WID_B},
+    {"BHS.W",   OP_Branch,   0x6400 + WID_W},
+    {"BCS",     OP_Branch,   0x6500 + WID_X},
+    {"BCS.B",   OP_Branch,   0x6500 + WID_B},
+    {"BCS.W",   OP_Branch,   0x6500 + WID_W},
+    {"BLO",     OP_Branch,   0x6500 + WID_X},
+    {"BLO.B",   OP_Branch,   0x6500 + WID_B},
+    {"BLO.W",   OP_Branch,   0x6500 + WID_W},
+    {"BNE",     OP_Branch,   0x6600 + WID_X},
+    {"BNE.B",   OP_Branch,   0x6600 + WID_B},
+    {"BNE.W",   OP_Branch,   0x6600 + WID_W},
+    {"BEQ",     OP_Branch,   0x6700 + WID_X},
+    {"BEQ.B",   OP_Branch,   0x6700 + WID_B},
+    {"BEQ.W",   OP_Branch,   0x6700 + WID_W},
+    {"BVC",     OP_Branch,   0x6800 + WID_X},
+    {"BVC.B",   OP_Branch,   0x6800 + WID_B},
+    {"BVC.W",   OP_Branch,   0x6800 + WID_W},
+    {"BVS",     OP_Branch,   0x6900 + WID_X},
+    {"BVS.B",   OP_Branch,   0x6900 + WID_B},
+    {"BVS.W",   OP_Branch,   0x6900 + WID_W},
+    {"BPL",     OP_Branch,   0x6A00 + WID_X},
+    {"BPL.B",   OP_Branch,   0x6A00 + WID_B},
+    {"BPL.W",   OP_Branch,   0x6A00 + WID_W},
+    {"BMI",     OP_Branch,   0x6B00 + WID_X},
+    {"BMI.B",   OP_Branch,   0x6B00 + WID_B},
+    {"BMI.W",   OP_Branch,   0x6B00 + WID_W},
+    {"BGE",     OP_Branch,   0x6C00 + WID_X},
+    {"BGE.B",   OP_Branch,   0x6C00 + WID_B},
+    {"BGE.W",   OP_Branch,   0x6C00 + WID_W},
+    {"BLT",     OP_Branch,   0x6D00 + WID_X},
+    {"BLT.B",   OP_Branch,   0x6D00 + WID_B},
+    {"BLT.W",   OP_Branch,   0x6D00 + WID_W},
+    {"BGT",     OP_Branch,   0x6E00 + WID_X},
+    {"BGT.B",   OP_Branch,   0x6E00 + WID_B},
+    {"BGT.W",   OP_Branch,   0x6E00 + WID_W},
+    {"BLE",     OP_Branch,   0x6F00 + WID_X},
+    {"BLE.B",   OP_Branch,   0x6F00 + WID_B},
+    {"BLE.W",   OP_Branch,   0x6F00 + WID_W},
+    {"BRA.S",   OP_Branch,   0x6000 + WID_B},
+    {"BSR.S",   OP_Branch,   0x6100 + WID_B},
+    {"BHI.S",   OP_Branch,   0x6200 + WID_B},
+    {"BLS.S",   OP_Branch,   0x6300 + WID_B},
+    {"BCC.S",   OP_Branch,   0x6400 + WID_B},
+    {"BHS.S",   OP_Branch,   0x6400 + WID_B},
+    {"BCS.S",   OP_Branch,   0x6500 + WID_B},
+    {"BLO.S",   OP_Branch,   0x6500 + WID_B},
+    {"BNE.S",   OP_Branch,   0x6600 + WID_B},
+    {"BEQ.S",   OP_Branch,   0x6700 + WID_B},
+    {"BVC.S",   OP_Branch,   0x6800 + WID_B},
+    {"BVS.S",   OP_Branch,   0x6900 + WID_B},
+    {"BPL.S",   OP_Branch,   0x6A00 + WID_B},
+    {"BMI.S",   OP_Branch,   0x6B00 + WID_B},
+    {"BGE.S",   OP_Branch,   0x6C00 + WID_B},
+    {"BLT.S",   OP_Branch,   0x6D00 + WID_B},
+    {"BGT.S",   OP_Branch,   0x6E00 + WID_B},
+    {"BLE.S",   OP_Branch,   0x6F00 + WID_B},
 
-    {"STOP",    o_Imm16,    0x4E72},
-    {"RTD",     o_Imm16,    0x4E74}, // *** 68010 and up
+    {"STOP",    OP_Imm16,    0x4E72},
+    {"RTD",     OP_Imm16,    0x4E74}, // *** 68010 and up
 
-    {"TRAP",    o_TRAP,     0x4E40},
-    {"BKPT",    o_BKPT,     0x4848}, // *** 68010 and up
+    {"TRAP",    OP_TRAP,     0x4E40},
+    {"BKPT",    OP_BKPT,     0x4848}, // *** 68010 and up
 
-    {"LEA",     o_LEA,      0x41C0}, // load-EA but no immediate
-    {"LEA.L",   o_LEA,      0x41C0}, // load-EA but no immediate
+    {"LEA",     OP_LEA,      0x41C0}, // load-EA but no immediate
+    {"LEA.L",   OP_LEA,      0x41C0}, // load-EA but no immediate
 
-    {"JMP",     o_JMP,      0x4EC0}, // load-EA but no immediate
-    {"JSR",     o_JMP,      0x4E80}, // load-EA but no immediate
-    {"PEA",     o_JMP,      0x4840}, // load-EA but no immediate
-    {"PEA.L",   o_JMP,      0x4840}, // load-EA but no immediate
+    {"JMP",     OP_JMP,      0x4EC0}, // load-EA but no immediate
+    {"JSR",     OP_JMP,      0x4E80}, // load-EA but no immediate
+    {"PEA",     OP_JMP,      0x4840}, // load-EA but no immediate
+    {"PEA.L",   OP_JMP,      0x4840}, // load-EA but no immediate
 
-    {"CLR",     o_OneEA,    0x4240}, // store-EA
-    {"CLR.B",   o_OneEA,    0x4200},
-    {"CLR.W",   o_OneEA,    0x4240},
-    {"CLR.L",   o_OneEA,    0x4280},
-    {"NBCD",    o_OneEA,    0x4800},
-    {"NBCD.B",  o_OneEA,    0x4800},
-    {"NEG",     o_OneEA,    0x4440},
-    {"NEG.B",   o_OneEA,    0x4400},
-    {"NEG.W",   o_OneEA,    0x4440},
-    {"NEG.L",   o_OneEA,    0x4480},
-    {"NEGX",    o_OneEA,    0x4040},
-    {"NEGX.B",  o_OneEA,    0x4000},
-    {"NEGX.W",  o_OneEA,    0x4040},
-    {"NEGX.L",  o_OneEA,    0x4080},
-    {"NOT",     o_OneEA,    0x4640},
-    {"NOT.B",   o_OneEA,    0x4600},
-    {"NOT.W",   o_OneEA,    0x4640},
-    {"NOT.L",   o_OneEA,    0x4680},
-    {"ST",      o_OneEA,    0x50C0},
-//  {"ST.B",    o_OneEA,    0x50C0},
-    {"SF",      o_OneEA,    0x51C0},
-//  {"SF.B",    o_OneEA,    0x51C0},
-    {"SHI",     o_OneEA,    0x52C0},
-//  {"SHI.B",   o_OneEA,    0x52C0},
-    {"SLS",     o_OneEA,    0x53C0},
-//  {"SLS.B",   o_OneEA,    0x53C0},
-    {"SCC",     o_OneEA,    0x54C0},
-//  {"SCC.B",   o_OneEA,    0x54C0},
-    {"SHS",     o_OneEA,    0x54C0},
-//  {"SHS.B",   o_OneEA,    0x54C0},
-    {"SCS",     o_OneEA,    0x55C0},
-//  {"SCS.B",   o_OneEA,    0x55C0},
-    {"SLO",     o_OneEA,    0x55C0},
-//  {"SLO.B",   o_OneEA,    0x55C0},
-    {"SNE",     o_OneEA,    0x56C0},
-//  {"SNE.B",   o_OneEA,    0x56C0},
-    {"SEQ",     o_OneEA,    0x57C0},
-//  {"SEQ.B",   o_OneEA,    0x57C0},
-    {"SVC",     o_OneEA,    0x58C0},
-//  {"SVC.B",   o_OneEA,    0x58C0},
-    {"SVS",     o_OneEA,    0x59C0},
-//  {"SVS.B",   o_OneEA,    0x59C0},
-    {"SPL",     o_OneEA,    0x5AC0},
-//  {"SPL.B",   o_OneEA,    0x5AC0},
-    {"SMI",     o_OneEA,    0x5BC0},
-//  {"SMI.B",   o_OneEA,    0x5BC0},
-    {"SGE",     o_OneEA,    0x5CC0},
-//  {"SGE.B",   o_OneEA,    0x5CC0},
-    {"SLT",     o_OneEA,    0x5DC0},
-//  {"SLT.B",   o_OneEA,    0x5DC0},
-    {"SGT",     o_OneEA,    0x5EC0},
-//  {"SGT.B",   o_OneEA,    0x5EC0},
-    {"SLE",     o_OneEA,    0x5FC0},
-//  {"SLE.B",   o_OneEA,    0x5FC0},
-    {"TAS",     o_OneEA,    0x4AC0},
-    {"TAS.B",   o_OneEA,    0x4AC0},
-    {"TST",     o_OneEA,    0x4A40},
-    {"TST.B",   o_OneEA,    0x4A00},
-    {"TST.W",   o_OneEA,    0x4A40},
-    {"TST.L",   o_OneEA,    0x4A80},
+    {"CLR",     OP_OneEA,    0x4240}, // store-EA
+    {"CLR.B",   OP_OneEA,    0x4200},
+    {"CLR.W",   OP_OneEA,    0x4240},
+    {"CLR.L",   OP_OneEA,    0x4280},
+    {"NBCD",    OP_OneEA,    0x4800},
+    {"NBCD.B",  OP_OneEA,    0x4800},
+    {"NEG",     OP_OneEA,    0x4440},
+    {"NEG.B",   OP_OneEA,    0x4400},
+    {"NEG.W",   OP_OneEA,    0x4440},
+    {"NEG.L",   OP_OneEA,    0x4480},
+    {"NEGX",    OP_OneEA,    0x4040},
+    {"NEGX.B",  OP_OneEA,    0x4000},
+    {"NEGX.W",  OP_OneEA,    0x4040},
+    {"NEGX.L",  OP_OneEA,    0x4080},
+    {"NOT",     OP_OneEA,    0x4640},
+    {"NOT.B",   OP_OneEA,    0x4600},
+    {"NOT.W",   OP_OneEA,    0x4640},
+    {"NOT.L",   OP_OneEA,    0x4680},
+    {"ST",      OP_OneEA,    0x50C0},
+//  {"ST.B",    OP_OneEA,    0x50C0},
+    {"SF",      OP_OneEA,    0x51C0},
+//  {"SF.B",    OP_OneEA,    0x51C0},
+    {"SHI",     OP_OneEA,    0x52C0},
+//  {"SHI.B",   OP_OneEA,    0x52C0},
+    {"SLS",     OP_OneEA,    0x53C0},
+//  {"SLS.B",   OP_OneEA,    0x53C0},
+    {"SCC",     OP_OneEA,    0x54C0},
+//  {"SCC.B",   OP_OneEA,    0x54C0},
+    {"SHS",     OP_OneEA,    0x54C0},
+//  {"SHS.B",   OP_OneEA,    0x54C0},
+    {"SCS",     OP_OneEA,    0x55C0},
+//  {"SCS.B",   OP_OneEA,    0x55C0},
+    {"SLO",     OP_OneEA,    0x55C0},
+//  {"SLO.B",   OP_OneEA,    0x55C0},
+    {"SNE",     OP_OneEA,    0x56C0},
+//  {"SNE.B",   OP_OneEA,    0x56C0},
+    {"SEQ",     OP_OneEA,    0x57C0},
+//  {"SEQ.B",   OP_OneEA,    0x57C0},
+    {"SVC",     OP_OneEA,    0x58C0},
+//  {"SVC.B",   OP_OneEA,    0x58C0},
+    {"SVS",     OP_OneEA,    0x59C0},
+//  {"SVS.B",   OP_OneEA,    0x59C0},
+    {"SPL",     OP_OneEA,    0x5AC0},
+//  {"SPL.B",   OP_OneEA,    0x5AC0},
+    {"SMI",     OP_OneEA,    0x5BC0},
+//  {"SMI.B",   OP_OneEA,    0x5BC0},
+    {"SGE",     OP_OneEA,    0x5CC0},
+//  {"SGE.B",   OP_OneEA,    0x5CC0},
+    {"SLT",     OP_OneEA,    0x5DC0},
+//  {"SLT.B",   OP_OneEA,    0x5DC0},
+    {"SGT",     OP_OneEA,    0x5EC0},
+//  {"SGT.B",   OP_OneEA,    0x5EC0},
+    {"SLE",     OP_OneEA,    0x5FC0},
+//  {"SLE.B",   OP_OneEA,    0x5FC0},
+    {"TAS",     OP_OneEA,    0x4AC0},
+    {"TAS.B",   OP_OneEA,    0x4AC0},
+    {"TST",     OP_OneEA,    0x4A40},
+    {"TST.B",   OP_OneEA,    0x4A00},
+    {"TST.W",   OP_OneEA,    0x4A40},
+    {"TST.L",   OP_OneEA,    0x4A80},
 
-    {"DIVS",    o_DIVMUL,   0x81C0},
-    {"DIVS.W",  o_DIVMUL,   0x81C0},
-    {"DIVU",    o_DIVMUL,   0x80C0},
-    {"DIVU.W",  o_DIVMUL,   0x80C0},
-    {"MULS",    o_DIVMUL,   0xC1C0},
-    {"MULS.W",  o_DIVMUL,   0xC1C0},
-    {"MULU",    o_DIVMUL,   0xC0C0},
-    {"MULU.W",  o_DIVMUL,   0xC0C0},
+    {"DIVS",    OP_DIVMUL,   0x81C0},
+    {"DIVS.W",  OP_DIVMUL,   0x81C0},
+    {"DIVU",    OP_DIVMUL,   0x80C0},
+    {"DIVU.W",  OP_DIVMUL,   0x80C0},
+    {"MULS",    OP_DIVMUL,   0xC1C0},
+    {"MULS.W",  OP_DIVMUL,   0xC1C0},
+    {"MULU",    OP_DIVMUL,   0xC0C0},
+    {"MULU.W",  OP_DIVMUL,   0xC0C0},
 
-    {"MOVE",    o_MOVE,     0x3000 + WID_X},
-    {"MOVE.B",  o_MOVE,     0x1000 + WID_B},
-    {"MOVE.W",  o_MOVE,     0x3000 + WID_W},
-    {"MOVE.L",  o_MOVE,     0x2000 + WID_L},
+    {"MOVE",    OP_MOVE,     0x3000 + WID_X},
+    {"MOVE.B",  OP_MOVE,     0x1000 + WID_B},
+    {"MOVE.W",  OP_MOVE,     0x3000 + WID_W},
+    {"MOVE.L",  OP_MOVE,     0x2000 + WID_L},
 
-    {"BCHG",    o_Bit,      0x0040 + WID_X},
-    {"BCHG.B",  o_Bit,      0x0040 + WID_B},
-    {"BCHG.L",  o_Bit,      0x0040 + WID_L},
-    {"BCLR",    o_Bit,      0x0080 + WID_X},
-    {"BCLR.B",  o_Bit,      0x0080 + WID_B},
-    {"BCLR.L",  o_Bit,      0x0080 + WID_L},
-    {"BSET",    o_Bit,      0x00C0 + WID_X},
-    {"BSET.B",  o_Bit,      0x00C0 + WID_B},
-    {"BSET.L",  o_Bit,      0x00C0 + WID_L},
-    {"BTST",    o_Bit,      0x0000 + WID_X},
-    {"BTST.B",  o_Bit,      0x0000 + WID_B},
-    {"BTST.L",  o_Bit,      0x0000 + WID_L},
+    {"BCHG",    OP_Bit,      0x0040 + WID_X},
+    {"BCHG.B",  OP_Bit,      0x0040 + WID_B},
+    {"BCHG.L",  OP_Bit,      0x0040 + WID_L},
+    {"BCLR",    OP_Bit,      0x0080 + WID_X},
+    {"BCLR.B",  OP_Bit,      0x0080 + WID_B},
+    {"BCLR.L",  OP_Bit,      0x0080 + WID_L},
+    {"BSET",    OP_Bit,      0x00C0 + WID_X},
+    {"BSET.B",  OP_Bit,      0x00C0 + WID_B},
+    {"BSET.L",  OP_Bit,      0x00C0 + WID_L},
+    {"BTST",    OP_Bit,      0x0000 + WID_X},
+    {"BTST.B",  OP_Bit,      0x0000 + WID_B},
+    {"BTST.L",  OP_Bit,      0x0000 + WID_L},
 
-    {"MOVEQ",   o_MOVEQ,    0},
-    {"MOVEQ.L", o_MOVEQ,    0},
+    {"MOVEQ",   OP_MOVEQ,    0},
+    {"MOVEQ.L", OP_MOVEQ,    0},
 
-    {"MOVEA",   o_ArithA,   0x3040 + WID_W},
-    {"MOVEA.W", o_ArithA,   0x3040 + WID_W},
-    {"MOVEA.L", o_ArithA,   0x2040 + WID_L},
-    {"ADDA",    o_ArithA,   0xD0C0 + WID_W},
-    {"ADDA.W",  o_ArithA,   0xD0C0 + WID_W},
-    {"ADDA.L",  o_ArithA,   0xD1C0 + WID_L},
-    {"CMPA",    o_ArithA,   0xB0C0 + WID_W},
-    {"CMPA.W",  o_ArithA,   0xB0C0 + WID_W},
-    {"CMPA.L",  o_ArithA,   0xB1C0 + WID_L},
-    {"SUBA",    o_ArithA,   0x90C0 + WID_W},
-    {"SUBA.W",  o_ArithA,   0x90C0 + WID_W},
-    {"SUBA.L",  o_ArithA,   0x91C0 + WID_L},
+    {"MOVEA",   OP_ArithA,   0x3040 + WID_W},
+    {"MOVEA.W", OP_ArithA,   0x3040 + WID_W},
+    {"MOVEA.L", OP_ArithA,   0x2040 + WID_L},
+    {"ADDA",    OP_ArithA,   0xD0C0 + WID_W},
+    {"ADDA.W",  OP_ArithA,   0xD0C0 + WID_W},
+    {"ADDA.L",  OP_ArithA,   0xD1C0 + WID_L},
+    {"CMPA",    OP_ArithA,   0xB0C0 + WID_W},
+    {"CMPA.W",  OP_ArithA,   0xB0C0 + WID_W},
+    {"CMPA.L",  OP_ArithA,   0xB1C0 + WID_L},
+    {"SUBA",    OP_ArithA,   0x90C0 + WID_W},
+    {"SUBA.W",  OP_ArithA,   0x90C0 + WID_W},
+    {"SUBA.L",  OP_ArithA,   0x91C0 + WID_L},
 
     // a_Arith special parm bits:
     // 8000 = EOR
     // 0004 = CMP
     // 0008/0010/0020 = bits for immediate
-    {"ADD",     o_Arith,    0xD040 + WID_X + 0x18},
-    {"ADD.B",   o_Arith,    0xD000 + WID_B + 0x18},
-    {"ADD.W",   o_Arith,    0xD040 + WID_W + 0x18},
-    {"ADD.L",   o_Arith,    0xD080 + WID_L + 0x18},
-    {"AND",     o_Arith,    0xC040 + WID_X + 0x08},
-    {"AND.B",   o_Arith,    0xC000 + WID_B + 0x08},
-    {"AND.W",   o_Arith,    0xC040 + WID_W + 0x08},
-    {"AND.L",   o_Arith,    0xC080 + WID_L + 0x08},
-    {"CMP",     o_Arith,    0xB040 + WID_X + 0x30 + 4}, // EA,Dn only
-    {"CMP.B",   o_Arith,    0xB000 + WID_B + 0x30 + 4},
-    {"CMP.W",   o_Arith,    0xB040 + WID_W + 0x30 + 4},
-    {"CMP.L",   o_Arith,    0xB080 + WID_L + 0x30 + 4},
-    {"EOR",     o_Arith,    0xB040 + WID_X + 0x28 - 0x8000}, // Dn,EA only
-    {"EOR.B",   o_Arith,    0xB000 + WID_B + 0x28 - 0x8000},
-    {"EOR.W",   o_Arith,    0xB040 + WID_W + 0x28 - 0x8000},
-    {"EOR.L",   o_Arith,    0xB080 + WID_L + 0x28 - 0x8000},
-    {"OR",      o_Arith,    0x8040 + WID_X + 0x00},
-    {"OR.B",    o_Arith,    0x8000 + WID_B + 0x00},
-    {"OR.W",    o_Arith,    0x8040 + WID_W + 0x00},
-    {"OR.L",    o_Arith,    0x8080 + WID_L + 0x00},
-    {"SUB",     o_Arith,    0x9040 + WID_X + 0x10},
-    {"SUB.B",   o_Arith,    0x9000 + WID_B + 0x10},
-    {"SUB.W",   o_Arith,    0x9040 + WID_W + 0x10},
-    {"SUB.L",   o_Arith,    0x9080 + WID_L + 0x10},
+    {"ADD",     OP_Arith,    0xD040 + WID_X + 0x18},
+    {"ADD.B",   OP_Arith,    0xD000 + WID_B + 0x18},
+    {"ADD.W",   OP_Arith,    0xD040 + WID_W + 0x18},
+    {"ADD.L",   OP_Arith,    0xD080 + WID_L + 0x18},
+    {"AND",     OP_Arith,    0xC040 + WID_X + 0x08},
+    {"AND.B",   OP_Arith,    0xC000 + WID_B + 0x08},
+    {"AND.W",   OP_Arith,    0xC040 + WID_W + 0x08},
+    {"AND.L",   OP_Arith,    0xC080 + WID_L + 0x08},
+    {"CMP",     OP_Arith,    0xB040 + WID_X + 0x30 + 4}, // EA,Dn only
+    {"CMP.B",   OP_Arith,    0xB000 + WID_B + 0x30 + 4},
+    {"CMP.W",   OP_Arith,    0xB040 + WID_W + 0x30 + 4},
+    {"CMP.L",   OP_Arith,    0xB080 + WID_L + 0x30 + 4},
+    {"EOR",     OP_Arith,    0xB040 + WID_X + 0x28 - 0x8000}, // Dn,EA only
+    {"EOR.B",   OP_Arith,    0xB000 + WID_B + 0x28 - 0x8000},
+    {"EOR.W",   OP_Arith,    0xB040 + WID_W + 0x28 - 0x8000},
+    {"EOR.L",   OP_Arith,    0xB080 + WID_L + 0x28 - 0x8000},
+    {"OR",      OP_Arith,    0x8040 + WID_X + 0x00},
+    {"OR.B",    OP_Arith,    0x8000 + WID_B + 0x00},
+    {"OR.W",    OP_Arith,    0x8040 + WID_W + 0x00},
+    {"OR.L",    OP_Arith,    0x8080 + WID_L + 0x00},
+    {"SUB",     OP_Arith,    0x9040 + WID_X + 0x10},
+    {"SUB.B",   OP_Arith,    0x9000 + WID_B + 0x10},
+    {"SUB.W",   OP_Arith,    0x9040 + WID_W + 0x10},
+    {"SUB.L",   OP_Arith,    0x9080 + WID_L + 0x10},
     /*
     1100 rrrm mm00 0000 -> 0000 0010 SS00 0000 AND -> ANDI
     1011 rrr1 mm00 0000 -> 0000 1010 SS00 0000 EOR -> EORI
@@ -326,125 +326,125 @@ static const struct OpcdRec M68K_opcdTab[] =
     1001 rrrm mm00 0000 -> 0000 0100 SS00 0000 SUB -> SUBI
      ^^^                        ^^^
     */
-    {"ADDI",    o_ArithI,   0x0640 + WID_W},
-    {"ADDI.B",  o_ArithI,   0x0600 + WID_B},
-    {"ADDI.W",  o_ArithI,   0x0640 + WID_W},
-    {"ADDI.L",  o_ArithI,   0x0680 + WID_L},
-    {"CMPI",    o_ArithI,   0x0C40 + WID_W},
-    {"CMPI.B",  o_ArithI,   0x0C00 + WID_B},
-    {"CMPI.W",  o_ArithI,   0x0C40 + WID_W},
-    {"CMPI.L",  o_ArithI,   0x0C80 + WID_L},
-    {"SUBI",    o_ArithI,   0x0440 + WID_W},
-    {"SUBI.B",  o_ArithI,   0x0400 + WID_B},
-    {"SUBI.W",  o_ArithI,   0x0440 + WID_W},
-    {"SUBI.L",  o_ArithI,   0x0480 + WID_L},
+    {"ADDI",    OP_ArithI,   0x0640 + WID_W},
+    {"ADDI.B",  OP_ArithI,   0x0600 + WID_B},
+    {"ADDI.W",  OP_ArithI,   0x0640 + WID_W},
+    {"ADDI.L",  OP_ArithI,   0x0680 + WID_L},
+    {"CMPI",    OP_ArithI,   0x0C40 + WID_W},
+    {"CMPI.B",  OP_ArithI,   0x0C00 + WID_B},
+    {"CMPI.W",  OP_ArithI,   0x0C40 + WID_W},
+    {"CMPI.L",  OP_ArithI,   0x0C80 + WID_L},
+    {"SUBI",    OP_ArithI,   0x0440 + WID_W},
+    {"SUBI.B",  OP_ArithI,   0x0400 + WID_B},
+    {"SUBI.W",  OP_ArithI,   0x0440 + WID_W},
+    {"SUBI.L",  OP_ArithI,   0x0480 + WID_L},
 
-    {"ANDI",    o_LogImm,   0x0200 + WID_X},
-    {"ANDI.B",  o_LogImm,   0x0200 + WID_B},
-    {"ANDI.W",  o_LogImm,   0x0200 + WID_W},
-    {"ANDI.L",  o_LogImm,   0x0200 + WID_L},
-    {"EORI",    o_LogImm,   0x0A00 + WID_X},
-    {"EORI.B",  o_LogImm,   0x0A00 + WID_B},
-    {"EORI.W",  o_LogImm,   0x0A00 + WID_W},
-    {"EORI.L",  o_LogImm,   0x0A00 + WID_L},
-    {"ORI",     o_LogImm,   0x0000 + WID_X},
-    {"ORI.B",   o_LogImm,   0x0000 + WID_B},
-    {"ORI.W",   o_LogImm,   0x0000 + WID_W},
-    {"ORI.L",   o_LogImm,   0x0000 + WID_L},
+    {"ANDI",    OP_LogImm,   0x0200 + WID_X},
+    {"ANDI.B",  OP_LogImm,   0x0200 + WID_B},
+    {"ANDI.W",  OP_LogImm,   0x0200 + WID_W},
+    {"ANDI.L",  OP_LogImm,   0x0200 + WID_L},
+    {"EORI",    OP_LogImm,   0x0A00 + WID_X},
+    {"EORI.B",  OP_LogImm,   0x0A00 + WID_B},
+    {"EORI.W",  OP_LogImm,   0x0A00 + WID_W},
+    {"EORI.L",  OP_LogImm,   0x0A00 + WID_L},
+    {"ORI",     OP_LogImm,   0x0000 + WID_X},
+    {"ORI.B",   OP_LogImm,   0x0000 + WID_B},
+    {"ORI.W",   OP_LogImm,   0x0000 + WID_W},
+    {"ORI.L",   OP_LogImm,   0x0000 + WID_L},
 
-    {"MOVEM",   o_MOVEM,    0x4880 + WID_W},
-    {"MOVEM.W", o_MOVEM,    0x4880 + WID_W},
-    {"MOVEM.L", o_MOVEM,    0x48C0 + WID_L},
+    {"MOVEM",   OP_MOVEM,    0x4880 + WID_W},
+    {"MOVEM.W", OP_MOVEM,    0x4880 + WID_W},
+    {"MOVEM.L", OP_MOVEM,    0x48C0 + WID_L},
 
-    {"ADDQ",    o_ADDQ,     0x5040 + WID_W},
-    {"ADDQ.B",  o_ADDQ,     0x5000 + WID_B},
-    {"ADDQ.W",  o_ADDQ,     0x5040 + WID_W},
-    {"ADDQ.L",  o_ADDQ,     0x5080 + WID_L},
-    {"SUBQ",    o_ADDQ,     0x5140 + WID_W},
-    {"SUBQ.B",  o_ADDQ,     0x5100 + WID_B},
-    {"SUBQ.W",  o_ADDQ,     0x5140 + WID_W},
-    {"SUBQ.L",  o_ADDQ,     0x5180 + WID_L},
+    {"ADDQ",    OP_ADDQ,     0x5040 + WID_W},
+    {"ADDQ.B",  OP_ADDQ,     0x5000 + WID_B},
+    {"ADDQ.W",  OP_ADDQ,     0x5040 + WID_W},
+    {"ADDQ.L",  OP_ADDQ,     0x5080 + WID_L},
+    {"SUBQ",    OP_ADDQ,     0x5140 + WID_W},
+    {"SUBQ.B",  OP_ADDQ,     0x5100 + WID_B},
+    {"SUBQ.W",  OP_ADDQ,     0x5140 + WID_W},
+    {"SUBQ.L",  OP_ADDQ,     0x5180 + WID_L},
 
-    {"ASL",     o_Shift,    0xE100 + WID_X}, // E100 E1C0
-    {"ASL.B",   o_Shift,    0xE100 + WID_B},
-    {"ASL.W",   o_Shift,    0xE100 + WID_W},
-    {"ASL.L",   o_Shift,    0xE100 + WID_L},
-    {"ASR",     o_Shift,    0xE000 + WID_X}, // E000 E0C0
-    {"ASR.B",   o_Shift,    0xE000 + WID_B},
-    {"ASR.W",   o_Shift,    0xE000 + WID_W},
-    {"ASR.L",   o_Shift,    0xE000 + WID_L},
-    {"LSL",     o_Shift,    0xE108 + WID_X}, // E108 E3C0
-    {"LSL.B",   o_Shift,    0xE108 + WID_B},
-    {"LSL.W",   o_Shift,    0xE108 + WID_W},
-    {"LSL.L",   o_Shift,    0xE108 + WID_L},
-    {"LSR",     o_Shift,    0xE008 + WID_X}, // E008 E2C0
-    {"LSR.B",   o_Shift,    0xE008 + WID_B},
-    {"LSR.W",   o_Shift,    0xE008 + WID_W},
-    {"LSR.L",   o_Shift,    0xE008 + WID_L},
-    {"ROL",     o_Shift,    0xE118 + WID_X}, // E118 E7C0
-    {"ROL.B",   o_Shift,    0xE118 + WID_B},
-    {"ROL.W",   o_Shift,    0xE118 + WID_W},
-    {"ROL.L",   o_Shift,    0xE118 + WID_L},
-    {"ROR",     o_Shift,    0xE018 + WID_X}, // E018 E6C0
-    {"ROR.B",   o_Shift,    0xE018 + WID_B},
-    {"ROR.W",   o_Shift,    0xE018 + WID_W},
-    {"ROR.L",   o_Shift,    0xE018 + WID_L},
-    {"ROXL",    o_Shift,    0xE110 + WID_X}, // E110 E5C0
-    {"ROXL.B",  o_Shift,    0xE110 + WID_B},
-    {"ROXL.W",  o_Shift,    0xE110 + WID_W},
-    {"ROXL.L",  o_Shift,    0xE110 + WID_L},
-    {"ROXR",    o_Shift,    0xE010 + WID_X}, // E010 E4C0
-    {"ROXR.B",  o_Shift,    0xE010 + WID_B},
-    {"ROXR.W",  o_Shift,    0xE010 + WID_W},
-    {"ROXR.L",  o_Shift,    0xE010 + WID_L},
+    {"ASL",     OP_Shift,    0xE100 + WID_X}, // E100 E1C0
+    {"ASL.B",   OP_Shift,    0xE100 + WID_B},
+    {"ASL.W",   OP_Shift,    0xE100 + WID_W},
+    {"ASL.L",   OP_Shift,    0xE100 + WID_L},
+    {"ASR",     OP_Shift,    0xE000 + WID_X}, // E000 E0C0
+    {"ASR.B",   OP_Shift,    0xE000 + WID_B},
+    {"ASR.W",   OP_Shift,    0xE000 + WID_W},
+    {"ASR.L",   OP_Shift,    0xE000 + WID_L},
+    {"LSL",     OP_Shift,    0xE108 + WID_X}, // E108 E3C0
+    {"LSL.B",   OP_Shift,    0xE108 + WID_B},
+    {"LSL.W",   OP_Shift,    0xE108 + WID_W},
+    {"LSL.L",   OP_Shift,    0xE108 + WID_L},
+    {"LSR",     OP_Shift,    0xE008 + WID_X}, // E008 E2C0
+    {"LSR.B",   OP_Shift,    0xE008 + WID_B},
+    {"LSR.W",   OP_Shift,    0xE008 + WID_W},
+    {"LSR.L",   OP_Shift,    0xE008 + WID_L},
+    {"ROL",     OP_Shift,    0xE118 + WID_X}, // E118 E7C0
+    {"ROL.B",   OP_Shift,    0xE118 + WID_B},
+    {"ROL.W",   OP_Shift,    0xE118 + WID_W},
+    {"ROL.L",   OP_Shift,    0xE118 + WID_L},
+    {"ROR",     OP_Shift,    0xE018 + WID_X}, // E018 E6C0
+    {"ROR.B",   OP_Shift,    0xE018 + WID_B},
+    {"ROR.W",   OP_Shift,    0xE018 + WID_W},
+    {"ROR.L",   OP_Shift,    0xE018 + WID_L},
+    {"ROXL",    OP_Shift,    0xE110 + WID_X}, // E110 E5C0
+    {"ROXL.B",  OP_Shift,    0xE110 + WID_B},
+    {"ROXL.W",  OP_Shift,    0xE110 + WID_W},
+    {"ROXL.L",  OP_Shift,    0xE110 + WID_L},
+    {"ROXR",    OP_Shift,    0xE010 + WID_X}, // E010 E4C0
+    {"ROXR.B",  OP_Shift,    0xE010 + WID_B},
+    {"ROXR.W",  OP_Shift,    0xE010 + WID_W},
+    {"ROXR.L",  OP_Shift,    0xE010 + WID_L},
 
-    {"CHK",     o_CHK,      0x4180 + WID_W},
-    {"CHK.W",   o_CHK,      0x4180 + WID_W},
+    {"CHK",     OP_CHK,      0x4180 + WID_W},
+    {"CHK.W",   OP_CHK,      0x4180 + WID_W},
 
-    {"CMPM",    o_CMPM,     0xB148},
-    {"CMPM.B",  o_CMPM,     0xB108},
-    {"CMPM.W",  o_CMPM,     0xB148},
-    {"CMPM.L",  o_CMPM,     0xB188},
+    {"CMPM",    OP_CMPM,     0xB148},
+    {"CMPM.B",  OP_CMPM,     0xB108},
+    {"CMPM.W",  OP_CMPM,     0xB148},
+    {"CMPM.L",  OP_CMPM,     0xB188},
 
-    {"MOVEP",   o_MOVEP,    0x0108},
-    {"MOVEP.W", o_MOVEP,    0x0108},
-    {"MOVEP.L", o_MOVEP,    0x0148},
+    {"MOVEP",   OP_MOVEP,    0x0108},
+    {"MOVEP.W", OP_MOVEP,    0x0108},
+    {"MOVEP.L", OP_MOVEP,    0x0148},
 
-    {"EXG",     o_EXG,      0},
-    {"EXG.L",   o_EXG,      0},
+    {"EXG",     OP_EXG,      0},
+    {"EXG.L",   OP_EXG,      0},
 
-    {"ABCD",    o_ABCD,     0xC100},
-    {"ABCD.B",  o_ABCD,     0xC100},
-    {"SBCD",    o_ABCD,     0x8100},
-    {"SBCD.B",  o_ABCD,     0x8100},
+    {"ABCD",    OP_ABCD,     0xC100},
+    {"ABCD.B",  OP_ABCD,     0xC100},
+    {"SBCD",    OP_ABCD,     0x8100},
+    {"SBCD.B",  OP_ABCD,     0x8100},
 
-    {"ADDX",    o_ADDX,     0xD140},
-    {"ADDX.B",  o_ADDX,     0xD100},
-    {"ADDX.W",  o_ADDX,     0xD140},
-    {"ADDX.L",  o_ADDX,     0xD180},
-    {"SUBX",    o_ADDX,     0x9140},
-    {"SUBX.B",  o_ADDX,     0x9100},
-    {"SUBX.W",  o_ADDX,     0x9140},
-    {"SUBX.L",  o_ADDX,     0x9180},
+    {"ADDX",    OP_ADDX,     0xD140},
+    {"ADDX.B",  OP_ADDX,     0xD100},
+    {"ADDX.W",  OP_ADDX,     0xD140},
+    {"ADDX.L",  OP_ADDX,     0xD180},
+    {"SUBX",    OP_ADDX,     0x9140},
+    {"SUBX.B",  OP_ADDX,     0x9100},
+    {"SUBX.W",  OP_ADDX,     0x9140},
+    {"SUBX.L",  OP_ADDX,     0x9180},
 
-    {"LINK",    o_LINK,     0x4E50},
-    {"LINK.W",  o_LINK,     0x4E50},
+    {"LINK",    OP_LINK,     0x4E50},
+    {"LINK.W",  OP_LINK,     0x4E50},
 
-    {"UNLK",    o_OneA,     0x4E58},
+    {"UNLK",    OP_OneA,     0x4E58},
 
-    {"SWAP",    o_OneD,     0x4840},
-    {"SWAP.W",  o_OneD,     0x4840},
-    {"EXT",     o_OneD,     0x4880},
-    {"EXT.W",   o_OneD,     0x4880},
-    {"EXT.L",   o_OneD,     0x48C0},
+    {"SWAP",    OP_OneD,     0x4840},
+    {"SWAP.W",  OP_OneD,     0x4840},
+    {"EXT",     OP_OneD,     0x4880},
+    {"EXT.W",   OP_OneD,     0x4880},
+    {"EXT.L",   OP_OneD,     0x48C0},
 
-    {"MOVEC",   o_MOVEC,    0x4E7A},
-    {"MOVES",   o_MOVES,    0x0E00 + WID_W},
-    {"MOVES.B", o_MOVES,    0x0E00 + WID_B},
-    {"MOVES.W", o_MOVES,    0x0E00 + WID_W},
-    {"MOVES.L", o_MOVES,    0x0E00 + WID_L},
+    {"MOVEC",   OP_MOVEC,    0x4E7A},
+    {"MOVES",   OP_MOVES,    0x0E00 + WID_W},
+    {"MOVES.B", OP_MOVES,    0x0E00 + WID_B},
+    {"MOVES.W", OP_MOVES,    0x0E00 + WID_W},
+    {"MOVES.L", OP_MOVES,    0x0E00 + WID_L},
 
-    {"",     o_Illegal,     0}
+    {"",     OP_Illegal,     0}
 };
 
 
@@ -452,84 +452,84 @@ static const struct OpcdRec M68K_opcdTab[] =
 
 
 // add extra words from an EA spec to the instruction
-static void InstrAddE(EArec *ea)
+static void M68K_InstrAddE(EArec *ea)
 {
     // detect longwords for proper hex spacing in listing
     if (ea->len == 2 && ((ea->mode & 0x38) == 0x28 || ea->mode == 0x39 ||
                          ea->mode == 0x3A || ea->mode == 0x3C))
     {
-        InstrAddL(ea -> extra[0] * 65536 + ea -> extra[1]);
+        INSTR_AddL(ea -> extra[0] * 65536 + ea -> extra[1]);
     }
     else
     {
         for (int i = 0; i < ea -> len; i++)
         {
-            InstrAddW(ea -> extra[i]);
+            INSTR_AddW(ea -> extra[i]);
         }
     }
 }
 
 
-static void InstrWE(uint16_t op, EArec *ea)
+static void M68K_InstrWE(uint16_t op, EArec *ea)
 {
-    InstrClear();
+    INSTR_Clear();
 
-    InstrAddW((op & 0xFFC0) | ea -> mode);
-    InstrAddE(ea);
+    INSTR_AddW((op & 0xFFC0) | ea -> mode);
+    M68K_InstrAddE(ea);
 }
 
 
-static void InstrWWE(uint16_t op, uint16_t w1, EArec *ea)
+static void M68K_InstrWWE(uint16_t op, uint16_t w1, EArec *ea)
 {
-    InstrClear();
+    INSTR_Clear();
 
-    InstrAddW((op & 0xFFC0) | ea -> mode);
-    InstrAddW(w1);
-    InstrAddE(ea);
+    INSTR_AddW((op & 0xFFC0) | ea -> mode);
+    INSTR_AddW(w1);
+    M68K_InstrAddE(ea);
 }
 
 
-static void InstrWLE(uint16_t op, uint32_t l1, EArec *ea)
+static void M68K_InstrWLE(uint16_t op, uint32_t l1, EArec *ea)
 {
-    InstrClear();
+    INSTR_Clear();
 
-    InstrAddW((op & 0xFFC0) | ea -> mode);
+    INSTR_AddW((op & 0xFFC0) | ea -> mode);
 #if 1 // zero to space out longwords as two words
-    InstrAddL(l1);
+    INSTR_AddL(l1);
 #else
-    InstrAddW(l1 >> 16);
-    InstrAddW(l1);
+    INSTR_AddW(l1 >> 16);
+    INSTR_AddW(l1);
 #endif
-    InstrAddE(ea);
+    M68K_InstrAddE(ea);
 }
 
 
-static void InstrWEE(uint16_t op, EArec *srcEA, EArec *dstEA)
+static void M68K_InstrWEE(uint16_t op, EArec *srcEA, EArec *dstEA)
 {
     // OP dstEA srcEA
     // srcext - up to 2 words on 68000, 5 words on 68020
     // dstext - up to 2 words on 68000, 5 words on 68020
 
-    InstrClear();
+    INSTR_Clear();
 
-    InstrAddW((op & 0xF000) | srcEA -> mode | (((dstEA -> mode) & 0x07) << 9) |
+    INSTR_AddW((op & 0xF000) | srcEA -> mode | (((dstEA -> mode) & 0x07) << 9) |
               (((dstEA -> mode) & 0x38) << 3));
-    InstrAddE(srcEA);
-    InstrAddE(dstEA);
+    M68K_InstrAddE(srcEA);
+    M68K_InstrAddE(dstEA);
 }
 
 
-static void CheckSize(int size, uint32_t val)
+static void M68K_CheckSize(int size, uint32_t val)
 {
     switch (size)
     {
         case WID_B:
-            CheckByte(val);
+            EXPR_CheckByte(val);
             break;
 
         case WID_X:
         case WID_W:
-            CheckWord(val);
+            EXPR_CheckWord(val);
             break;
 
         case WID_L:
@@ -539,7 +539,7 @@ static void CheckSize(int size, uint32_t val)
 }
 
 
-static bool GetEA(bool store, int size, EArec *ea)
+static bool M68K_GetEA(bool store, int size, EArec *ea)
 {
     Str255  word;
     int     val;
@@ -548,7 +548,7 @@ static bool GetEA(bool store, int size, EArec *ea)
 
     char *oldLine = linePtr;
     char *oldLine0 = linePtr;
-    int token = GetWord(word);
+    int token = TOKEN_GetWord(word);
 
     ea -> mode = 0;
     ea -> len = 0;
@@ -579,13 +579,13 @@ static bool GetEA(bool store, int size, EArec *ea)
         // 111100 = #imm - load-EA only
         if (store || size < 0)
         {
-            BadMode();
+            TOKEN_BadMode();
         }
         else
         {
             ea -> mode = 0x3C;
-            val = Eval();
-            CheckSize(size, val);
+            val = EXPR_Eval();
+            M68K_CheckSize(size, val);
             switch (size)
             {
                 case WID_B:
@@ -601,7 +601,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                     ea -> extra[1] = val;
                     break;
                 default: // shouldn't get here
-                    BadMode();
+                    TOKEN_BadMode();
                     break;
             }
         }
@@ -611,13 +611,13 @@ static bool GetEA(bool store, int size, EArec *ea)
     else if (token == '-')
     {
         // 100nnn -(An)
-        if (GetWord(word) == '(')
+        if (TOKEN_GetWord(word) == '(')
         {
-            reg1 = GetReg(addr_regs);
+            reg1 = REG_Get(addr_regs);
             if (reg1 == 8) reg1 = 7;
             if (reg1 >= 0)
             {
-                if (GetWord(word) == ')')
+                if (TOKEN_GetWord(word) == ')')
                 {
                     ea -> mode = 0x20 + reg1;
                     return true;
@@ -636,16 +636,16 @@ static bool GetEA(bool store, int size, EArec *ea)
         // 111011 (d8,PC,Xn) - load only
         oldLine = linePtr; // in case this is just an expression in parens for absolute
 
-        reg1 = GetReg(A_PC_regs);
+        reg1 = REG_Get(A_PC_regs);
         if (reg1 == 8) reg1 = 7; // SP -> A7
         if (reg1 >= 0)
         {
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             switch (token)
             {
                 case ')': // (An)
                     oldLine = linePtr;
-                    if (GetWord(word) == '+')
+                    if (TOKEN_GetWord(word) == '+')
                     {
                         // 011 (An)+
                         ea -> mode = 0x18 + reg1;
@@ -664,7 +664,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                     // 0(PC,Xn) 0(An,Xn)
                     // FIXME: reg1 can't be PC here?
                     val = 0;
-                    reg2 = GetReg(DA_regs);
+                    reg2 = REG_Get(DA_regs);
                     if (reg2 == 16) reg2 = 15; // SP -> A7
                     if (reg2 >= 0)
                     {
@@ -684,7 +684,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                         }
 
                         //CheckByte(val); // zero IS a byte
-                        if (RParen()) return false;
+                        if (TOKEN_RParen()) return false;
 
                         if (reg1 == 9)   // PC
                         {
@@ -723,10 +723,10 @@ static bool GetEA(bool store, int size, EArec *ea)
             linePtr = oldLine;
 
             // look for "(ofs,reg"
-            val = Eval(); // get offset
+            val = EXPR_Eval(); // get offset
 
             oldLine = linePtr;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             if (token == ')')
             {
                 // (expr) which may be followed by more expr: (foo)*(bar)
@@ -749,7 +749,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                             linePtr = linePtr + 1;
                             break;
                     }
-                    if (RParen()) return false;
+                    if (TOKEN_RParen()) return false;
 
                     goto ABSOLUTE;
 //              } else if (token == ')') {
@@ -759,15 +759,15 @@ static bool GetEA(bool store, int size, EArec *ea)
                 }
 
                 linePtr = oldLine;
-                if (Comma()) return false;
+                if (TOKEN_Comma()) return false;
 
-                reg1 = GetReg(A_PC_regs);
+                reg1 = REG_Get(A_PC_regs);
                 if (reg1 == 8) reg1 = 7; // SP -> A7
 
                 if (reg1 >= 0)
                 {
                     // look for rparen or Xn
-                    switch (GetWord(word))
+                    switch (TOKEN_GetWord(word))
                     {
                         case ')':
                             // (ofs,An) or (ofs,PC)
@@ -779,7 +779,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                                     val = val - locPtr - 2;
                                     if (!errFlag && (val < -128 || val > 127))
                                     {
-                                        Error("Offset out of range");
+                                        ASMX_Error("Offset out of range");
                                     }
                                     ea -> mode = 0x3A;
                                     ea -> len = 1;
@@ -796,7 +796,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                                     return true;
                                 }
                                 // (d16,An)
-                                CheckWord(val);
+                                EXPR_CheckWord(val);
                                 ea -> mode = 0x28 + reg1;
                                 ea -> len = 1;
                                 ea -> extra[0] = val;
@@ -805,7 +805,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                             break;
 
                         case ',': // (d8,An,Xn) or (d8,PC,Xn)
-                            reg2 = GetReg(DA_regs);
+                            reg2 = REG_Get(DA_regs);
                             if (reg2 == 16) reg2 = 15; // SP -> A7
                             if (reg2 >= 0)
                             {
@@ -823,7 +823,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                                     }
                                 }
 
-                                if (RParen()) break;
+                                if (TOKEN_RParen()) break;
 
                                 if (reg1 == 9)   // PC
                                 {
@@ -833,7 +833,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                                         val = val - locPtr - 2;
                                         if (!errFlag && (val < -128 || val > 127))
                                         {
-                                            Error("Offset out of range");
+                                            ASMX_Error("Offset out of range");
                                         }
                                         ea -> mode = 0x3B;
                                         ea -> len = 1;
@@ -848,7 +848,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                                 else
                                 {
                                     // (d8,An,Xn)
-                                    CheckByte(val);
+                                    EXPR_CheckByte(val);
                                     ea -> mode = 0x30 + reg1;
                                     ea -> len = 1;
                                     ea -> extra[0] = (reg2 << 12) + (val & 0xFF);
@@ -877,7 +877,7 @@ static bool GetEA(bool store, int size, EArec *ea)
     // 111011 d8(PC,Xn) - load only
     {
         // get address/offset and forced size if any
-        val = Eval();
+        val = EXPR_Eval();
         width = WID_X;
         if (linePtr[0] == '.')
         {
@@ -895,16 +895,16 @@ static bool GetEA(bool store, int size, EArec *ea)
         }
 
         oldLine = linePtr;
-        switch (GetWord(word))
+        switch (TOKEN_GetWord(word))
         {
             case '(':
                 // offset indexed
-                reg1 = GetReg(A_PC_regs);
+                reg1 = REG_Get(A_PC_regs);
                 if (reg1 == 8) reg1 = 7; // SP -> A7
                 if (reg1 >= 0)
                 {
                     // now look for ) or ,
-                    switch (GetWord(word))
+                    switch (TOKEN_GetWord(word))
                     {
                         case ')':
                             if (reg1 == 9)   // PC
@@ -915,7 +915,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                                     val = val - locPtr - 2;
                                     if (!errFlag && (val < -32768 || val > 32767))
                                     {
-                                        Error("Offset out of range");
+                                        ASMX_Error("Offset out of range");
                                     }
                                     ea -> mode = 0x3A;
                                     ea -> len = 1;
@@ -933,7 +933,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                                 }
 
                                 // d16(An)
-                                CheckWord(val);
+                                EXPR_CheckWord(val);
                                 ea -> mode = 0x28 + reg1;
                                 ea -> len = 1;
                                 ea -> extra[0] = val;
@@ -942,7 +942,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                             break;
 
                         case ',': // d8(An,Xn) or d8(PC,Xn)
-                            reg2 = GetReg(DA_regs);
+                            reg2 = REG_Get(DA_regs);
                             if (reg2 == 16) reg2 = 15; // SP -> A7
                             if (reg2 >= 0)
                             {
@@ -961,7 +961,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                                     }
                                 }
 
-                                if (RParen()) break;
+                                if (TOKEN_RParen()) break;
 
                                 if (reg1 == 9)   // PC
                                 {
@@ -971,7 +971,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                                         val = val - locPtr - 2;
                                         if (!errFlag && (val < -128 || val > 127))
                                         {
-                                            Error("Offset out of range");
+                                            ASMX_Error("Offset out of range");
                                         }
                                         ea -> mode = 0x3B;
                                         ea -> len = 1;
@@ -986,7 +986,7 @@ static bool GetEA(bool store, int size, EArec *ea)
                                 else
                                 {
                                     // d8(An,Xn)
-                                    CheckByte(val);
+                                    EXPR_CheckByte(val);
                                     ea -> mode = 0x30 + reg1;
                                     ea -> len = 1;
                                     ea -> extra[0] = (reg2 << 12) + (val & 0xFF);
@@ -1014,7 +1014,7 @@ ABSOLUTE:
                     // abs.w
                     if (reg2 < -0x8000 || reg2 > 0x7FFF)
                     {
-                        Error("Absolute word addressing mode out of range");
+                        ASMX_Error("Absolute word addressing mode out of range");
                     }
                     ea -> mode = 0x38;
                     ea -> len = 1;
@@ -1035,7 +1035,7 @@ ABSOLUTE:
         }
     }
 
-    BadMode();
+    TOKEN_BadMode();
     return false;
 
     // p2-2
@@ -1044,18 +1044,18 @@ ABSOLUTE:
 }
 
 
-static void Set68KMultiReg(int reg, int *regs, bool *warned)
+static void M68K_SetMultiReg(int reg, int *regs, bool *warned)
 {
     if (!*warned && *regs & (1 << reg))
     {
-        Warning("MOVEM register specified twice");
+        ASMX_Warning("MOVEM register specified twice");
         *warned = true;
     }
     *regs |= 1 << reg;
 }
 
 
-static int Get68KMultiRegs(void)
+static int M68K_GetMultiRegs(void)
 {
     Str255  word;
     int     regs = 0;
@@ -1065,47 +1065,47 @@ static int Get68KMultiRegs(void)
     int token = '/';
     while (token == '/')
     {
-        int reg1 = GetReg(DA_regs);
+        int reg1 = REG_Get(DA_regs);
         if (reg1 == 16) reg1 = 15; // SP -> A7
         if (reg1 < 0)
         {
-            IllegalOperand();      // abort if not valid register
+            ASMX_IllegalOperand();      // abort if not valid register
             break;
         }
 
         // set single register bit
-        Set68KMultiReg(reg1, &regs, &warned);
+        M68K_SetMultiReg(reg1, &regs, &warned);
 
         // check for - or /
         oldLine = linePtr;
-        token = GetWord(word);
+        token = TOKEN_GetWord(word);
 
         if (token == '-')       // register range
         {
             oldLine = linePtr;  // commit line position
-            int reg2 = GetReg(DA_regs); // check for second register
+            int reg2 = REG_Get(DA_regs); // check for second register
             if (reg2 == 16) reg2 = 15; // SP -> A7
             if (reg2 < 0)
             {
-                IllegalOperand();      // abort if not valid register
+                ASMX_IllegalOperand();      // abort if not valid register
                 break;
             }
             if (reg1 < reg2)
             {
                 for (int i = reg1 + 1; i <= reg2; i++)
                 {
-                    Set68KMultiReg(i, &regs, &warned);
+                    M68K_SetMultiReg(i, &regs, &warned);
                 }
             }
             else if (reg1 > reg2)
             {
                 for (int i = reg1 - 1; i >= reg2; i--)
                 {
-                    Set68KMultiReg(i, &regs, &warned);
+                    M68K_SetMultiReg(i, &regs, &warned);
                 }
             }
             oldLine = linePtr;  // commit line position
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
         }
         if (token == '/')   // is there another register?
         {
@@ -1119,7 +1119,7 @@ static int Get68KMultiRegs(void)
 
 
 // get a MOVEC register name
-// GetMOVECreg returns:
+// M68K_GetMOVECreg returns:
 //      -2 (aka reg_EOL) and reports a "missing operand" error if end of line
 //      -1 (aka reg_None) if no register found
 //      else the actual 12-bit register code
@@ -1136,9 +1136,9 @@ static int Get68KMultiRegs(void)
 // 006 = DACR0 EC040
 // 007 = DACR1 EC040
 
-static int GetMOVECreg(void)
+static int M68K_GetMOVECreg(void)
 {
-    int reg = GetReg("SFC DFC USP VBR"); // 68010 MOVEC registers
+    int reg = REG_Get("SFC DFC USP VBR"); // 68010 MOVEC registers
 
     switch (reg)
     {
@@ -1174,37 +1174,37 @@ static int M68K_DoCPUOpcode(int typ, int parm)
 
     switch (typ)
     {
-        case o_Inherent:
-            InstrW(parm);
+        case OP_Inherent:
+            INSTR_W(parm);
             break;
 
-        case o_DBcc:
-            reg1 = GetReg(data_regs);
+        case OP_DBcc:
+            reg1 = REG_Get(data_regs);
             if (reg1 >= 0)
             {
-                if (Comma()) break;
-                val = EvalWBranch(2);
-                InstrWW(parm + reg1, val);
+                if (TOKEN_Comma()) break;
+                val = EXPR_EvalWBranch(2);
+                INSTR_WW(parm + reg1, val);
             }
             else
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
             }
             break;
 
-        case o_Branch:
+        case OP_Branch:
             switch (parm & 3)
             {
                 case WID_B:
-                    val = EvalBranch(2);
+                    val = EXPR_EvalBranch(2);
                     if (val == 0)
                     {
-                        Error("Short branch can not have zero offset!");
-                        InstrW(0x4E71); // assemble a NOP instead of a zero branch
+                        ASMX_Error("Short branch can not have zero offset!");
+                        INSTR_W(0x4E71); // assemble a NOP instead of a zero branch
                     }
                     else
                     {
-                        InstrW((parm & 0xFF00) + (val & 0x00FF));
+                        INSTR_W((parm & 0xFF00) + (val & 0x00FF));
                     }
                     break;
 
@@ -1212,164 +1212,164 @@ static int M68K_DoCPUOpcode(int typ, int parm)
 #if 1 // to enable optimized branches
 #if 0 // long branch for 68020+
                     // if not a forward reference, can choose L, W, or B branch
-                    val = EvalLBranch(2);
+                    val = EXPR_EvalLBranch(2);
                     if (evalKnown && -128 <= val && val <= 127 && val != 0 && val != 0xFF)
                     {
-                        InstrW((parm & 0xFF00) + (val & 0x00FF));
+                        INSTR_W((parm & 0xFF00) + (val & 0x00FF));
                     }
                     else if (evalKnown && -32768 <= val && val <= 32767)
                     {
-                        InstrWW(parm & 0xFF00, val);
+                        INSTR_WW(parm & 0xFF00, val);
                     }
                     else
                     {
-                        InstrWL(parm & 0xFF00 + 0xFF, val);
+                        INSTR_WL(parm & 0xFF00 + 0xFF, val);
                     }
 #else
                     // if not a forward reference, can choose W or B branch
-                    val = EvalWBranch(2);
+                    val = EXPR_EvalWBranch(2);
                     if (evalKnown && -128 <= val && val <= 127 && val != 0 && val != 0xFF)
                     {
-                        InstrW((parm & 0xFF00) + (val & 0x00FF));
+                        INSTR_W((parm & 0xFF00) + (val & 0x00FF));
                     }
                     else
                     {
                         if (val != 0 && -128 <= val && val <= 129 && !exactFlag)
                         {
                             // max is +129 because short branch saves 2 bytes
-                            Warning("Short branch could be used here");
+                            ASMX_Warning("Short branch could be used here");
                         }
-                        InstrWW(parm & 0xFF00, val);
+                        INSTR_WW(parm & 0xFF00, val);
                     }
 #endif
                     break;
 #endif
                 case WID_W:
-                    val = EvalWBranch(2);
+                    val = EXPR_EvalWBranch(2);
                     if (val != 0 && -128 <= val && val <= 129 && !exactFlag)
                     {
                         // max is +129 because short branch saves 2 bytes
-                        Warning("Short branch could be used here");
+                        ASMX_Warning("Short branch could be used here");
                     }
-                    InstrWW(parm & 0xFF00, val);
+                    INSTR_WW(parm & 0xFF00, val);
                     break;
 
                 case WID_L:
 #if 0 // long branch for 68020+
-                    val = EvalLBranch(2);
+                    val = EXPR_EvalLBranch(2);
                     if (val != 0 && -128 <= val && val <= 131 && !exactFlag)
                     {
                         // max is +131 because short branch saves 4 bytes
-                        Warning("Short branch could be used here");
+                        ASMX_Warning("Short branch could be used here");
                     }
                     else    if (-32768 <= val && val <= 32769 && !exactFlag)
                     {
                         // max is +32769 because word branch saves 2 bytes
-                        Warning("Word branch could be used here");
+                        ASMX_Warning("Word branch could be used here");
                     }
-                    InstrWL(parm & 0xFF00 + 0xFF, val);
+                    INSTR_WL(parm & 0xFF00 + 0xFF, val);
                     break;
 #endif
                 default:
-                    BadMode();
+                    TOKEN_BadMode();
                     break;
             }
             break;
 
-        case o_Imm16:
+        case OP_Imm16:
             if (curCPU == CPU_68000 && parm == 0x4E74) return 0; // RTD
 
-            if (Expect("#")) break;
-            val = Eval();
-            InstrWW(parm, val);
+            if (TOKEN_Expect("#")) break;
+            val = EXPR_Eval();
+            INSTR_WW(parm, val);
             break;
 
-        case o_TRAP:
-        case o_BKPT:
-            if (Expect("#")) break;
-            val = Eval();
-            if (val < 0 || val > 15 || (typ == o_BKPT && val > 7))
+        case OP_TRAP:
+        case OP_BKPT:
+            if (TOKEN_Expect("#")) break;
+            val = EXPR_Eval();
+            if (val < 0 || val > 15 || (typ == OP_BKPT && val > 7))
             {
-                IllegalOperand();
-                InstrW(parm); // to avoid potential phase errors
+                ASMX_IllegalOperand();
+                INSTR_W(parm); // to avoid potential phase errors
             }
             else
             {
-                InstrW(parm + val);
+                INSTR_W(parm + val);
             }
             break;
 
-        case o_LEA:
-            if (GetEA(false, -1, &ea1))
+        case OP_LEA:
+            if (M68K_GetEA(false, -1, &ea1))
             {
                 reg1 = ea1.mode & 0x38; // don't allow Dn An (An)+ or -(An)
                 if (reg1 == 0x00 || reg1 == 0x08 || reg1 == 0x18 || reg1 == 0x20)
                 {
-                    BadMode();
+                    TOKEN_BadMode();
                 }
                 else
                 {
-                    if (Comma()) break;
-                    reg1 = GetReg(addr_regs);
+                    if (TOKEN_Comma()) break;
+                    reg1 = REG_Get(addr_regs);
                     if (reg1 == 8) reg1 = 7;
                     if (reg1 >= 0)
                     {
-                        InstrWE(parm + (reg1 << 9), &ea1);
+                        M68K_InstrWE(parm + (reg1 << 9), &ea1);
                     }
                     else
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                     }
                 }
             }
             break;
 
-        case o_JMP:
-            if (GetEA(false, -1, &ea1))
+        case OP_JMP:
+            if (M68K_GetEA(false, -1, &ea1))
             {
                 reg1 = ea1.mode & 0x38; // don't allow Dn An (An)+ or -(An)
                 if (reg1 == 0x00 || reg1 == 0x08 || reg1 == 0x18 || reg1 == 0x20)
                 {
-                    BadMode();
+                    TOKEN_BadMode();
                 }
                 else
                 {
-                    InstrWE(parm, &ea1);
+                    M68K_InstrWE(parm, &ea1);
                 }
             }
             break;
 
-        case o_OneEA:
-            if (GetEA(true, -1, &ea1))
+        case OP_OneEA:
+            if (M68K_GetEA(true, -1, &ea1))
             {
-                InstrWE(parm, &ea1);
+                M68K_InstrWE(parm, &ea1);
             }
             break;
 
-        case o_DIVMUL:
-            if (GetEA(false, WID_W, &ea1))
+        case OP_DIVMUL:
+            if (M68K_GetEA(false, WID_W, &ea1))
             {
-                if (Comma()) break;
-                reg1 = GetReg(data_regs);
+                if (TOKEN_Comma()) break;
+                reg1 = REG_Get(data_regs);
                 if (0 <= reg1 && reg1 <= 7)
                 {
-                    InstrWE(parm + (reg1 << 9), &ea1);
+                    M68K_InstrWE(parm + (reg1 << 9), &ea1);
                 }
                 else
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                 }
             }
             break;
 
-        case o_MOVE:
+        case OP_MOVE:
             size = parm & 3;
-            reg1 = GetReg("CCR SR USP");
+            reg1 = REG_Get("CCR SR USP");
             if (reg1 == reg_EOL) break;
             if (reg1 >= 0)
             {
-                if (Comma()) break;
-                if (GetEA(true, size, &ea1))
+                if (TOKEN_Comma()) break;
+                if (M68K_GetEA(true, size, &ea1))
                 {
                     switch (reg1)
                     {
@@ -1378,27 +1378,27 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                             {
                                 if (size == WID_B || size == WID_L)
                                 {
-                                    BadMode();
+                                    TOKEN_BadMode();
                                 }
                                 else
                                 {
-                                    InstrWE(0x42C0, &ea1);
+                                    M68K_InstrWE(0x42C0, &ea1);
                                 }
                             }
                             else
                             {
-                                BadMode();
+                                TOKEN_BadMode();
                             }
                             break;
 
                         case 1: // from SR
                             if (size == WID_B || size == WID_L)
                             {
-                                BadMode();
+                                TOKEN_BadMode();
                             }
                             else
                             {
-                                InstrWE(0x40C0, &ea1);
+                                M68K_InstrWE(0x40C0, &ea1);
                             }
                             break;
 
@@ -1406,11 +1406,11 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                             if ((ea1.mode & 0x38) != 0x08 || // An
                                     size == WID_B || size == WID_W)
                             {
-                                BadMode();
+                                TOKEN_BadMode();
                             }
                             else
                             {
-                                InstrW(0x4E68 + (ea1.mode & 0x0007));
+                                INSTR_W(0x4E68 + (ea1.mode & 0x0007));
                             }
                             break;
                     }
@@ -1420,30 +1420,30 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             {
                 reg1 = size;
                 if (reg1 == WID_X) reg1 = WID_W;
-                if (GetEA(false, reg1, &ea1))
+                if (M68K_GetEA(false, reg1, &ea1))
                 {
-                    if (Comma()) break;
-                    switch (GetReg("CCR SR USP"))
+                    if (TOKEN_Comma()) break;
+                    switch (REG_Get("CCR SR USP"))
                     {
                         case 0: // CCR
                             if (size == WID_B || size == WID_L)
                             {
-                                BadMode();
+                                TOKEN_BadMode();
                             }
                             else
                             {
-                                InstrWE(0x44C0, &ea1);
+                                M68K_InstrWE(0x44C0, &ea1);
                             }
                             break;
 
                         case 1: // SR
                             if (size == WID_B || size == WID_L)
                             {
-                                BadMode();
+                                TOKEN_BadMode();
                             }
                             else
                             {
-                                InstrWE(0x46C0, &ea1);
+                                M68K_InstrWE(0x46C0, &ea1);
                             }
                             break;
 
@@ -1451,11 +1451,11 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                             if ((ea1.mode & 0x38) != 0x08 || // An
                                     size == WID_B || size == WID_W)
                             {
-                                BadMode();
+                                TOKEN_BadMode();
                             }
                             else
                             {
-                                InstrW(0x4E60 + (ea1.mode & 0x0007));
+                                INSTR_W(0x4E60 + (ea1.mode & 0x0007));
                             }
                             break;
 
@@ -1464,9 +1464,9 @@ static int M68K_DoCPUOpcode(int typ, int parm)
 
                         default:
                             if (size == WID_X) size = WID_W;
-                            if (GetEA(true, size, &ea2))
+                            if (M68K_GetEA(true, size, &ea2))
                             {
-                                InstrWEE(parm, &ea1, &ea2);
+                                M68K_InstrWEE(parm, &ea1, &ea2);
                             }
                             break;
                     }
@@ -1474,89 +1474,89 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             }
             break;
 
-        case o_Bit:
+        case OP_Bit:
             size = parm & 3;
             parm = parm & 0xFFFC;
 
-            reg1 = GetReg("D0 D1 D2 D3 D4 D5 D6 D7 #");
+            reg1 = REG_Get("D0 D1 D2 D3 D4 D5 D6 D7 #");
             if (reg1 >= 0)
             {
                 val = 0; // to avoid unitialized use
                 if (reg1 == 8)   // immediate
                 {
-                    val = Eval();
+                    val = EXPR_Eval();
                 }
-                if (Comma()) break;
-                if (GetEA(true, -1, &ea1))
+                if (TOKEN_Comma()) break;
+                if (M68K_GetEA(true, -1, &ea1))
                 {
                     reg2 = (ea1.mode & 0x38);
                     if ((reg2 == 0x08)                  ||  // An not allowed
                             (reg2 == 0x00 && size == WID_B) ||  // Bxxx.B Dn
                             (reg2 >= 0x10 && size == WID_L))    // Bxxx.L everything else
                     {
-                        BadMode();
+                        TOKEN_BadMode();
                         break;
                     }
                     // mask out 0x07 immediate if non-data reg EA
                     if (reg1 == 8 && reg2 != 0) val = val & 0x07;
                     if (reg1 == 8)
                     {
-                        InstrWWE(parm + 0x0800, val & 0x1F, &ea1);
+                        M68K_InstrWWE(parm + 0x0800, val & 0x1F, &ea1);
                     }
                     else
                     {
-                        InstrWE (parm + 0x0100 + (reg1 << 9), &ea1);
+                        M68K_InstrWE (parm + 0x0100 + (reg1 << 9), &ea1);
                     }
                 }
             }
             else
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
             }
             break;
 
-        case o_MOVEQ:
-            if (Expect("#")) break;
-            val = EvalByte();
-            if (Comma()) break;
-            reg1 = GetReg(data_regs);
+        case OP_MOVEQ:
+            if (TOKEN_Expect("#")) break;
+            val = EXPR_EvalByte();
+            if (TOKEN_Comma()) break;
+            reg1 = REG_Get(data_regs);
             if (0 <= reg1 && reg1 <= 7)
             {
-                InstrW(0x7000 + (reg1 << 9) + val);
+                INSTR_W(0x7000 + (reg1 << 9) + val);
             }
             else
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
             }
             break;
 
-        case o_ArithA:
+        case OP_ArithA:
             size = parm & 3;
             parm = parm & 0xFFFC;
-            if (GetEA(false, size, &ea1))
+            if (M68K_GetEA(false, size, &ea1))
             {
-                if (Comma()) break;
-                reg1 = GetReg(addr_regs);
+                if (TOKEN_Comma()) break;
+                reg1 = REG_Get(addr_regs);
                 if (reg1 == 8) reg1 = 7;
                 if (reg1 >= 0)
                 {
-                    InstrWE(parm + (reg1 << 9), &ea1);
+                    M68K_InstrWE(parm + (reg1 << 9), &ea1);
                 }
                 else
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                 }
             }
             break;
 
-        case o_Arith:
+        case OP_Arith:
             size = parm & 3;
             reg1 = parm & 0x0038; // used to build parm for immediate opcode
             reg2 = parm & 0x8004; // 4 = EA,Dn only flag, high bit low = Dn,EA only flag
             val  = parm >> 12;    // save high nibble to filter specific instructions
             parm = (parm & 0xFFC0) | 0x8000; // rebuild base opcode word
             oldLine = linePtr;
-            if (((GetWord(word) != '#' )  // let immediate fall through if allowed
+            if (((TOKEN_GetWord(word) != '#' )  // let immediate fall through if allowed
                     ||  val == 0xD // ADD
                     ||  val == 0xC // AND
                     || (val == 0xB && reg2 == 0x8004) // CMP but not EOR
@@ -1566,12 +1566,12 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                 // check for Dn
                 linePtr = oldLine;
                 if (size == WID_X) size = WID_W;
-                reg1 = GetReg(data_regs);
+                reg1 = REG_Get(data_regs);
                 if (reg1 >= 0)
                 {
                     // Dn,EA
-                    if (Comma()) break;
-                    if (GetEA(true, size, &ea1))
+                    if (TOKEN_Comma()) break;
+                    if (M68K_GetEA(true, size, &ea1))
                     {
                         if ((ea1.mode & 0x38) == 8)   // Dn,An
                         {
@@ -1579,7 +1579,7 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                             if (size == WID_B)
                             {
                                 // must be word or long
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
                             }
                             switch (parm & 0xF000)
@@ -1587,7 +1587,7 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                                 case 0xB000: // CMP
                                     if ((reg2 & 4) == 0)   // EOR not allowed here
                                     {
-                                        BadMode();
+                                        TOKEN_BadMode();
                                         break;
                                     }
                                     FALLTHROUGH;
@@ -1599,13 +1599,13 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                                         // bits 6-8 mode .W = 011 / .L = 111
                                         parm = (parm & 0xF000) | (size << 7) | 0xC0;
                                         // generate ANDA / SUBA / CMPA instruction
-                                        InstrW(parm + (((ea1.mode & 7) << 9) + reg1));
+                                        INSTR_W(parm + (((ea1.mode & 7) << 9) + reg1));
                                         break;
                                     }
                                     FALLTHROUGH;
 
                                 default:
-                                    BadMode();
+                                    TOKEN_BadMode();
                                     break;
                             }
                             break;
@@ -1616,7 +1616,7 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                             // dest must be a data register
                             if ((ea1.mode & 0x38) != 0)
                             {
-                                BadMode();
+                                TOKEN_BadMode();
                                 break;
                             }
                         }
@@ -1624,35 +1624,35 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                         {
                             // Dn,Dn, except for EOR
                             // Dn,Dn needs the dest to be a register for CMP
-                            InstrW(parm + (ea1.mode << 9) + reg1);
+                            INSTR_W(parm + (ea1.mode << 9) + reg1);
                             break;
                         }
-                        InstrWE(parm + (reg1 << 9) + 0x0100, &ea1);
+                        M68K_InstrWE(parm + (reg1 << 9) + 0x0100, &ea1);
                     }
                 }
                 else
                 {
                     // EA,
-                    if (GetEA(false, size, &ea1))
+                    if (M68K_GetEA(false, size, &ea1))
                     {
-                        if (Comma()) break;
-                        reg1 = GetReg(DA_regs);
+                        if (TOKEN_Comma()) break;
+                        reg1 = REG_Get(DA_regs);
                         if (reg1 == 16) reg1 = 15; // SP -> A7
                         if (0 <= reg1 && reg1 <= 7)   // EA,Dn
                         {
                             if (reg2 == 0)
                             {
                                 // EOR EA,Dn is invalid
-                                BadMode();
+                                TOKEN_BadMode();
                                 break;
                             }
                             if (/*(reg2 & 4) &&*/ (ea1.mode & 0x38) == 8 && size == WID_B)
                             {
                                 // all op.B An,Dn is invalid (orignally only tested for CMP.B)
-                                BadMode();
+                                TOKEN_BadMode();
                                 break;
                             }
-                            InstrWE(parm + (reg1 << 9), &ea1);
+                            M68K_InstrWE(parm + (reg1 << 9), &ea1);
                         }
                         else if (8 <= reg1 && reg1 <= 15 && size != WID_B)     // EA,An
                         {
@@ -1668,18 +1668,18 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                                         // bits 6-8 mode .W = 011 / .L = 111
                                         parm = (parm & 0xF000) | (size << 7) | 0xC0;
                                         // generate ANDA / SUBA / CMPA instruction
-                                        InstrWE(parm + (reg1 << 9), &ea1);
+                                        M68K_InstrWE(parm + (reg1 << 9), &ea1);
                                         break;
                                     }
                                     FALLTHROUGH;
                                 default:
-                                    IllegalOperand();
+                                    ASMX_IllegalOperand();
                                     break;
                             }
                         }
                         else
                         {
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                         }
                     }
                 }
@@ -1688,10 +1688,10 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             // first operand is immediate, rewind back to '#'
             linePtr = oldLine;
 
-            // set up parm for o_ArithI or o_LogImm
+            // set up parm for OP_ArithI or OP_LogImm
             if (!(reg1 & 0x0100))
             {
-                skipArithI = true; // do o_LogImm
+                skipArithI = true; // do OP_LogImm
                 parm = (reg1 << 6) + size;
             }
             else
@@ -1702,16 +1702,16 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             // fall through...
             FALLTHROUGH;
 
-        case o_ArithI:
+        case OP_ArithI:
             if (!skipArithI)
             {
                 size = parm & 3;
                 parm = parm & 0xFFFC;
-                if (Expect("#")) break;
-                val = Eval();
-                CheckSize(size, val);
-                if (Comma()) break;
-                if (GetEA(true, -1, &ea1))
+                if (TOKEN_Expect("#")) break;
+                val = EXPR_Eval();
+                M68K_CheckSize(size, val);
+                if (TOKEN_Comma()) break;
+                if (M68K_GetEA(true, -1, &ea1))
                 {
                     if ((ea1.mode & 0x38) == 0x08)
                     {
@@ -1734,86 +1734,86 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                             }
                             if (size == WID_L)
                             {
-                                InstrWL(parm + ((ea1.mode & 7) << 9) + (size << 7) + 0x007C, val);
+                                INSTR_WL(parm + ((ea1.mode & 7) << 9) + (size << 7) + 0x007C, val);
                             }
                             else
                             {
-                                InstrWW(parm + ((ea1.mode & 7) << 9) + (size << 7) + 0x007C, val);
+                                INSTR_WW(parm + ((ea1.mode & 7) << 9) + (size << 7) + 0x007C, val);
                             }
                             break;
                         }
-                        BadMode();
+                        TOKEN_BadMode();
                     }
                     else if (size == WID_L)
                     {
-                        InstrWLE(parm, val, &ea1);
+                        M68K_InstrWLE(parm, val, &ea1);
                     }
                     else
                     {
-                        InstrWWE(parm, val, &ea1);
+                        M68K_InstrWWE(parm, val, &ea1);
                     }
                 }
                 break;
             }
-            // fall through for o_Arith...
+            // fall through for OP_Arith...
             FALLTHROUGH;
 
-        case o_LogImm:
+        case OP_LogImm:
             size = parm & 3;
             parm = parm & 0xFFFC;
-            if (GetWord(word) != '#')
+            if (TOKEN_GetWord(word) != '#')
             {
-                BadMode();
+                TOKEN_BadMode();
             }
             else
             {
-                val = Eval();
-                if (Comma()) break;
-                switch ((reg1 = GetReg("CCR SR")))
+                val = EXPR_Eval();
+                if (TOKEN_Comma()) break;
+                switch ((reg1 = REG_Get("CCR SR")))
                 {
                     case 0: // CCR
-                        CheckByte(val);
+                        EXPR_CheckByte(val);
                         if (size != WID_X && size != WID_B)
                         {
-                            BadMode();
+                            TOKEN_BadMode();
                         }
                         else
                         {
-                            InstrWW((parm & 0xFF00) + 0x003C, val & 0xFF);
+                            INSTR_WW((parm & 0xFF00) + 0x003C, val & 0xFF);
                         }
                         break;
 
                     case 1: // SR
-                        CheckSize(size, val);
+                        M68K_CheckSize(size, val);
                         if (size != WID_X && size != WID_W)
                         {
-                            BadMode();
+                            TOKEN_BadMode();
                         }
                         else
                         {
-                            InstrWW((parm & 0xFF00) + 0x007C, val);
+                            INSTR_WW((parm & 0xFF00) + 0x007C, val);
                         }
                         break;
 
                     default:
                         if (size == WID_X) size = WID_W;
-                        CheckSize(size, val);
-                        if (GetEA(true, -1, &ea1))
+                        M68K_CheckSize(size, val);
+                        if (M68K_GetEA(true, -1, &ea1))
                         {
                             if ((ea1.mode & 0x38) == 0x08)
                             {
                                 // logical immediate does not support An as dest
-                                BadMode();
+                                TOKEN_BadMode();
                             }
                             else
                             {
                                 if (size == WID_L)
                                 {
-                                    InstrWLE(parm + (size << 6), val, &ea1);
+                                    M68K_InstrWLE(parm + (size << 6), val, &ea1);
                                 }
                                 else
                                 {
-                                    InstrWWE(parm + (size << 6), val, &ea1);
+                                    M68K_InstrWWE(parm + (size << 6), val, &ea1);
                                 }
                             }
                         }
@@ -1821,25 +1821,25 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             }
             break;
 
-        case o_MOVEM:
+        case OP_MOVEM:
             size = (parm & 3) >> 1;
             parm = parm & 0xFFFC;
 
             oldLine = linePtr;
-            reg1 = GetReg(DA_regs);
+            reg1 = REG_Get(DA_regs);
             if (reg1 == 16) reg1 = 15; // SP -> A7
             linePtr = oldLine;
 
             if (reg1 >= 0)   // register-to-memory
             {
-                reg2 = Get68KMultiRegs();
-                if (Comma()) break;
-                if (GetEA(true, -1, &ea1))
+                reg2 = M68K_GetMultiRegs();
+                if (TOKEN_Comma()) break;
+                if (M68K_GetEA(true, -1, &ea1))
                 {
                     val = ea1.mode & 0x38;
                     if (val == 0x00 || val == 0x08 || val == 0x18)
                     {
-                        BadMode();
+                        TOKEN_BadMode();
                     }
                     else if (val == 0x20)
                     {
@@ -1852,113 +1852,113 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                         }
                         reg2 = reg1;
                     }
-                    InstrWWE(parm, reg2, &ea1);
+                    M68K_InstrWWE(parm, reg2, &ea1);
                 }
             }
             else     // memory-to-register
             {
-                if (GetEA(true, -1, &ea1))
+                if (M68K_GetEA(true, -1, &ea1))
                 {
-                    if (Comma()) break;
-                    reg2 = Get68KMultiRegs();
+                    if (TOKEN_Comma()) break;
+                    reg2 = M68K_GetMultiRegs();
                     val = ea1.mode & 0x38;
                     if (val == 0x00 || val == 0x08 || val == 0x20)
                     {
-                        BadMode();
+                        TOKEN_BadMode();
                     }
                     else
                     {
-                        InstrWWE(parm + 0x0400, reg2, &ea1);
+                        M68K_InstrWWE(parm + 0x0400, reg2, &ea1);
                     }
                 }
             }
             break;
 
-        case o_ADDQ:
+        case OP_ADDQ:
             size = parm & 3;
             parm = parm & 0xFFFC;
 
-            if (GetWord(word) == '#')
+            if (TOKEN_GetWord(word) == '#')
             {
-                val = Eval();
-                if (Comma()) break;
-                if (GetEA(true, -1, &ea1))
+                val = EXPR_Eval();
+                if (TOKEN_Comma()) break;
+                if (M68K_GetEA(true, -1, &ea1))
                 {
                     if ((ea1.mode & 0x38) == 0x08 && size == WID_B)
                     {
                         // byte add to An is invalid
-                        BadMode();
+                        TOKEN_BadMode();
                         break;
                     }
-                    if (val < 1 || val > 8) IllegalOperand();
+                    if (val < 1 || val > 8) ASMX_IllegalOperand();
                     val = val & 7;
-                    InstrWE(parm + (val << 9), &ea1);
+                    M68K_InstrWE(parm + (val << 9), &ea1);
                 }
             }
             else
             {
-                BadMode();
+                TOKEN_BadMode();
             }
             break;
 
-        case o_Shift: // bits 3,4 -> bits 9,10 for EA
+        case OP_Shift: // bits 3,4 -> bits 9,10 for EA
             size = parm & 3;
             parm = parm & 0xFFFC;
 
             oldLine = linePtr;
-            if (GetWord(word) == '#')
+            if (TOKEN_GetWord(word) == '#')
             {
                 // #data,Dy
-                val = Eval();
-                if (Comma()) break;
-                reg1 = GetReg(data_regs);
+                val = EXPR_Eval();
+                if (TOKEN_Comma()) break;
+                reg1 = REG_Get(data_regs);
                 if (reg1 >= 0)
                 {
                     if (size == WID_X) size = WID_W;
-                    if (val < 1 || val > 8) IllegalOperand();
+                    if (val < 1 || val > 8) ASMX_IllegalOperand();
                     val = val & 7;
-                    InstrW(parm + (val << 9) + (size << 6) + reg1);
+                    INSTR_W(parm + (val << 9) + (size << 6) + reg1);
                 }
                 else
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                 }
             }
             else
             {
                 linePtr = oldLine;
-                if (GetEA(true, -1, &ea1))
+                if (M68K_GetEA(true, -1, &ea1))
                 {
                     val = ea1.mode & 0x38;
                     switch (val)
                     {
                         case 0x00: // Dx,Dy
-                            if (Comma()) break;
+                            if (TOKEN_Comma()) break;
                             if (size == WID_X) size = WID_W;
-                            reg1 = GetReg(data_regs);
+                            reg1 = REG_Get(data_regs);
                             if (reg1 >= 0)
                             {
-                                InstrW(parm + (ea1.mode << 9) + (size << 6) + reg1 + 0x20);
+                                INSTR_W(parm + (ea1.mode << 9) + (size << 6) + reg1 + 0x20);
                             }
                             else
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                             }
                             break;
 
                         case 0x08: // Ax
-                            BadMode();
+                            TOKEN_BadMode();
                             break;
 
                         default: // EA
                             if (size != WID_W && size != WID_X)
                             {
                                 // memory shifts can't be .B or .L!
-                                Error("Invalid size in opcode");
+                                ASMX_Error("Invalid size in opcode");
                             }
                             else
                             {
-                                InstrWE((parm & 0xF100) + ((parm & 0x18) << 6) + 0xC0, &ea1);
+                                M68K_InstrWE((parm & 0xF100) + ((parm & 0x18) << 6) + 0xC0, &ea1);
                             }
                             break;
                     }
@@ -1966,53 +1966,53 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             }
             break;
 
-        case o_CHK:
+        case OP_CHK:
             size = parm & 3;
             parm = parm & 0xFFFC;
 
-            if (GetEA(false, size, &ea1))
+            if (M68K_GetEA(false, size, &ea1))
             {
                 if ((ea1.mode & 0x38) == 0x08)
                 {
-                    BadMode(); // address register not allowed
+                    TOKEN_BadMode(); // address register not allowed
                 }
                 else
                 {
-                    if (Comma()) break;
-                    reg1 = GetReg(data_regs);
+                    if (TOKEN_Comma()) break;
+                    reg1 = REG_Get(data_regs);
                     if (reg1 >= 0)
                     {
-                        InstrWE(parm + (reg1 << 9), &ea1);
+                        M68K_InstrWE(parm + (reg1 << 9), &ea1);
                     }
                 }
             }
             break;
 
-        case o_CMPM:
-            if (GetEA(true, -1, &ea1))
+        case OP_CMPM:
+            if (M68K_GetEA(true, -1, &ea1))
             {
-                if (Comma()) break;
-                if (GetEA(true, -1, &ea2))
+                if (TOKEN_Comma()) break;
+                if (M68K_GetEA(true, -1, &ea2))
                 {
                     reg1 = ea1.mode & 7;
                     reg2 = ea2.mode & 7;
                     if ((ea1.mode & 0x38) != 0x18 || (ea2.mode & 0x38) != 0x18)
                     {
-                        BadMode();
+                        TOKEN_BadMode();
                     }
                     else
                     {
-                        InstrW(parm + (reg2 << 9) + reg1);
+                        INSTR_W(parm + (reg2 << 9) + reg1);
                     }
                 }
             }
             break;
 
-        case o_MOVEP:
-            if (GetEA(true, -1, &ea1))
+        case OP_MOVEP:
+            if (M68K_GetEA(true, -1, &ea1))
             {
-                if (Comma()) break;
-                if (GetEA(true, -1, &ea2))
+                if (TOKEN_Comma()) break;
+                if (M68K_GetEA(true, -1, &ea2))
                 {
                     reg1 = ea1.mode & 7;
                     reg2 = ea2.mode & 7;
@@ -2022,31 +2022,31 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                             ea2.extra[0] = 0;
                         // fall through...
                         case 0x0028: // Dx,(d16,Ay) or Dx,d16(Ay)
-                            InstrWW(parm + (reg1 << 9) + reg2 + 0x0080, ea2.extra[0]);
+                            INSTR_WW(parm + (reg1 << 9) + reg2 + 0x0080, ea2.extra[0]);
                             break;
 
                         case 0x1000: // (Ay),Dx
                             ea1.extra[0] = 0;
                         // fall through...
                         case 0x2800: // (d16,Ay),Dx or d16(Ay),Dx
-                            InstrWW(parm + (reg2 << 9) + reg1, ea1.extra[0]);
+                            INSTR_WW(parm + (reg2 << 9) + reg1, ea1.extra[0]);
                             break;
 
                         default:
-                            BadMode();
+                            TOKEN_BadMode();
                             break;
                     }
                 }
             }
             break;
 
-        case o_EXG:
-            reg1 = GetReg(DA_regs);
+        case OP_EXG:
+            reg1 = REG_Get(DA_regs);
             if (reg1 == 16) reg1 = 15; // SP -> A7
             if (reg1 >= 0)
             {
-                if (Comma()) break;
-                reg2 = GetReg(DA_regs);
+                if (TOKEN_Comma()) break;
+                reg2 = REG_Get(DA_regs);
                 if (reg2 == 16) reg2 = 15; // SP -> A7
                 if (reg2 >= 0)
                 {
@@ -2055,12 +2055,12 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                         if (reg2 <= 7)
                         {
                             // Dn,Dn
-                            InstrW(0xC140 + (reg1 << 9) + reg2);
+                            INSTR_W(0xC140 + (reg1 << 9) + reg2);
                         }
                         else
                         {
                             // Dn,An
-                            InstrW(0xC188 + (reg1 << 9) + (reg2 & 7));
+                            INSTR_W(0xC188 + (reg1 << 9) + (reg2 & 7));
                         }
                     }
                     else     // An
@@ -2069,114 +2069,114 @@ static int M68K_DoCPUOpcode(int typ, int parm)
                         if (reg2 <= 7)
                         {
                             // An,Dn
-                            InstrW(0xC188 + (reg2 << 9) + reg1);
+                            INSTR_W(0xC188 + (reg2 << 9) + reg1);
                         }
                         else
                         {
                             // An,An
-                            InstrW(0xC148 + (reg1 << 9) + (reg2 & 7));
+                            INSTR_W(0xC148 + (reg1 << 9) + (reg2 & 7));
                         }
                     }
                 }
                 else
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                 }
             }
             else
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
             }
             break;
 
-        case o_ABCD:
-        case o_ADDX:
-            if (GetEA(true, -1, &ea1))
+        case OP_ABCD:
+        case OP_ADDX:
+            if (M68K_GetEA(true, -1, &ea1))
             {
-                if (Comma()) break;
-                if (GetEA(true, -1, &ea2))
+                if (TOKEN_Comma()) break;
+                if (M68K_GetEA(true, -1, &ea2))
                 {
                     reg1 = ea1.mode & 7;
                     reg2 = ea2.mode & 7;
                     switch ((ea1.mode & 0x38)*256 + (ea2.mode & 0x38))
                     {
                         case 0x0000:
-                            InstrW(parm + (reg2 << 9) + reg1); // Dy,Dx
+                            INSTR_W(parm + (reg2 << 9) + reg1); // Dy,Dx
                             break;
 
                         case 0x2020:
-                            InstrW(parm + (reg2 << 9) + reg1 + 8); // -(Ay),-(Ax)
+                            INSTR_W(parm + (reg2 << 9) + reg1 + 8); // -(Ay),-(Ax)
                             break;
 
                         default:
-                            BadMode();
+                            TOKEN_BadMode();
                             break;
                     }
                 }
             }
             break;
 
-        case o_LINK:
-            reg1 = GetReg(addr_regs);
+        case OP_LINK:
+            reg1 = REG_Get(addr_regs);
             if (reg1 == 8) reg1 = 7;
             if (reg1 >= 0)
             {
-                if (Comma()) break;
-                if (Expect("#")) break;
-                val = Eval();
+                if (TOKEN_Comma()) break;
+                if (TOKEN_Expect("#")) break;
+                val = EXPR_Eval();
                 if (val > 0)
                 {
-                    Warning("LINK opcode with positive displacement");
+                    ASMX_Warning("LINK opcode with positive displacement");
                 }
-                CheckWord(val);
-                InstrWW(parm + reg1, val);
+                EXPR_CheckWord(val);
+                INSTR_WW(parm + reg1, val);
             }
             else
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
             }
             break;
 
 
-        case o_OneA:
-            reg1 = GetReg(addr_regs);
+        case OP_OneA:
+            reg1 = REG_Get(addr_regs);
             if (reg1 == 8) reg1 = 7;
             if (reg1 >= 0)
             {
-                InstrW(parm + reg1);
+                INSTR_W(parm + reg1);
             }
             else
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
             }
             break;
 
-        case o_OneD:
-            reg1 = GetReg(data_regs);
+        case OP_OneD:
+            reg1 = REG_Get(data_regs);
             if (reg1 == 8) reg1 = 7;
             if (reg1 >= 0)
             {
-                InstrW(parm + reg1);
+                INSTR_W(parm + reg1);
             }
             else
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
             }
             break;
 
-        case o_MOVEC:
+        case OP_MOVEC:
             if (curCPU == CPU_68000) return 0;
 
-            reg2 = GetMOVECreg();
+            reg2 = M68K_GetMOVECreg();
             if (reg2 >= 0)
             {
                 // Rc,Rn
-                if (Comma()) break;
-                reg1 = GetReg(DA_regs);
+                if (TOKEN_Comma()) break;
+                reg1 = REG_Get(DA_regs);
                 if (reg1 == 16) reg1 = 15; // SP -> A7
                 if (reg1 < 0)
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
                 }
                 val = 0;
@@ -2184,41 +2184,41 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             else
             {
                 // Rn,Rc
-                reg1 = GetReg(DA_regs);
+                reg1 = REG_Get(DA_regs);
                 if (reg1 == 16) reg1 = 15; // SP -> A7
                 if (reg1 < 0)
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
                 }
-                if (Comma()) break;
-                reg2 = GetMOVECreg();
+                if (TOKEN_Comma()) break;
+                reg2 = M68K_GetMOVECreg();
                 if (reg2 < 0)
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
                 }
                 val = 1;
             }
-            InstrWW(parm + val,(reg1 << 12) + reg2);
+            INSTR_WW(parm + val,(reg1 << 12) + reg2);
             break;
 
-        case o_MOVES:
+        case OP_MOVES:
             if (curCPU == CPU_68000) return 0;
 
             size = parm & 3;
             parm = parm & 0xFFFC;
-            reg1 = GetReg(DA_regs);
+            reg1 = REG_Get(DA_regs);
             if (reg1 == 16) reg1 = 15; // SP -> A7
             if (reg1 >= 0)
             {
                 // Rn,ea
                 reg2 = 0x0800;  // direction = general register to ea
-                if (Comma()) break;
-                if (!GetEA(true, size, &ea1)) break;
+                if (TOKEN_Comma()) break;
+                if (!M68K_GetEA(true, size, &ea1)) break;
                 if ((ea1.mode & 0x30) == 0)
                 {
-                    BadMode();
+                    TOKEN_BadMode();
                     break;
                 }
             }
@@ -2226,18 +2226,18 @@ static int M68K_DoCPUOpcode(int typ, int parm)
             {
                 // ea,Rn
                 reg2 = 0x0000;  // direction = ea to general register
-                if (!GetEA(true, size, &ea1)) break;
-                if (Comma()) break;
+                if (!M68K_GetEA(true, size, &ea1)) break;
+                if (TOKEN_Comma()) break;
                 if ((ea1.mode & 0x30) == 0)
                 {
-                    BadMode();
+                    TOKEN_BadMode();
                     break;
                 }
-                reg1 = GetReg(DA_regs);
+                reg1 = REG_Get(DA_regs);
                 if (reg1 == 16) reg1 = 15; // SP -> A7
                 if (reg1 < 0) break;
             }
-            InstrWWE(parm + (size << 6), (reg1 << 12) + reg2, &ea1);
+            M68K_InstrWWE(parm + (size << 6), (reg1 << 12) + reg2, &ea1);
             break;
 
         default:
@@ -2247,9 +2247,9 @@ static int M68K_DoCPUOpcode(int typ, int parm)
 
     if (locPtr & 1)
     {
-        Error("Code at non-word-aligned address");
+        ASMX_Error("Code at non-word-aligned address");
         // deposit an extra byte to reset alignment and prevent further errors
-        InstrAddB(0);
+        INSTR_AddB(0);
         // note: Inserting bytes in front won't work because offsets have already been assembled.
         // The line could be re-assembled by recursively calling DoCPUOpcode, but then
         // the label before the instruction would still be at the odd address.
@@ -2259,11 +2259,11 @@ static int M68K_DoCPUOpcode(int typ, int parm)
 }
 
 
-void Asm68KInit(void)
+void M68K_AsmInit(void)
 {
-    void *p = AddAsm(versionName, &M68K_DoCPUOpcode, NULL, NULL);
+    void *p = ASMX_AddAsm(versionName, &M68K_DoCPUOpcode, NULL, NULL);
 
-    AddCPU(p, "68K",    CPU_68000, BIG_END, ADDR_24, LIST_24, 8, 0, M68K_opcdTab);
-    AddCPU(p, "68000",  CPU_68000, BIG_END, ADDR_24, LIST_24, 8, 0, M68K_opcdTab);
-    AddCPU(p, "68010",  CPU_68010, BIG_END, ADDR_24, LIST_24, 8, 0, M68K_opcdTab);
+    ASMX_AddCPU(p, "68K",    CPU_68000, END_BIG, ADDR_24, LIST_24, 8, 0, M68K_opcdTab);
+    ASMX_AddCPU(p, "68000",  CPU_68000, END_BIG, ADDR_24, LIST_24, 8, 0, M68K_opcdTab);
+    ASMX_AddCPU(p, "68010",  CPU_68010, END_BIG, ADDR_24, LIST_24, 8, 0, M68K_opcdTab);
 }

@@ -1,6 +1,6 @@
-// asm8048.c
+// asmI8048.c
 
-#define versionName "8048 assembler"
+#define versionName "I8048 assembler"
 #include "asmx.h"
 
 enum
@@ -13,34 +13,34 @@ enum
 
 enum instrType
 {
-    o_None,         // No operands
+    OP_None,         // No operands
 
-    o_Arith,        // ADD, ADDC
-    o_Logical,      // ANL, ORL, XRL, XCH
-    o_XCHD,         // XCHD
-    o_JMP,          // JMP, CALL
-    o_RET,          // RET, RETR
-    o_Branch,       // Jcc
-    o_DJNZ,         // DJNZ
-    o_INC_DEC,      // INC, DEC
-    o_MOV,          // MOV
-    o_MOVD,         // MOVD
-    o_LogicalD,     // ANLD, ORLD
-    o_CLR_CPL,      // CLR, CPL
-    o_Accum,        // DA A, RL A, RLC A, RRC A, RR A, SWAP A
-    o_EN_DIS,       // EN, DIS
-    o_MOVX,         // MOVX
-    o_ENT0,         // ENT0 CLK
-    o_MOVP,         // MOVP MOVP3
-    o_JMPP,         // JMPP @A
-    o_STOP,         // STOP TCNT
-    o_STRT,         // STRT CNT/T
-    o_SEL,          // SEL
-    o_IN,           // IN
-    o_INS,          // INS
-    o_OUTL,         // OUTL
+    OP_Arith,        // ADD, ADDC
+    OP_Logical,      // ANL, ORL, XRL, XCH
+    OP_XCHD,         // XCHD
+    OP_JMP,          // JMP, CALL
+    OP_RET,          // RET, RETR
+    OP_Branch,       // Jcc
+    OP_DJNZ,         // DJNZ
+    OP_INC_DEC,      // INC, DEC
+    OP_MOV,          // MOV
+    OP_MOVD,         // MOVD
+    OP_LogicalD,     // ANLD, ORLD
+    OP_CLR_CPL,      // CLR, CPL
+    OP_Accum,        // DA A, RL A, RLC A, RRC A, RR A, SWAP A
+    OP_EN_DIS,       // EN, DIS
+    OP_MOVX,         // MOVX
+    OP_ENT0,         // ENT0 CLK
+    OP_MOVP,         // MOVP MOVP3
+    OP_JMPP,         // JMPP @A
+    OP_STOP,         // STOP TCNT
+    OP_STRT,         // STRT CNT/T
+    OP_SEL,          // SEL
+    OP_IN,           // IN
+    OP_INS,          // INS
+    OP_OUTL,         // OUTL
 
-//  o_Foo = o_LabelOp,
+//  o_Foo = OP_LabelOp,
 };
 
 // Note: there seem to be three primary variations of the instruction set:
@@ -53,96 +53,96 @@ enum instrType
 
 static const struct OpcdRec I8048_opcdTab[] =
 {
-    {"NOP",  o_None,  0x00},
-    {"HALT", o_None,  0x01}, // on Oki MSM80Cxx and Toshiba 8048
-    {"RET",  o_RET,   0x83}, // note: 8022 may want "RET I" instead of RETR
-    {"RETR", o_RET,   0x93},
-    {"HLTS", o_None,  0x82}, // on Oki MSM80Cxx
-    {"FLT",  o_None,  0xA2}, // on Oki MSM80Cxx
-    {"FLTT", o_None,  0xC2}, // on Oki MSM80Cxx
+    {"NOP",  OP_None,  0x00},
+    {"HALT", OP_None,  0x01}, // on Oki MSM80Cxx and Toshiba 8048
+    {"RET",  OP_RET,   0x83}, // note: 8022 may want "RET I" instead of RETR
+    {"RETR", OP_RET,   0x93},
+    {"HLTS", OP_None,  0x82}, // on Oki MSM80Cxx
+    {"FLT",  OP_None,  0xA2}, // on Oki MSM80Cxx
+    {"FLTT", OP_None,  0xC2}, // on Oki MSM80Cxx
 
-    {"ADD",  o_Arith, 0x00},
-    {"ADDC", o_Arith, 0x10},
+    {"ADD",  OP_Arith, 0x00},
+    {"ADDC", OP_Arith, 0x10},
 
-    {"ANL",  o_Logical, 0x50}, // no ports on 8022?
-    {"ORL",  o_Logical, 0x40}, // no ports on 8022?
-    {"XRL",  o_Logical, 0xD0}, // no ports
-    {"XCH",  o_Logical, 0x20}, // no ports or immediate
+    {"ANL",  OP_Logical, 0x50}, // no ports on 8022?
+    {"ORL",  OP_Logical, 0x40}, // no ports on 8022?
+    {"XRL",  OP_Logical, 0xD0}, // no ports
+    {"XCH",  OP_Logical, 0x20}, // no ports or immediate
 
-    {"XCHD", o_XCHD,    0x30},
+    {"XCHD", OP_XCHD,    0x30},
 
-    {"JMP",  o_JMP,     0x04},
-    {"CALL", o_JMP,     0x14},
+    {"JMP",  OP_JMP,     0x04},
+    {"CALL", OP_JMP,     0x14},
 
-    {"JB0",  o_Branch,  0x12}, // 8048 only
-    {"JB1",  o_Branch,  0x32}, // 8048 only
-    {"JB2",  o_Branch,  0x52}, // 8048 only
-    {"JB3",  o_Branch,  0x72}, // 8048 only
-    {"JB4",  o_Branch,  0x92}, // 8048 only
-    {"JB5",  o_Branch,  0xB2}, // 8048 only
-    {"JB6",  o_Branch,  0xD2}, // 8048 only
-    {"JB7",  o_Branch,  0xF2}, // 8048 only
+    {"JB0",  OP_Branch,  0x12}, // 8048 only
+    {"JB1",  OP_Branch,  0x32}, // 8048 only
+    {"JB2",  OP_Branch,  0x52}, // 8048 only
+    {"JB3",  OP_Branch,  0x72}, // 8048 only
+    {"JB4",  OP_Branch,  0x92}, // 8048 only
+    {"JB5",  OP_Branch,  0xB2}, // 8048 only
+    {"JB6",  OP_Branch,  0xD2}, // 8048 only
+    {"JB7",  OP_Branch,  0xF2}, // 8048 only
 
-    {"JTF",  o_Branch,  0x16},
-    {"JNT0", o_Branch,  0x26}, // not 8021?
-    {"JT0",  o_Branch,  0x36}, // not 8021?
-    {"JNT1", o_Branch,  0x46},
-    {"JT1",  o_Branch,  0x56},
-    {"JF1",  o_Branch,  0x76}, // not 8021/8022?
-    {"JNI",  o_Branch,  0x86}, // not 8021/8022?
-    {"JF0",  o_Branch,  0xb6}, // not 8021/8022?
+    {"JTF",  OP_Branch,  0x16},
+    {"JNT0", OP_Branch,  0x26}, // not 8021?
+    {"JT0",  OP_Branch,  0x36}, // not 8021?
+    {"JNT1", OP_Branch,  0x46},
+    {"JT1",  OP_Branch,  0x56},
+    {"JF1",  OP_Branch,  0x76}, // not 8021/8022?
+    {"JNI",  OP_Branch,  0x86}, // not 8021/8022?
+    {"JF0",  OP_Branch,  0xb6}, // not 8021/8022?
 
-    {"JZ",   o_Branch,  0xC6},
-    {"JNZ",  o_Branch,  0x96},
-    {"JC",   o_Branch,  0xF6},
-    {"JNC",  o_Branch,  0xE6},
+    {"JZ",   OP_Branch,  0xC6},
+    {"JNZ",  OP_Branch,  0x96},
+    {"JC",   OP_Branch,  0xF6},
+    {"JNC",  OP_Branch,  0xE6},
 
-    {"DJNZ", o_DJNZ,    0xE8},
+    {"DJNZ", OP_DJNZ,    0xE8},
 
-    {"INC",  o_INC_DEC, 0x10},
-    {"DEC",  o_INC_DEC, 0xC0},
+    {"INC",  OP_INC_DEC, 0x10},
+    {"DEC",  OP_INC_DEC, 0xC0},
 
-    {"MOV",  o_MOV,     0x00},
+    {"MOV",  OP_MOV,     0x00},
 
-    {"MOVD", o_MOVD,    0x00},
+    {"MOVD", OP_MOVD,    0x00},
 
-    {"ANLD", o_LogicalD,0x9C},
-    {"ORLD", o_LogicalD,0x8C},
+    {"ANLD", OP_LogicalD,0x9C},
+    {"ORLD", OP_LogicalD,0x8C},
 
-    {"CLR",  o_CLR_CPL, 0x00},
-    {"CPL",  o_CLR_CPL, 0x10},
+    {"CLR",  OP_CLR_CPL, 0x00},
+    {"CPL",  OP_CLR_CPL, 0x10},
 
-    {"SWAP", o_Accum,   0x47},
-    {"DA",   o_Accum,   0x57},
-    {"RRC",  o_Accum,   0x67},
-    {"RR",   o_Accum,   0x77},
-    {"RL",   o_Accum,   0xE7},
-    {"RLC",  o_Accum,   0xF7},
+    {"SWAP", OP_Accum,   0x47},
+    {"DA",   OP_Accum,   0x57},
+    {"RRC",  OP_Accum,   0x67},
+    {"RR",   OP_Accum,   0x77},
+    {"RL",   OP_Accum,   0xE7},
+    {"RLC",  OP_Accum,   0xF7},
 
-    {"EN",   o_EN_DIS,  0x00},
-    {"DIS",  o_EN_DIS,  0x10},
+    {"EN",   OP_EN_DIS,  0x00},
+    {"DIS",  OP_EN_DIS,  0x10},
 
-    {"MOVX", o_MOVX,    0x00}, // 8048 only
+    {"MOVX", OP_MOVX,    0x00}, // 8048 only
 
-    {"ENT0", o_ENT0,    0x00}, // 8048 only
+    {"ENT0", OP_ENT0,    0x00}, // 8048 only
 
-    {"MOVP", o_MOVP,    0xA3},
-    {"MOVP3",o_MOVP,    0xE3},
+    {"MOVP", OP_MOVP,    0xA3},
+    {"MOVP3",OP_MOVP,    0xE3},
 
-    {"JMPP", o_JMPP,    0xB3},
+    {"JMPP", OP_JMPP,    0xB3},
 
-    {"STOP", o_STOP,    0x00},
+    {"STOP", OP_STOP,    0x00},
 
-    {"STRT", o_STRT,    0x00},
+    {"STRT", OP_STRT,    0x00},
 
-    {"SEL",  o_SEL,     0x00},
+    {"SEL",  OP_SEL,     0x00},
 
-    {"IN",   o_IN,      0x00},
-    {"INS",  o_INS,     0x00},
-    {"OUTL", o_OUTL,    0x00}, // OUTL DBB,A is 0x90 on 8041/8021/8022
+    {"IN",   OP_IN,      0x00},
+    {"INS",  OP_INS,     0x00},
+    {"OUTL", OP_OUTL,    0x00}, // OUTL DBB,A is 0x90 on 8041/8021/8022
 
 
-    {"",    o_Illegal,  0}
+    {"",    OP_Illegal,  0}
 };
 
 
@@ -150,20 +150,20 @@ char regs_8048[] = "R0 R1 R2 R3 R4 R5 R6 R7 @R0 @R1 # A PSW T";
 
 enum
 {
-    reg_R0    =  0,
-    reg_R1    =  1,
-    reg_R2    =  2,
-    reg_R3    =  3,
-    reg_R4    =  4,
-    reg_R5    =  5,
-    reg_R6    =  6,
-    reg_R7    =  7,
-    reg_xR0   =  8,
-    reg_xR1   =  9,
-    reg_Imm   = 10,
-    reg_A     = 11,
-    reg_PSW   = 12,
-    reg_T     = 13,
+    REG_R0    =  0,
+    REG_R1    =  1,
+    REG_R2    =  2,
+    REG_R3    =  3,
+    REG_R4    =  4,
+    REG_R5    =  5,
+    REG_R6    =  6,
+    REG_R7    =  7,
+    REG_xR0   =  8,
+    REG_xR1   =  9,
+    REG_Imm   = 10,
+    REG_A     = 11,
+    REG_PSW   = 12,
+    REG_T     = 13,
 };
 
 
@@ -179,24 +179,24 @@ int selmb;
 // --------------------------------------------------------------
 
 
-static int Get_8048_Reg(const char *regList)
+static int I8048_GetReg(const char *regList)
 {
     Str255  word;
     int     token;
 
-    if (!(token = GetWord(word)))
+    if (!(token = TOKEN_GetWord(word)))
     {
-        MissingOperand();
+        ASMX_MissingOperand();
         return reg_EOL;
     }
 
     // 8048 needs to handle '@' symbols as part of a register name
     if (token == '@')
     {
-        GetWord(word+1);
+        TOKEN_GetWord(word+1);
     }
 
-    return FindReg(word, regList);
+    return REG_Find(word, regList);
 }
 
 
@@ -209,150 +209,150 @@ static int I8048_DoCPUOpcode(int typ, int parm)
 
     switch (typ)
     {
-        case o_RET:
+        case OP_RET:
             // reset selmb after unconditional returns
             selmb = -1;
         // fall through...
-        case o_None:
-            InstrB(parm);
+        case OP_None:
+            INSTR_B(parm);
             break;
 
-        case o_Arith:
-            if (Expect("A")) break;
-            if (Comma()) break;
-            reg1 = Get_8048_Reg(regs_8048);
+        case OP_Arith:
+            if (TOKEN_Expect("A")) break;
+            if (TOKEN_Comma()) break;
+            reg1 = I8048_GetReg(regs_8048);
             switch (reg1)
             {
-                case reg_R0: // A,Rn = parm + 0x68 + reg
-                case reg_R1:
-                case reg_R2:
-                case reg_R3:
-                case reg_R4:
-                case reg_R5:
-                case reg_R6:
-                case reg_R7:
-                    InstrB(parm + 0x68 + reg1 - reg_R0);
+                case REG_R0: // A,Rn = parm + 0x68 + reg
+                case REG_R1:
+                case REG_R2:
+                case REG_R3:
+                case REG_R4:
+                case REG_R5:
+                case REG_R6:
+                case REG_R7:
+                    INSTR_B(parm + 0x68 + reg1 - REG_R0);
                     break;
 
-                case reg_xR0: // A,@Rn = parm + 0x60 + reg
-                case reg_xR1:
-                    InstrB(parm + 0x60 + reg1 - reg_xR0);
+                case REG_xR0: // A,@Rn = parm + 0x60 + reg
+                case REG_xR1:
+                    INSTR_B(parm + 0x60 + reg1 - REG_xR0);
                     break;
 
-                case reg_Imm: // A,#imm = parm + 0x03
-                    val = EvalByte();
-                    InstrBB(parm + 0x03, val);
+                case REG_Imm: // A,#imm = parm + 0x03
+                    val = EXPR_EvalByte();
+                    INSTR_BB(parm + 0x03, val);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_Logical:
-            reg1 = Get_8048_Reg("A P1 P2 BUS");
+        case OP_Logical:
+            reg1 = I8048_GetReg("A P1 P2 BUS");
             switch (reg1)
             {
                 case 0:
-                    if (Comma()) break;
-                    reg1 = Get_8048_Reg(regs_8048);
+                    if (TOKEN_Comma()) break;
+                    reg1 = I8048_GetReg(regs_8048);
                     switch (reg1)
                     {
-                        case reg_R0: // A,Rn = parm + 0x08 + reg
-                        case reg_R1:
-                        case reg_R2:
-                        case reg_R3:
-                        case reg_R4:
-                        case reg_R5:
-                        case reg_R6:
-                        case reg_R7:
-                            InstrB(parm + 0x08 + reg1 - reg_R0);
+                        case REG_R0: // A,Rn = parm + 0x08 + reg
+                        case REG_R1:
+                        case REG_R2:
+                        case REG_R3:
+                        case REG_R4:
+                        case REG_R5:
+                        case REG_R6:
+                        case REG_R7:
+                            INSTR_B(parm + 0x08 + reg1 - REG_R0);
                             break;
 
-                        case reg_xR0: // A,@Rn = parm + reg
-                        case reg_xR1:
-                            InstrB(parm + reg1 - reg_xR0);
+                        case REG_xR0: // A,@Rn = parm + reg
+                        case REG_xR1:
+                            INSTR_B(parm + reg1 - REG_xR0);
                             break;
 
-                        case reg_Imm: // A,#imm = parm + 0x03 (not 0x20)
+                        case REG_Imm: // A,#imm = parm + 0x03 (not 0x20)
                             if (parm == 0x20)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
                             }
-                            val = EvalByte();
-                            InstrBB(parm + 0x03, val);
+                            val = EXPR_EvalByte();
+                            INSTR_BB(parm + 0x03, val);
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 case 1: // Pn,#imm = parm + 0x48 + port (not 0xD0 or 0x20)
                 case 2:
-                    if (Comma()) break;
-                    if (Expect("#")) break;
-                    val = EvalByte();
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("#")) break;
+                    val = EXPR_EvalByte();
                     if (parm == 0xD0 || parm == 0x20)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                     }
-                    InstrBB(parm + 0x48 + reg1, val);
+                    INSTR_BB(parm + 0x48 + reg1, val);
                     break;
 
                 case 3: // BUS,#imm = parm + 0x48 (not 0xD0 or 0x20)
-                    if (Comma()) break;
-                    if (Expect("#")) break;
-                    val = EvalByte();
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("#")) break;
+                    val = EXPR_EvalByte();
                     if (parm == 0xD0 || parm == 0x20)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                     }
-                    InstrBB(parm + 0x48, val);
+                    INSTR_BB(parm + 0x48, val);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_XCHD:
-            if (Expect("A")) break;
-            if (Comma()) break;
-            reg1 = Get_8048_Reg("@R0 @R1");
+        case OP_XCHD:
+            if (TOKEN_Expect("A")) break;
+            if (TOKEN_Comma()) break;
+            reg1 = I8048_GetReg("@R0 @R1");
             switch (reg1)
             {
                 case 0: // A,@Rn = parm + reg
                 case 1:
-                    InstrB(parm + reg1);
+                    INSTR_B(parm + reg1);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_JMP:
-            val = Eval();
+        case OP_JMP:
+            val = EXPR_Eval();
 
             // check for jumps to the other SEL MB area
             if (selmb == -1)
@@ -360,7 +360,7 @@ static int I8048_DoCPUOpcode(int typ, int parm)
                 // if no SEL MBx seen recently, assume PC is correct
                 if ((val & 0xF800) != ((locPtr + 2) & 0xF800))
                 {
-                    Warning("Jump across code bank boundary");
+                    ASMX_Warning("Jump across code bank boundary");
                 }
             }
             else
@@ -368,7 +368,7 @@ static int I8048_DoCPUOpcode(int typ, int parm)
                 // if SEL MBx has been seen, use it for bank number
                 if (selmb != ((val & 0xF800) >> 11))
                 {
-                    Warning("Jump across code bank boundary");
+                    ASMX_Warning("Jump across code bank boundary");
                 }
             }
 
@@ -378,234 +378,234 @@ static int I8048_DoCPUOpcode(int typ, int parm)
                 selmb = -1;
             }
 
-            InstrBB(parm + ((val & 0x0700) >> 3), val & 0xFF);
+            INSTR_BB(parm + ((val & 0x0700) >> 3), val & 0xFF);
             break;
 
-        case o_Branch:
-            val = Eval();
+        case OP_Branch:
+            val = EXPR_Eval();
             if ((val & 0xFF00) != ((locPtr + 2) & 0xFF00))
             {
-                Warning("Branch out of range");
+                ASMX_Warning("Branch out of range");
             }
-            InstrBB(parm, val & 0xFF);
+            INSTR_BB(parm, val & 0xFF);
             break;
 
-        case o_DJNZ:
-            reg1 = Get_8048_Reg(regs_8048);
+        case OP_DJNZ:
+            reg1 = I8048_GetReg(regs_8048);
             switch (reg1)
             {
-                case reg_R0: // Rn,addr = parm + reg
-                case reg_R1:
-                case reg_R2:
-                case reg_R3:
-                case reg_R4:
-                case reg_R5:
-                case reg_R6:
-                case reg_R7:
-                    if (Comma()) break;
-                    val = Eval();
+                case REG_R0: // Rn,addr = parm + reg
+                case REG_R1:
+                case REG_R2:
+                case REG_R3:
+                case REG_R4:
+                case REG_R5:
+                case REG_R6:
+                case REG_R7:
+                    if (TOKEN_Comma()) break;
+                    val = EXPR_Eval();
                     if ((val & 0xFF00) != ((locPtr + 2) & 0xFF00))
                     {
-                        Warning("Branch out of range");
+                        ASMX_Warning("Branch out of range");
                     }
-                    InstrBB(parm + reg1 - reg_R0, val & 0xFF);
+                    INSTR_BB(parm + reg1 - REG_R0, val & 0xFF);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
 
             }
             break;
 
-        case o_INC_DEC:
-            reg1 = Get_8048_Reg(regs_8048);
+        case OP_INC_DEC:
+            reg1 = I8048_GetReg(regs_8048);
             switch (reg1)
             {
-                case reg_R0: // Rn = parm + 0x08 + reg (no 0xC0 on 8021/8022)
-                case reg_R1:
-                case reg_R2:
-                case reg_R3:
-                case reg_R4:
-                case reg_R5:
-                case reg_R6:
-                case reg_R7:
-                    InstrB(parm + 0x08 + reg1 - reg_R0);
+                case REG_R0: // Rn = parm + 0x08 + reg (no 0xC0 on 8021/8022)
+                case REG_R1:
+                case REG_R2:
+                case REG_R3:
+                case REG_R4:
+                case REG_R5:
+                case REG_R6:
+                case REG_R7:
+                    INSTR_B(parm + 0x08 + reg1 - REG_R0);
                     break;
 
-                case reg_xR0: // @Rn = parm + reg
-                case reg_xR1:
-                    InstrB(parm + reg1 - reg_xR0);
+                case REG_xR0: // @Rn = parm + reg
+                case REG_xR1:
+                    INSTR_B(parm + reg1 - REG_xR0);
                     break;
 
-                case reg_A: // A = (parm & 0x10) + 0x07
-                    InstrB((parm & 0x10) + 0x07);
+                case REG_A: // A = (parm & 0x10) + 0x07
+                    INSTR_B((parm & 0x10) + 0x07);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_MOV:
-            reg1 = Get_8048_Reg(regs_8048);
+        case OP_MOV:
+            reg1 = I8048_GetReg(regs_8048);
             switch (reg1)
             {
-                case reg_R0: // Rn,
-                case reg_R1:
-                case reg_R2:
-                case reg_R3:
-                case reg_R4:
-                case reg_R5:
-                case reg_R6:
-                case reg_R7:
-                    if (Comma()) break;
-                    reg2 = Get_8048_Reg("A #");
+                case REG_R0: // Rn,
+                case REG_R1:
+                case REG_R2:
+                case REG_R3:
+                case REG_R4:
+                case REG_R5:
+                case REG_R6:
+                case REG_R7:
+                    if (TOKEN_Comma()) break;
+                    reg2 = I8048_GetReg("A #");
                     switch (reg2)
                     {
                         case 0: // Rn,A = 0xA8 + reg1
-                            InstrB(0xA8 + reg1 - reg_R0);
+                            INSTR_B(0xA8 + reg1 - REG_R0);
                             break;
 
                         case 1: // Rn,#imm = 0xB8 + reg1
-                            val = EvalByte();
-                            InstrBB(0xB8 + reg1 - reg_R0, val);
+                            val = EXPR_EvalByte();
+                            INSTR_BB(0xB8 + reg1 - REG_R0, val);
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case reg_xR0: // @Rn,
-                case reg_xR1:
-                    if (Comma()) break;
-                    reg2 = Get_8048_Reg("A #");
+                case REG_xR0: // @Rn,
+                case REG_xR1:
+                    if (TOKEN_Comma()) break;
+                    reg2 = I8048_GetReg("A #");
                     switch (reg2)
                     {
                         case 0: // @Rn,A = 0xA0 + reg1
-                            InstrB(0xA0 + reg1 - reg_xR0);
+                            INSTR_B(0xA0 + reg1 - REG_xR0);
                             break;
 
                         case 1: // @Rn,#imm = 0xB0 + reg1
-                            val = EvalByte();
-                            InstrBB(0xB0 + reg1 - reg_xR0, val);
+                            val = EXPR_EvalByte();
+                            INSTR_BB(0xB0 + reg1 - REG_xR0, val);
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case reg_A: // A,
-                    if (Comma()) break;
-                    reg2 = Get_8048_Reg(regs_8048);
+                case REG_A: // A,
+                    if (TOKEN_Comma()) break;
+                    reg2 = I8048_GetReg(regs_8048);
                     switch (reg2)
                     {
-                        case reg_R0: // A,Rn = 0xF8 + reg2
-                        case reg_R1:
-                        case reg_R2:
-                        case reg_R3:
-                        case reg_R4:
-                        case reg_R5:
-                        case reg_R6:
-                        case reg_R7:
-                            InstrB(0xF8 + reg2 - reg_R0);
+                        case REG_R0: // A,Rn = 0xF8 + reg2
+                        case REG_R1:
+                        case REG_R2:
+                        case REG_R3:
+                        case REG_R4:
+                        case REG_R5:
+                        case REG_R6:
+                        case REG_R7:
+                            INSTR_B(0xF8 + reg2 - REG_R0);
                             break;
 
-                        case reg_xR1: // @Rn = 0xF0 + reg2
-                        case reg_xR0:
-                            InstrB(0xF0 + reg2 - reg_xR0);
+                        case REG_xR1: // @Rn = 0xF0 + reg2
+                        case REG_xR0:
+                            INSTR_B(0xF0 + reg2 - REG_xR0);
                             break;
 
-                        case reg_Imm: // A,#imm
-                            val = EvalByte();
-                            InstrBB(0x23, val);
+                        case REG_Imm: // A,#imm
+                            val = EXPR_EvalByte();
+                            INSTR_BB(0x23, val);
                             break;
 
-                        case reg_PSW: // A,PSW
-                            InstrB(0xC7);
+                        case REG_PSW: // A,PSW
+                            INSTR_B(0xC7);
                             break;
 
-                        case reg_T: // A,T
-                            InstrB(0x42);
+                        case REG_T: // A,T
+                            INSTR_B(0x42);
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case reg_PSW: // PSW,A
-                    if (Comma()) break;
-                    if (Expect("A")) break;
-                    InstrB(0xD7);
+                case REG_PSW: // PSW,A
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
+                    INSTR_B(0xD7);
                     break;
 
-                case reg_T: // T,A
-                    if (Comma()) break;
-                    if (Expect("A")) break;
-                    InstrB(0x62);
+                case REG_T: // T,A
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
+                    INSTR_B(0x62);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_MOVD:
-            reg1 = Get_8048_Reg("P4 P5 P6 P7 A");
+        case OP_MOVD:
+            reg1 = I8048_GetReg("P4 P5 P6 P7 A");
             switch (reg1)
             {
                 case 0: // Pn,A = 0x3C + reg
                 case 1:
                 case 2:
                 case 3:
-                    if (Comma()) break;
-                    if (Expect("A")) break;
-                    InstrB(0x3C + reg1);
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
+                    INSTR_B(0x3C + reg1);
                     break;
 
                 case 4: // A,Pn
-                    if (Comma()) break;
-                    reg1 = Get_8048_Reg("P4 P5 P6 P7");
+                    if (TOKEN_Comma()) break;
+                    reg1 = I8048_GetReg("P4 P5 P6 P7");
                     switch (reg1)
                     {
                         case 0: // A,Pn = 0x0C + reg
                         case 1:
                         case 2:
                         case 3:
-                            InstrB(0x0C + reg1);
+                            INSTR_B(0x0C + reg1);
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
@@ -614,114 +614,114 @@ static int I8048_DoCPUOpcode(int typ, int parm)
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_LogicalD:
-            reg1 = Get_8048_Reg("P4 P5 P6 P7");
+        case OP_LogicalD:
+            reg1 = I8048_GetReg("P4 P5 P6 P7");
             switch (reg1)
             {
                 case 0: // Pn,A = parm + reg
                 case 1:
                 case 2:
                 case 3:
-                    if (Comma()) break;
-                    if (Expect("A")) break;
-                    InstrB(parm + reg1);
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
+                    INSTR_B(parm + reg1);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_CLR_CPL:
-            reg1 = Get_8048_Reg("A F0 C F1");
+        case OP_CLR_CPL:
+            reg1 = I8048_GetReg("A F0 C F1");
             switch (reg1)
             {
                 case 0: // A  = parm + 0x27
-                    InstrB(parm + 0x27);
+                    INSTR_B(parm + 0x27);
                     break;
 
                 case 1: // F0 = parm + 0x85 (not on 8021/8022)
-                    InstrB(parm + 0x85);
+                    INSTR_B(parm + 0x85);
                     break;
 
                 case 2: // C  = parm + 0x97
-                    InstrB(parm + 0x97);
+                    INSTR_B(parm + 0x97);
                     break;
 
                 case 3: // F1 = parm + 0xA5 (not on 8021/8022)
-                    InstrB(parm + 0xA5);
+                    INSTR_B(parm + 0xA5);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_Accum:
-            if (Expect("A")) break;
-            InstrB(parm);
+        case OP_Accum:
+            if (TOKEN_Expect("A")) break;
+            INSTR_B(parm);
             break;
 
-        case o_EN_DIS:
-            reg1 = Get_8048_Reg("I TCNTI");
+        case OP_EN_DIS:
+            reg1 = I8048_GetReg("I TCNTI");
             switch (reg1)
             {
                 case 0: // I  = parm + 0x05
-                    InstrB(parm + 0x05);
+                    INSTR_B(parm + 0x05);
                     break;
 
                 case 1: // TCNTI = parm + 0x25
-                    InstrB(parm + 0x25);
+                    INSTR_B(parm + 0x25);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_MOVX: // 8048 only
-            reg1 = Get_8048_Reg("@R0 @R1 A");
+        case OP_MOVX: // 8048 only
+            reg1 = I8048_GetReg("@R0 @R1 A");
             switch (reg1)
             {
                 case 0: // @Rn,A = 0x90 + reg
                 case 1:
-                    if (Comma()) break;
-                    if (Expect("A")) break;
-                    InstrB(0x90 + reg1);
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
+                    INSTR_B(0x90 + reg1);
                     break;
 
                 case 2: // A,@Rn
-                    if (Comma()) break;
-                    reg1 = Get_8048_Reg("@R0 @R1");
+                    if (TOKEN_Comma()) break;
+                    reg1 = I8048_GetReg("@R0 @R1");
                     switch (reg1)
                     {
                         case 0: // @A,Rn = 0x80 + reg
                         case 1:
-                            InstrB(0x80 + reg1);
+                            INSTR_B(0x80 + reg1);
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
@@ -730,95 +730,95 @@ static int I8048_DoCPUOpcode(int typ, int parm)
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_ENT0: // 8048 only
-            reg1 = Get_8048_Reg("CLK");
+        case OP_ENT0: // 8048 only
+            reg1 = I8048_GetReg("CLK");
             switch (reg1)
             {
                 case 0: // CLK
-                    InstrB(0x75);
+                    INSTR_B(0x75);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_MOVP:
-            if (Expect("A")) break;
-            if (Comma()) break;
+        case OP_MOVP:
+            if (TOKEN_Expect("A")) break;
+            if (TOKEN_Comma()) break;
         // fall through...
-        case o_JMPP:
+        case OP_JMPP:
             // reset selmb after unconditional jumps
-            if ((typ == o_JMPP) && (parm == 0xB3))
+            if ((typ == OP_JMPP) && (parm == 0xB3))
             {
                 selmb = -1;
             }
 
-            reg1 = Get_8048_Reg("@A");
+            reg1 = I8048_GetReg("@A");
             switch (reg1)
             {
                 case 0: // @A
-                    InstrB(parm);
+                    INSTR_B(parm);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_STOP:
-            reg1 = Get_8048_Reg("TCNT");
+        case OP_STOP:
+            reg1 = I8048_GetReg("TCNT");
             switch (reg1)
             {
                 case 0: // TCNT
-                    InstrB(0x65);
+                    INSTR_B(0x65);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_STRT:
-            reg1 = Get_8048_Reg("CNT T");
+        case OP_STRT:
+            reg1 = I8048_GetReg("CNT T");
             switch (reg1)
             {
                 case 0: // CNT
-                    InstrB(0x45);
+                    INSTR_B(0x45);
                     break;
 
                 case 1: // T
-                    InstrB(0x55);
+                    INSTR_B(0x55);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_SEL:
-            reg1 = Get_8048_Reg("RB0 RB1 MB0 MB1");
+        case OP_SEL:
+            reg1 = I8048_GetReg("RB0 RB1 MB0 MB1");
             switch (reg1)
             {
                 case 2: // MB0
@@ -833,75 +833,75 @@ static int I8048_DoCPUOpcode(int typ, int parm)
                 case 1: // RB1 = 0xD5 not 8022?
                 case 2: // MB0 = 0xE5 8048 only
                 case 3: // MB1 = 0XF5 8048 only
-                    InstrB(0xC5 + reg1*16);
+                    INSTR_B(0xC5 + reg1*16);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_IN:
-        case o_INS:
-            if (Expect("A")) break;
-            if (Comma()) break;
-            reg1 = Get_8048_Reg("BUS P1 P2");
+        case OP_IN:
+        case OP_INS:
+            if (TOKEN_Expect("A")) break;
+            if (TOKEN_Comma()) break;
+            reg1 = I8048_GetReg("BUS P1 P2");
             switch (reg1)
             {
                 case 0: // A,BUS
-                    if (typ == o_IN)
+                    if (typ == OP_IN)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                     }
-                    InstrB(0x08);
+                    INSTR_B(0x08);
                     break;
 
                 case 1: // A,P1
                 case 2: // A,P2
-                    if (typ != o_IN)
+                    if (typ != OP_IN)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                     }
-                    InstrB(0x08 + reg1);
+                    INSTR_B(0x08 + reg1);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_OUTL:
-            reg1 = Get_8048_Reg("BUS P1 P2");
+        case OP_OUTL:
+            reg1 = I8048_GetReg("BUS P1 P2");
             switch (reg1)
             {
                 case 0: // BUS,A
-                    if (Comma()) break;
-                    if (Expect("A")) break;
-                    InstrB(0x02); // 0x90 for 8041/8021/8022 "OUTL DBB,A"
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
+                    INSTR_B(0x02); // 0x90 for 8041/8021/8022 "OUTL DBB,A"
                     break;
 
                 case 1: // P1,A
                 case 2: // P2,A
-                    if (Comma()) break;
-                    if (Expect("A")) break;
-                    InstrB(0x38 + reg1);
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
+                    INSTR_B(0x38 + reg1);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
@@ -921,12 +921,12 @@ void I8048_PassInit(void)
 }
 
 
-void Asm8048Init(void)
+void I8048_AsmInit(void)
 {
-    void *p = AddAsm(versionName, &I8048_DoCPUOpcode, NULL, &I8048_PassInit);
+    void *p = ASMX_AddAsm(versionName, &I8048_DoCPUOpcode, NULL, &I8048_PassInit);
 
-    AddCPU(p, "8048",  CPU_8048, LITTLE_END, ADDR_16, LIST_24, 8, 0, I8048_opcdTab);
-//  AddCPU(p, "8041",  CPU_8041, LITTLE_END, ADDR_16, LIST_24, 8, 0, I8048_opcdTab);
-//  AddCPU(p, "8021",  CPU_8021, LITTLE_END, ADDR_16, LIST_24, 8, 0, I8048_opcdTab);
-//  AddCPU(p, "8022",  CPU_8022, LITTLE_END, ADDR_16, LIST_24, 8, 0, I8048_opcdTab);
+    ASMX_AddCPU(p, "8048",  CPU_8048, END_LITTLE, ADDR_16, LIST_24, 8, 0, I8048_opcdTab);
+//  ASMX_AddCPU(p, "8041",  CPU_8041, LITTLE_END, ADDR_16, LIST_24, 8, 0, I8048_opcdTab);
+//  ASMX_AddCPU(p, "8021",  CPU_8021, LITTLE_END, ADDR_16, LIST_24, 8, 0, I8048_opcdTab);
+//  ASMX_AddCPU(p, "8022",  CPU_8022, LITTLE_END, ADDR_16, LIST_24, 8, 0, I8048_opcdTab);
 }

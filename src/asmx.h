@@ -5,7 +5,15 @@
 
 enum
 {
-    MAX_BYTSTR = 1024,          // size of bytStr[]
+    IHEX_SIZE   = 32,       // max number of data bytes per line in hex object file
+    MAXSYMLEN   = 32,       // max symbol length (only used in SYM_Dump())
+    symTabCols  = 1,        // number of columns for symbol table dump
+    MAXMACPARMS = 30,       // maximum macro parameters
+    MAX_INCLUDE = 10,       // maximum INCLUDE nesting level
+    MAX_BYTSTR  = 1024,     // size of bytStr[] (moved to asmx.h)
+    MAX_COND    = 256,      // maximum nesting level of IF blocks
+    MAX_MACRO   = 10,       // maximum nesting level of MACRO invocations
+    TRS_BUF_MAX = 256,      // maximum buffer size for TRSDOS block
 };
 
 #include <stdio.h>
@@ -50,11 +58,11 @@ enum
     OPT_DOLLARSYM = 0x02,   // allow symbols to start with '$'
 };
 
-void *AddAsm(const char *name,  // assembler name
+void *ASMX_AddAsm(const char *name,  // assembler name
              int (*DoCPUOpcode) (int typ, int parm),
              int (*DoCPULabelOp) (int typ, int parm, char *labl),
              void (*PassInit) (void) );
-void AddCPU(void *as,           // assembler for this CPU
+void ASMX_AddCPU(void *as,           // assembler for this CPU
             const char *name,   // uppercase name of this CPU
             int index,          // index number for this CPU
             int endian,         // assembler endian
@@ -66,7 +74,7 @@ void AddCPU(void *as,           // assembler for this CPU
 
 // assembler endian, address width, and listing hex width settings
 // 0 = little endian, 1 = big endian, -1 = undefined endian
-enum { UNKNOWN_END = -1, LITTLE_END, BIG_END };
+enum { END_UNKNOWN = -1, END_LITTLE, END_BIG };
 enum { ADDR_16, ADDR_24, ADDR_32 };
 enum { LIST_16, LIST_24 }; // Note: ADDR_24 and ADDR_32 should always use LIST_24
 
@@ -80,74 +88,74 @@ enum
 // opcode constants
 enum
 {
-    o_Illegal = 0x0100,
-    o_LabelOp = 0x1000,
-    o_EQU     = o_LabelOp + 0x100,
+    OP_Illegal = 0x0100,
+    OP_LabelOp = 0x1000,
+    OP_EQU     = OP_LabelOp + 0x100,
 };
 
-void Error(const char *message);
-void Warning(const char *message);
-void DefSym(const char *symName, uint32_t val, bool setSym, bool equSym);
-int GetWord(char *word);
-bool Expect(const char *expected);
-bool Comma(void);
-bool RParen(void);
-void EatIt(void);
-void IllegalOperand(void);
-void MissingOperand(void);
-void BadMode(void);
-int FindReg(const char *regName, const char *regList);
-int GetReg(const char *regList);
-int CheckReg(int reg);
-int Eval(void);
-void CheckByte(int val);
-void CheckStrictByte(int val);
-void CheckWord(int val);
-void CheckStrictWord(int val);
-int EvalByte(void);
-int EvalBranch(int instrLen);
-int EvalWBranch(int instrLen);
-int EvalLBranch(int instrLen);
-void DoLabelOp(int typ, int parm, char *labl);
+void ASMX_Error(const char *message);
+void ASMX_Warning(const char *message);
+void SYM_Def(const char *symName, uint32_t val, bool setSym, bool equSym);
+int TOKEN_GetWord(char *word);
+bool TOKEN_Expect(const char *expected);
+bool TOKEN_Comma(void);
+bool TOKEN_RParen(void);
+void TOKEN_EatIt(void);
+void ASMX_IllegalOperand(void);
+void ASMX_MissingOperand(void);
+void TOKEN_BadMode(void);
+int REG_Find(const char *regName, const char *regList);
+int REG_Get(const char *regList);
+int REG_Check(int reg);
+int EXPR_Eval(void);
+void EXPR_CheckByte(int val);
+void EXPR_CheckStrictByte(int val);
+void EXPR_CheckWord(int val);
+void EXPR_CheckStrictWord(int val);
+int EXPR_EvalByte(void);
+int EXPR_EvalBranch(int instrLen);
+int EXPR_EvalWBranch(int instrLen);
+int EXPR_EvalLBranch(int instrLen);
+void ASMX_DoLabelOp(int typ, int parm, char *labl);
 
-void InstrClear(void);
-void InstrAddB(uint8_t b);
-void InstrAddX(uint32_t op);
-void InstrAddW(uint16_t w);
-void InstrAdd3(uint32_t l);
-void InstrAddL(uint32_t l);
+void INSTR_Clear(void);
+void INSTR_AddB(uint8_t b);
+void INSTR_AddX(uint32_t op);
+void INSTR_AddW(uint16_t w);
+void INSTR_Add3(uint32_t l);
+void INSTR_AddL(uint32_t l);
 
-void InstrB(uint8_t b1);
-void InstrBB(uint8_t b1, uint8_t b2);
-void InstrBBB(uint8_t b1, uint8_t b2, uint8_t b3);
-void InstrBBBB(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4);
-void InstrBBBBB(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5);
-void InstrBW(uint8_t b1, uint16_t w1);
-void InstrBBW(uint8_t b1, uint8_t b2, uint16_t w1);
-void InstrBBBW(uint8_t b1, uint8_t b2, uint8_t b3, uint16_t w1);
-void InstrB3(uint8_t b, uint32_t l);
-void InstrX(uint32_t op);
-void InstrXB(uint32_t op, uint8_t b1);
-void InstrXBB(uint32_t op, uint8_t b1, uint8_t b2);
-void InstrXBBB(uint32_t op, uint8_t b1, uint8_t b2, uint8_t b3);
-void InstrXBBBB(uint32_t op, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4);
-void InstrXW(uint32_t op, uint16_t w1);
-void InstrXBW(uint32_t op, uint8_t b1, uint16_t w1);
-void InstrXBWB(uint32_t op, uint8_t b1, uint16_t w1, uint8_t b2);
-void InstrXWW(uint32_t op, uint16_t w1, uint16_t w2);
-void InstrX3(uint32_t op, uint32_t l1);
-void InstrW(uint16_t w1);
-void InstrWW(uint16_t w1, uint16_t w2);
-void InstrWL(uint16_t w1, uint32_t l1);
-void InstrL(uint32_t l1);
-void InstrLL(uint32_t l1, uint32_t l2);
+void INSTR_B(uint8_t b1);
+void INSTR_BB(uint8_t b1, uint8_t b2);
+void INSTR_BBB(uint8_t b1, uint8_t b2, uint8_t b3);
+void INSTR_BBBB(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4);
+void INSTR_BBBBB(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5);
+void INSTR_BW(uint8_t b1, uint16_t w1);
+void INSTR_BBW(uint8_t b1, uint8_t b2, uint16_t w1);
+void INSTR_BBBW(uint8_t b1, uint8_t b2, uint8_t b3, uint16_t w1);
+void INSTR_B3(uint8_t b, uint32_t l);
+void INSTR_X(uint32_t op);
+void INSTR_XB(uint32_t op, uint8_t b1);
+void INSTR_XBB(uint32_t op, uint8_t b1, uint8_t b2);
+void INSTR_XBBB(uint32_t op, uint8_t b1, uint8_t b2, uint8_t b3);
+void INSTR_XBBBB(uint32_t op, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4);
+void INSTR_XW(uint32_t op, uint16_t w1);
+void INSTR_XBW(uint32_t op, uint8_t b1, uint16_t w1);
+void INSTR_XBWB(uint32_t op, uint8_t b1, uint16_t w1, uint8_t b2);
+void INSTR_XWW(uint32_t op, uint16_t w1, uint16_t w2);
+void INSTR_X3(uint32_t op, uint32_t l1);
+void INSTR_W(uint16_t w1);
+void INSTR_WW(uint16_t w1, uint16_t w2);
+void INSTR_WL(uint16_t w1, uint32_t l1);
+void INSTR_L(uint32_t l1);
+void INSTR_LL(uint32_t l1, uint32_t l2);
 
-char *ListStr(char *l, const char *s);
-char *ListByte(char *p, uint8_t b);
-char *ListWord(char *p, uint16_t w);
-char *ListLong(char *p, uint32_t l);
-char *ListAddr(char *p,uint32_t addr);
-char *ListLoc(uint32_t addr);
+char *LIST_Str(char *l, const char *s);
+char *LIST_Byte(char *p, uint8_t b);
+char *LIST_Word(char *p, uint16_t w);
+char *LIST_Long(char *p, uint32_t l);
+char *LIST_Addr(char *p,uint32_t addr);
+char *LIST_Loc(uint32_t addr);
 
 // various internal variables used by the assemblers
 extern  bool            errFlag;            // true if error occurred this line

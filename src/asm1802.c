@@ -1,124 +1,124 @@
-// asm1802.c
+// asmR1802.c
 
-#define versionName "RCA 1802 assembler"
+#define versionName "R1802 assembler"
 #include "asmx.h"
 
 enum
 {
-    o_None,         // No operands
-    o_Register,     // register operand (with optional "R" in front)
-    o_Immediate,    // 8-bit immediate operand
-    o_Branch,       // short branch
-    o_LBranch,      // long branch
-    o_INPOUT        // INP/OUT instruction
+    OP_None,         // No operands
+    OP_Register,     // register operand (with optional "R" in front)
+    OP_Immediate,    // 8-bit immediate operand
+    OP_Branch,       // short branch
+    OP_LBranch,      // long branch
+    OP_INPOUT        // INP/OUT instruction
 
-//  o_Foo = o_LabelOp,
+//  o_Foo = OP_LabelOp,
 };
 
-static const struct OpcdRec RCA1802_opcdTab[] =
+static const struct OpcdRec R1802_opcdTab[] =
 {
-    {"IDL", o_None,     0x00},
-    {"LDN", o_Register, 0x00},  // note: LDN R0 not allowed
-    {"INC", o_Register, 0x10},
-    {"DEC", o_Register, 0x20},
-    {"BR",  o_Branch,   0x30},
-    {"BQ",  o_Branch,   0x31},
-    {"BZ",  o_Branch,   0x32},
-    {"BDF", o_Branch,   0x33},
-    {"BPZ", o_Branch,   0x33}, // duplicate opcode
-    {"BGE", o_Branch,   0x33}, // duplicate opcode
-    {"B1",  o_Branch,   0x34},
-    {"B2",  o_Branch,   0x35},
-    {"B3",  o_Branch,   0x36},
-    {"B4",  o_Branch,   0x37},
-    {"SKP", o_None,     0x38},
-    {"NBR", o_Branch,   0x38}, // duplicate opcode
-    {"BNQ", o_Branch,   0x39},
-    {"BNZ", o_Branch,   0x3A},
-    {"BNF", o_Branch,   0x3B},
-    {"BM",  o_Branch,   0x3B}, // duplicate opcode
-    {"BL",  o_Branch,   0x3B}, // duplicate opcode
-    {"BN1", o_Branch,   0x3C},
-    {"BN2", o_Branch,   0x3D},
-    {"BN3", o_Branch,   0x3E},
-    {"BN4", o_Branch,   0x3F},
-    {"LDA", o_Register, 0x40},
-    {"STR", o_Register, 0x50},
-    {"IRX", o_None,     0x60},
-    {"OUT", o_INPOUT,   0x60},
+    {"IDL", OP_None,     0x00},
+    {"LDN", OP_Register, 0x00},  // note: LDN R0 not allowed
+    {"INC", OP_Register, 0x10},
+    {"DEC", OP_Register, 0x20},
+    {"BR",  OP_Branch,   0x30},
+    {"BQ",  OP_Branch,   0x31},
+    {"BZ",  OP_Branch,   0x32},
+    {"BDF", OP_Branch,   0x33},
+    {"BPZ", OP_Branch,   0x33}, // duplicate opcode
+    {"BGE", OP_Branch,   0x33}, // duplicate opcode
+    {"B1",  OP_Branch,   0x34},
+    {"B2",  OP_Branch,   0x35},
+    {"B3",  OP_Branch,   0x36},
+    {"B4",  OP_Branch,   0x37},
+    {"SKP", OP_None,     0x38},
+    {"NBR", OP_Branch,   0x38}, // duplicate opcode
+    {"BNQ", OP_Branch,   0x39},
+    {"BNZ", OP_Branch,   0x3A},
+    {"BNF", OP_Branch,   0x3B},
+    {"BM",  OP_Branch,   0x3B}, // duplicate opcode
+    {"BL",  OP_Branch,   0x3B}, // duplicate opcode
+    {"BN1", OP_Branch,   0x3C},
+    {"BN2", OP_Branch,   0x3D},
+    {"BN3", OP_Branch,   0x3E},
+    {"BN4", OP_Branch,   0x3F},
+    {"LDA", OP_Register, 0x40},
+    {"STR", OP_Register, 0x50},
+    {"IRX", OP_None,     0x60},
+    {"OUT", OP_INPOUT,   0x60},
     // no opcode for 0x68
-    {"INP", o_INPOUT,   0x68},
-    {"RET", o_None,     0x70},
-    {"DIS", o_None,     0x71},
-    {"LDXA",o_None,     0x72},
-    {"STXD",o_None,     0x73},
-    {"ADC", o_None,     0x74},
-    {"SDB", o_None,     0x75},
-    {"SHRC",o_None,     0x76},
-    {"RSHR",o_None,     0x76}, // duplicate opcode
-    {"SMB", o_None,     0x77},
-    {"SAV", o_None,     0x78},
-    {"MARK",o_None,     0x79},
-    {"REQ", o_None,     0x7A},
-    {"SEQ", o_None,     0x7B},
-    {"ADCI",o_Immediate,0x7C},
-    {"SDBI",o_Immediate,0x7D},
-    {"SHLC",o_None,     0x7E},
-    {"RSHL",o_None,     0x7E}, // duplicate opcode
-    {"SMBI",o_Immediate,0x7F},
-    {"GLO", o_Register, 0x80},
-    {"GHI", o_Register, 0x90},
-    {"PLO", o_Register, 0xA0},
-    {"PHI", o_Register, 0xB0},
-    {"LBR", o_LBranch,  0xC0},
-    {"LBQ", o_LBranch,  0xC1},
-    {"LBZ", o_LBranch,  0xC2},
-    {"LBDF",o_LBranch,  0xC3},
-    {"NOP", o_None,     0xC4},
-    {"LSNQ",o_None,     0xC5},
-    {"LSNZ",o_None,     0xC6},
-    {"LSNF",o_None,     0xC7},
-    {"LSKP",o_None,     0xC8},
-    {"NLBR",o_LBranch,  0xC8}, // duplicate opcode
-    {"LBNQ",o_LBranch,  0xC9},
-    {"LBNZ",o_LBranch,  0xCA},
-    {"LBNF",o_LBranch,  0xCB},
-    {"LSIE",o_None,     0xCC},
-    {"LSQ", o_None,     0xCD},
-    {"LSZ", o_None,     0xCE},
-    {"LSDF",o_None,     0xCF},
-    {"SEP", o_Register, 0xD0},
-    {"SEX", o_Register, 0xE0},
-    {"LDX", o_None,     0xF0},
-    {"OR",  o_None,     0xF1},
-    {"AND", o_None,     0xF2},
-    {"XOR", o_None,     0xF3},
-    {"ADD", o_None,     0xF4},
-    {"SD",  o_None,     0xF5},
-    {"SHR", o_None,     0xF6},
-    {"SM",  o_None,     0xF7},
-    {"LDI", o_Immediate,0xF8},
-    {"ORI", o_Immediate,0xF9},
-    {"ANI", o_Immediate,0xFA},
-    {"XRI", o_Immediate,0xFB},
-    {"ADI", o_Immediate,0xFC},
-    {"SDI", o_Immediate,0xFD},
-    {"SHL", o_None,     0xFE},
-    {"SMI", o_Immediate,0xFF},
+    {"INP", OP_INPOUT,   0x68},
+    {"RET", OP_None,     0x70},
+    {"DIS", OP_None,     0x71},
+    {"LDXA",OP_None,     0x72},
+    {"STXD",OP_None,     0x73},
+    {"ADC", OP_None,     0x74},
+    {"SDB", OP_None,     0x75},
+    {"SHRC",OP_None,     0x76},
+    {"RSHR",OP_None,     0x76}, // duplicate opcode
+    {"SMB", OP_None,     0x77},
+    {"SAV", OP_None,     0x78},
+    {"MARK",OP_None,     0x79},
+    {"REQ", OP_None,     0x7A},
+    {"SEQ", OP_None,     0x7B},
+    {"ADCI",OP_Immediate,0x7C},
+    {"SDBI",OP_Immediate,0x7D},
+    {"SHLC",OP_None,     0x7E},
+    {"RSHL",OP_None,     0x7E}, // duplicate opcode
+    {"SMBI",OP_Immediate,0x7F},
+    {"GLO", OP_Register, 0x80},
+    {"GHI", OP_Register, 0x90},
+    {"PLO", OP_Register, 0xA0},
+    {"PHI", OP_Register, 0xB0},
+    {"LBR", OP_LBranch,  0xC0},
+    {"LBQ", OP_LBranch,  0xC1},
+    {"LBZ", OP_LBranch,  0xC2},
+    {"LBDF",OP_LBranch,  0xC3},
+    {"NOP", OP_None,     0xC4},
+    {"LSNQ",OP_None,     0xC5},
+    {"LSNZ",OP_None,     0xC6},
+    {"LSNF",OP_None,     0xC7},
+    {"LSKP",OP_None,     0xC8},
+    {"NLBR",OP_LBranch,  0xC8}, // duplicate opcode
+    {"LBNQ",OP_LBranch,  0xC9},
+    {"LBNZ",OP_LBranch,  0xCA},
+    {"LBNF",OP_LBranch,  0xCB},
+    {"LSIE",OP_None,     0xCC},
+    {"LSQ", OP_None,     0xCD},
+    {"LSZ", OP_None,     0xCE},
+    {"LSDF",OP_None,     0xCF},
+    {"SEP", OP_Register, 0xD0},
+    {"SEX", OP_Register, 0xE0},
+    {"LDX", OP_None,     0xF0},
+    {"OR",  OP_None,     0xF1},
+    {"AND", OP_None,     0xF2},
+    {"XOR", OP_None,     0xF3},
+    {"ADD", OP_None,     0xF4},
+    {"SD",  OP_None,     0xF5},
+    {"SHR", OP_None,     0xF6},
+    {"SM",  OP_None,     0xF7},
+    {"LDI", OP_Immediate,0xF8},
+    {"ORI", OP_Immediate,0xF9},
+    {"ANI", OP_Immediate,0xFA},
+    {"XRI", OP_Immediate,0xFB},
+    {"ADI", OP_Immediate,0xFC},
+    {"SDI", OP_Immediate,0xFD},
+    {"SHL", OP_None,     0xFE},
+    {"SMI", OP_Immediate,0xFF},
 
-    {"",    o_Illegal,  0}
+    {"",    OP_Illegal,  0}
 };
 
 
 // --------------------------------------------------------------
 
 
-static int Get_1802_Reg(void)
+static int R1802_GetReg(void)
 {
     Str255  word;
 
     char *oldLine = linePtr;
-    /*int token =*/ GetWord(word);
+    /*int token =*/ TOKEN_GetWord(word);
     if (word[0] == 'R')
     {
         // R0-R9
@@ -140,11 +140,11 @@ static int Get_1802_Reg(void)
 
     // otherwise evaluate an expression
     linePtr = oldLine;
-    return Eval();
+    return EXPR_Eval();
 }
 
 
-static int RCA1802_DoCPUOpcode(int typ, int parm)
+static int R1802_DoCPUOpcode(int typ, int parm)
 {
     int     val;
 //  Str255  word;
@@ -153,55 +153,55 @@ static int RCA1802_DoCPUOpcode(int typ, int parm)
 
     switch (typ)
     {
-        case o_None:
-            InstrB(parm);
+        case OP_None:
+            INSTR_B(parm);
             break;
 
-        case o_Register:
-            val = Get_1802_Reg();
+        case OP_Register:
+            val = R1802_GetReg();
             if (val < 0 || val > 15)
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
             }
             else if (val == 0 && parm == 0x00)
             {
-                IllegalOperand();   // don't allow LDN R0
+                ASMX_IllegalOperand();   // don't allow LDN R0
             }
             else
             {
-                InstrB(parm+val);
+                INSTR_B(parm+val);
             }
             break;
 
-        case o_Immediate:
-            val = EvalByte();
-            InstrBB(parm, val);
+        case OP_Immediate:
+            val = EXPR_EvalByte();
+            INSTR_BB(parm, val);
             break;
 
-        case o_Branch:
-            val = Eval();
+        case OP_Branch:
+            val = EXPR_Eval();
             // branch must go to same page as second byte of instruction
             if (((locPtr + 1) & 0xFF00) != (val & 0xFF00))
             {
-                Error("Branch out of range");
+                ASMX_Error("Branch out of range");
             }
-            InstrBB(parm, val);
+            INSTR_BB(parm, val);
             break;
 
-        case o_LBranch:
-            val = Eval();
-            InstrBW(parm, val);
+        case OP_LBranch:
+            val = EXPR_Eval();
+            INSTR_BW(parm, val);
             break;
 
-        case o_INPOUT:
-            val = Eval();
+        case OP_INPOUT:
+            val = EXPR_Eval();
             if (val < 1 || val > 7)
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
             }
             else
             {
-                InstrB(parm+val);
+                INSTR_B(parm+val);
             }
             break;
 
@@ -213,9 +213,9 @@ static int RCA1802_DoCPUOpcode(int typ, int parm)
 }
 
 
-void Asm1802Init(void)
+void R1802_AsmInit(void)
 {
-    void *p = AddAsm(versionName, &RCA1802_DoCPUOpcode, NULL, NULL);
+    void *p = ASMX_AddAsm(versionName, &R1802_DoCPUOpcode, NULL, NULL);
 
-    AddCPU(p, "1802", 0, BIG_END, ADDR_16, LIST_24, 8, 0, RCA1802_opcdTab);
+    ASMX_AddCPU(p, "1802", 0, END_BIG, ADDR_16, LIST_24, 8, 0, R1802_opcdTab);
 }

@@ -1,29 +1,29 @@
-// asm6502.c
+// asmM6502.c
 
-#define versionName "6502 assembler"
+#define versionName "M6502 assembler"
 #include "asmx.h"
 
 enum
 {
-    o_Implied,          // implied instructions
-    o_Implied_65C02,    // implied instructions for 65C02/65C816
-    o_Implied_6502U,    // implied instructions for undocumented 6502 only
-    o_Branch,           // branch instructions
-    o_Branch_65C02,     // branch instructions for 65C02/65C816
-    o_Mode,             // instructions with multiple addressing modes
-    o_Mode_65C02,       // o_Mode for 6502
-    o_Mode_6502U,       // o_Mode for undocumented 6502
-    o_RSMB,             // RMBn/SMBn instructions for 65C02 only
-    o_BBRS,             // BBRn/BBSn instructions for 65C02 only
+    OP_Implied,          // implied instructions
+    OP_Implied_65C02,    // implied instructions for 65C02/65C816
+    OP_Implied_6502U,    // implied instructions for undocumented 6502 only
+    OP_Branch,           // branch instructions
+    OP_Branch_65C02,     // branch instructions for 65C02/65C816
+    OP_Mode,             // instructions with multiple addressing modes
+    OP_Mode_65C02,       // OP_Mode for 6502
+    OP_Mode_6502U,       // OP_Mode for undocumented 6502
+    OP_RSMB,             // RMBn/SMBn instructions for 65C02 only
+    OP_BBRS,             // BBRn/BBSn instructions for 65C02 only
     // 65C816 instructions
-    o_Implied_65C816,   // implied instructions for 65C816 only
-    o_Mode_65C816,      // o_Mode for 65C816
-    o_BranchW,          // 16-bit branch for 65C816
-    o_BlockMove,        // MVN,MVP for 65C816
-    o_COP,              // COP for 65C816
+    OP_Implied_65C816,   // implied instructions for 65C816 only
+    OP_Mode_65C816,      // OP_Mode for 65C816
+    OP_BranchW,          // 16-bit branch for 65C816
+    OP_BlockMove,        // MVN,MVP for 65C816
+    OP_COP,              // COP for 65C816
 
-    o_LONGA = o_LabelOp,// .LONGA and .LONGI pseudo-ops for 65816
-    o_LONGI,
+    OP_LONGA = OP_LabelOp,// .LONGA and .LONGI pseudo-ops for 65816
+    OP_LONGI,
 };
 
 enum cputype
@@ -35,93 +35,93 @@ bool longa, longi;      // 65816 operand size flags
 
 enum addrMode
 {
-    a_None = -1,// -1 invalid addressing mode
-    a_Imm,      //  0 Immediate        #byte
-    a_Abs,      //  1 Absolute         word
-    a_Zpg,      //  2 Z-Page           byte
-    a_Acc,      //  3 Accumulator      A (or no operand)
-    a_Inx,      //  4 Indirect X       (byte,X)
-    a_Iny,      //  5 Indirect Y       (byte),Y
-    a_Zpx,      //  6 Z-Page X         byte,X
-    a_Abx,      //  7 Absolute X       word,X
-    a_Aby,      //  8 Absolute Y       word,Y
-    a_Ind,      //  9 Indirect         (word)
-    a_Zpy,      // 10 Z-Page Y         byte,Y
-    a_Zpi,      // 11 Z-Page Indirect  (byte) 65C02/65C816 only
+    MADR_None = -1,// -1 invalid addressing mode
+    MADR_Imm,      //  0 Immediate        #byte
+    MADR_Abs,      //  1 Absolute         word
+    MADR_Zpg,      //  2 Z-Page           byte
+    MADR_Acc,      //  3 Accumulator      A (or no operand)
+    MADR_Inx,      //  4 Indirect X       (byte,X)
+    MADR_Iny,      //  5 Indirect Y       (byte),Y
+    MADR_Zpx,      //  6 Z-Page X         byte,X
+    MADR_Abx,      //  7 Absolute X       word,X
+    MADR_Aby,      //  8 Absolute Y       word,Y
+    MADR_Ind,      //  9 Indirect         (word)
+    MADR_Zpy,      // 10 Z-Page Y         byte,Y
+    MADR_Zpi,      // 11 Z-Page Indirect  (byte) 65C02/65C816 only
     // 65C816 modes
-    a_AbL,      // 12 Absolute Long        al
-    a_ALX,      // 13 Absolute Long X      al,x
-    a_DIL,      // 14 Direct Indirect Long [d]
-    a_DIY,      // 15 Direct Indirect Y    [d],Y
-    a_Stk,      // 16 Stack Relative       d,S
-    a_SIY,      // 17 Stack Indirect Y     (d,S),Y
-    a_Max,      // 18
-    a_Imm16,    // -- Immediate 16-bit, only generated in a_Imm
+    MADR_AbL,      // 12 Absolute Long        al
+    MADR_ALX,      // 13 Absolute Long X      al,x
+    MADR_DIL,      // 14 Direct Indirect Long [d]
+    MADR_DIY,      // 15 Direct Indirect Y    [d],Y
+    MADR_Stk,      // 16 Stack Relative       d,S
+    MADR_SIY,      // 17 Stack Indirect Y     (d,S),Y
+    MADR_Max,      // 18
+    MADR_Imm16,    // -- Immediate 16-bit, only generated in MADR_Imm
 };
 
 enum addrOps
 {
-    o_ORA,      //  0
-    o_ASL,      //  1
-    o_JSR,      //  2
-    o_AND,      //  3
-    o_BIT,      //  4
-    o_ROL,      //  5
-    o_EOR,      //  6
-    o_LSR,      //  7
-    o_JMP,      //  8
-    o_ADC,      //  9
-    o_ROR,      // 10
-    o_STA,      // 11
-    o_STY,      // 12
-    o_STX,      // 13
-    o_LDY,      // 14
-    o_LDA,      // 15
-    o_LDX,      // 16
-    o_CPY,      // 17
-    o_CMP,      // 18
-    o_DEC,      // 19
-    o_CPX,      // 20
-    o_SBC,      // 21
-    o_INC,      // 22
+    MOP_ORA,      //  0
+    MOP_ASL,      //  1
+    MOP_JSR,      //  2
+    MOP_AND,      //  3
+    MOP_BIT,      //  4
+    MOP_ROL,      //  5
+    MOP_EOR,      //  6
+    MOP_LSR,      //  7
+    MOP_JMP,      //  8
+    MOP_ADC,      //  9
+    MOP_ROR,      // 10
+    MOP_STA,      // 11
+    MOP_STY,      // 12
+    MOP_STX,      // 13
+    MOP_LDY,      // 14
+    MOP_LDA,      // 15
+    MOP_LDX,      // 16
+    MOP_CPY,      // 17
+    MOP_CMP,      // 18
+    MOP_DEC,      // 19
+    MOP_CPX,      // 20
+    MOP_SBC,      // 21
+    MOP_INC,      // 22
 
-    o_Extra,    // 23
+    MOP_Extra,    // 23
 
-//  o_Mode_6502U
+//  OP_Mode_6502U
 
-    o_LAX = o_Extra, // 23
-    o_DCP,
-    o_ISB,
-    o_RLA,
-    o_RRA,
-    o_SAX,
-    o_SLO,
-    o_SRE,
-    o_ANC,
-    o_ARR,
-    o_ASR,
-    o_SBX,
+    MOP_LAX = MOP_Extra, // 23
+    MOP_DCP,
+    MOP_ISB,
+    MOP_RLA,
+    MOP_RRA,
+    MOP_SAX,
+    MOP_SLO,
+    MOP_SRE,
+    MOP_ANC,
+    MOP_ARR,
+    MOP_ASR,
+    MOP_SBX,
 
-//  o_Mode_65C02
+//  OP_Mode_65C02
 
-    o_STZ = o_Extra, // 23
-    o_TSB,      // 24
-    o_TRB,      // 25
+    MOP_STZ = MOP_Extra, // 23
+    MOP_TSB,      // 24
+    MOP_TRB,      // 25
 
-//  o_Mode_65C816
+//  OP_Mode_65C816
 
-    o_JSL,      // 26
-    o_JML,      // 27
-    o_REP,      // 28
-    o_SEP,      // 29
-    o_PEI,      // 30
-    o_PEA,      // 31
+    MOP_JSL,      // 26
+    MOP_JML,      // 27
+    MOP_REP,      // 28
+    MOP_SEP,      // 29
+    MOP_PEI,      // 30
+    MOP_PEA,      // 31
 
-    o_Max       // 32
+    MOP_Max       // 32
 };
 
 
-static const uint8_t mode2op6502[] =   // [o_Max * a_Max] =
+static const uint8_t mode2op6502[] =   // [MOP_Max * MADR_Max] =
 {
 // Imm=0 Abs=1 Zpg=2 Acc=3 Inx=4 Iny=5 Zpx=6 Abx=7 Aby=8 Ind=9 Zpy=10 Zpi=11
     0x09, 0x0D, 0x05,    0, 0x01, 0x11, 0x15, 0x1D, 0x19,    0,    0,    0, 0,0,0,0,0,0, //  0 ORA
@@ -164,7 +164,7 @@ static const uint8_t mode2op6502[] =   // [o_Max * a_Max] =
 };
 
 
-static const uint8_t mode2op65C02[] =   // [o_Max * a_Max] =
+static const uint8_t mode2op65C02[] =   // [MOP_Max * MADR_Max] =
 {
 // Imm=0 Abs=1 Zpg=2 Acc=3 Inx=4 Iny=5 Zpx=6 Abx=7 Aby=8 Ind=9 Zpy=10 Zpi=11
     0x09, 0x0D, 0x05,    0, 0x01, 0x11, 0x15, 0x1D, 0x19,    0,    0, 0x12, 0,0,0,0,0,0, //  0 ORA
@@ -197,7 +197,7 @@ static const uint8_t mode2op65C02[] =   // [o_Max * a_Max] =
 };
 
 
-static const uint8_t mode2op65C816[] =   // [o_Max * a_Max] =
+static const uint8_t mode2op65C816[] =   // [MOP_Max * MADR_Max] =
 {
 // Imm=0 Abs=1 Zpg=2 Acc=3 Inx=4 Iny=5 Zpx=6 Abx=7 Aby=8 Ind=9 Zpy10 Zpi11 AbL12 ALX13 DIL14 DIY15 Stk16 SIY17
     0x09, 0x0D, 0x05,    0, 0x01, 0x11, 0x15, 0x1D, 0x19,    0,    0, 0x12, 0x0F, 0x1F, 0x07, 0x17, 0x03, 0x13, //  0 ORA
@@ -243,176 +243,176 @@ static const uint8_t mode2op65C816[] =   // [o_Max * a_Max] =
 
 static const struct OpcdRec M6502_opcdTab[] =
 {
-    {"BRK",  o_Implied, 0x00},
-    {"PHP",  o_Implied, 0x08},
-    {"CLC",  o_Implied, 0x18},
-    {"PLP",  o_Implied, 0x28},
-    {"SEC",  o_Implied, 0x38},
-    {"RTI",  o_Implied, 0x40},
-    {"PHA",  o_Implied, 0x48},
-    {"CLI",  o_Implied, 0x58},
-    {"RTS",  o_Implied, 0x60},
-    {"PLA",  o_Implied, 0x68},
-    {"SEI",  o_Implied, 0x78},
-    {"DEY",  o_Implied, 0x88},
-    {"TXA",  o_Implied, 0x8A},
-    {"TYA",  o_Implied, 0x98},
-    {"TXS",  o_Implied, 0x9A},
-    {"TAY",  o_Implied, 0xA8},
-    {"TAX",  o_Implied, 0xAA},
-    {"CLV",  o_Implied, 0xB8},
-    {"TSX",  o_Implied, 0xBA},
-    {"INY",  o_Implied, 0xC8},
-    {"DEX",  o_Implied, 0xCA},
-    {"CLD",  o_Implied, 0xD8},
-    {"INX",  o_Implied, 0xE8},
-    {"NOP",  o_Implied, 0xEA},
-    {"SED",  o_Implied, 0xF8},
+    {"BRK",  OP_Implied, 0x00},
+    {"PHP",  OP_Implied, 0x08},
+    {"CLC",  OP_Implied, 0x18},
+    {"PLP",  OP_Implied, 0x28},
+    {"SEC",  OP_Implied, 0x38},
+    {"RTI",  OP_Implied, 0x40},
+    {"PHA",  OP_Implied, 0x48},
+    {"CLI",  OP_Implied, 0x58},
+    {"RTS",  OP_Implied, 0x60},
+    {"PLA",  OP_Implied, 0x68},
+    {"SEI",  OP_Implied, 0x78},
+    {"DEY",  OP_Implied, 0x88},
+    {"TXA",  OP_Implied, 0x8A},
+    {"TYA",  OP_Implied, 0x98},
+    {"TXS",  OP_Implied, 0x9A},
+    {"TAY",  OP_Implied, 0xA8},
+    {"TAX",  OP_Implied, 0xAA},
+    {"CLV",  OP_Implied, 0xB8},
+    {"TSX",  OP_Implied, 0xBA},
+    {"INY",  OP_Implied, 0xC8},
+    {"DEX",  OP_Implied, 0xCA},
+    {"CLD",  OP_Implied, 0xD8},
+    {"INX",  OP_Implied, 0xE8},
+    {"NOP",  OP_Implied, 0xEA},
+    {"SED",  OP_Implied, 0xF8},
 
-    {"ASLA", o_Implied, 0x0A},
-    {"ROLA", o_Implied, 0x2A},
-    {"LSRA", o_Implied, 0x4A},
-    {"RORA", o_Implied, 0x6A},
+    {"ASLA", OP_Implied, 0x0A},
+    {"ROLA", OP_Implied, 0x2A},
+    {"LSRA", OP_Implied, 0x4A},
+    {"RORA", OP_Implied, 0x6A},
 
-    {"BPL",  o_Branch, 0x10},
-    {"BMI",  o_Branch, 0x30},
-    {"BVC",  o_Branch, 0x50},
-    {"BVS",  o_Branch, 0x70},
-    {"BCC",  o_Branch, 0x90},
-    {"BCS",  o_Branch, 0xB0},
-    {"BNE",  o_Branch, 0xD0},
-    {"BEQ",  o_Branch, 0xF0},
+    {"BPL",  OP_Branch, 0x10},
+    {"BMI",  OP_Branch, 0x30},
+    {"BVC",  OP_Branch, 0x50},
+    {"BVS",  OP_Branch, 0x70},
+    {"BCC",  OP_Branch, 0x90},
+    {"BCS",  OP_Branch, 0xB0},
+    {"BNE",  OP_Branch, 0xD0},
+    {"BEQ",  OP_Branch, 0xF0},
 
-    {"ORA",  o_Mode, o_ORA},
-    {"ASL",  o_Mode, o_ASL},
-    {"JSR",  o_Mode, o_JSR},
-    {"AND",  o_Mode, o_AND},
-    {"BIT",  o_Mode, o_BIT},
-    {"ROL",  o_Mode, o_ROL},
-    {"EOR",  o_Mode, o_EOR},
-    {"LSR",  o_Mode, o_LSR},
-    {"JMP",  o_Mode, o_JMP},
-    {"ADC",  o_Mode, o_ADC},
-    {"ROR",  o_Mode, o_ROR},
-    {"STA",  o_Mode, o_STA},
-    {"STY",  o_Mode, o_STY},
-    {"STX",  o_Mode, o_STX},
-    {"LDY",  o_Mode, o_LDY},
-    {"LDA",  o_Mode, o_LDA},
-    {"LDX",  o_Mode, o_LDX},
-    {"CPY",  o_Mode, o_CPY},
-    {"CMP",  o_Mode, o_CMP},
-    {"DEC",  o_Mode, o_DEC},
-    {"CPX",  o_Mode, o_CPX},
-    {"SBC",  o_Mode, o_SBC},
-    {"INC",  o_Mode, o_INC},
+    {"ORA",  OP_Mode, MOP_ORA},
+    {"ASL",  OP_Mode, MOP_ASL},
+    {"JSR",  OP_Mode, MOP_JSR},
+    {"AND",  OP_Mode, MOP_AND},
+    {"BIT",  OP_Mode, MOP_BIT},
+    {"ROL",  OP_Mode, MOP_ROL},
+    {"EOR",  OP_Mode, MOP_EOR},
+    {"LSR",  OP_Mode, MOP_LSR},
+    {"JMP",  OP_Mode, MOP_JMP},
+    {"ADC",  OP_Mode, MOP_ADC},
+    {"ROR",  OP_Mode, MOP_ROR},
+    {"STA",  OP_Mode, MOP_STA},
+    {"STY",  OP_Mode, MOP_STY},
+    {"STX",  OP_Mode, MOP_STX},
+    {"LDY",  OP_Mode, MOP_LDY},
+    {"LDA",  OP_Mode, MOP_LDA},
+    {"LDX",  OP_Mode, MOP_LDX},
+    {"CPY",  OP_Mode, MOP_CPY},
+    {"CMP",  OP_Mode, MOP_CMP},
+    {"DEC",  OP_Mode, MOP_DEC},
+    {"CPX",  OP_Mode, MOP_CPX},
+    {"SBC",  OP_Mode, MOP_SBC},
+    {"INC",  OP_Mode, MOP_INC},
 
     // 65C02 opcodes
 
-    {"INCA", o_Implied_65C02, 0x1A},
-    {"INA",  o_Implied_65C02, 0x1A},
-    {"DECA", o_Implied_65C02, 0x3A},
-    {"DEA",  o_Implied_65C02, 0x3A},
-    {"PHY",  o_Implied_65C02, 0x5A},
-    {"PLY",  o_Implied_65C02, 0x7A},
-    {"PHX",  o_Implied_65C02, 0xDA},
-    {"PLX",  o_Implied_65C02, 0xFA},
+    {"INCA", OP_Implied_65C02, 0x1A},
+    {"INA",  OP_Implied_65C02, 0x1A},
+    {"DECA", OP_Implied_65C02, 0x3A},
+    {"DEA",  OP_Implied_65C02, 0x3A},
+    {"PHY",  OP_Implied_65C02, 0x5A},
+    {"PLY",  OP_Implied_65C02, 0x7A},
+    {"PHX",  OP_Implied_65C02, 0xDA},
+    {"PLX",  OP_Implied_65C02, 0xFA},
 
-    {"BRA",  o_Branch_65C02, 0x80},
+    {"BRA",  OP_Branch_65C02, 0x80},
 
-    {"STZ",  o_Mode_65C02, o_STZ},
-    {"TSB",  o_Mode_65C02, o_TSB},
-    {"TRB",  o_Mode_65C02, o_TRB},
+    {"STZ",  OP_Mode_65C02, MOP_STZ},
+    {"TSB",  OP_Mode_65C02, MOP_TSB},
+    {"TRB",  OP_Mode_65C02, MOP_TRB},
 
-    {"RMB0", o_RSMB, 0x07},
-    {"RMB1", o_RSMB, 0x17},
-    {"RMB2", o_RSMB, 0x27},
-    {"RMB3", o_RSMB, 0x37},
-    {"RMB4", o_RSMB, 0x47},
-    {"RMB5", o_RSMB, 0x57},
-    {"RMB6", o_RSMB, 0x67},
-    {"RMB7", o_RSMB, 0x77},
+    {"RMB0", OP_RSMB, 0x07},
+    {"RMB1", OP_RSMB, 0x17},
+    {"RMB2", OP_RSMB, 0x27},
+    {"RMB3", OP_RSMB, 0x37},
+    {"RMB4", OP_RSMB, 0x47},
+    {"RMB5", OP_RSMB, 0x57},
+    {"RMB6", OP_RSMB, 0x67},
+    {"RMB7", OP_RSMB, 0x77},
 
-    {"SMB0", o_RSMB, 0x87},
-    {"SMB1", o_RSMB, 0x97},
-    {"SMB2", o_RSMB, 0xA7},
-    {"SMB3", o_RSMB, 0xB7},
-    {"SMB4", o_RSMB, 0xC7},
-    {"SMB5", o_RSMB, 0xD7},
-    {"SMB6", o_RSMB, 0xE7},
-    {"SMB7", o_RSMB, 0xF7},
+    {"SMB0", OP_RSMB, 0x87},
+    {"SMB1", OP_RSMB, 0x97},
+    {"SMB2", OP_RSMB, 0xA7},
+    {"SMB3", OP_RSMB, 0xB7},
+    {"SMB4", OP_RSMB, 0xC7},
+    {"SMB5", OP_RSMB, 0xD7},
+    {"SMB6", OP_RSMB, 0xE7},
+    {"SMB7", OP_RSMB, 0xF7},
 
-    {"BBR0", o_BBRS, 0x0F},
-    {"BBR1", o_BBRS, 0x1F},
-    {"BBR2", o_BBRS, 0x2F},
-    {"BBR3", o_BBRS, 0x3F},
-    {"BBR4", o_BBRS, 0x4F},
-    {"BBR5", o_BBRS, 0x5F},
-    {"BBR6", o_BBRS, 0x6F},
-    {"BBR7", o_BBRS, 0x7F},
+    {"BBR0", OP_BBRS, 0x0F},
+    {"BBR1", OP_BBRS, 0x1F},
+    {"BBR2", OP_BBRS, 0x2F},
+    {"BBR3", OP_BBRS, 0x3F},
+    {"BBR4", OP_BBRS, 0x4F},
+    {"BBR5", OP_BBRS, 0x5F},
+    {"BBR6", OP_BBRS, 0x6F},
+    {"BBR7", OP_BBRS, 0x7F},
 
-    {"BBS0", o_BBRS, 0x8F},
-    {"BBS1", o_BBRS, 0x9F},
-    {"BBS2", o_BBRS, 0xAF},
-    {"BBS3", o_BBRS, 0xBF},
-    {"BBS4", o_BBRS, 0xCF},
-    {"BBS5", o_BBRS, 0xDF},
-    {"BBS6", o_BBRS, 0xEF},
-    {"BBS7", o_BBRS, 0xFF},
+    {"BBS0", OP_BBRS, 0x8F},
+    {"BBS1", OP_BBRS, 0x9F},
+    {"BBS2", OP_BBRS, 0xAF},
+    {"BBS3", OP_BBRS, 0xBF},
+    {"BBS4", OP_BBRS, 0xCF},
+    {"BBS5", OP_BBRS, 0xDF},
+    {"BBS6", OP_BBRS, 0xEF},
+    {"BBS7", OP_BBRS, 0xFF},
 
     // 65C816 opcodes
 
-    {"PHD",  o_Implied_65C816, 0x0B},
-    {"TCS",  o_Implied_65C816, 0x1B},
-    {"PLD",  o_Implied_65C816, 0x2B},
-    {"TSC",  o_Implied_65C816, 0x3B},
-    {"WDM",  o_Implied_65C816, 0x42},
-    {"PHK",  o_Implied_65C816, 0x4B},
-    {"TCD",  o_Implied_65C816, 0x5B},
-    {"RTL",  o_Implied_65C816, 0x6B},
-    {"TDC",  o_Implied_65C816, 0x7B},
-    {"PHB",  o_Implied_65C816, 0x8B},
-    {"TXY",  o_Implied_65C816, 0x9B},
-    {"PLB",  o_Implied_65C816, 0xAB},
-    {"TYX",  o_Implied_65C816, 0xBB},
-    {"WAI",  o_Implied_65C816, 0xCB},
-    {"STP",  o_Implied_65C816, 0xDB},
-    {"XBA",  o_Implied_65C816, 0xEB},
-    {"XCE",  o_Implied_65C816, 0xFB},
-    {"PER",  o_BranchW,        0x62},
-    {"BRL",  o_BranchW,        0x82},
-    {"MVP",  o_BlockMove,      0x44},
-    {"MVN",  o_BlockMove,      0x54},
-    {"COP",  o_COP,            0x02},
-    {"JSL",  o_Mode_65C816,    o_JSL},
-    {"REP",  o_Mode_65C816,    o_REP},
-    {"PEI",  o_Mode_65C816,    o_PEI},
-    {"JML",  o_Mode_65C816,    o_JML},
-    {"SEP",  o_Mode_65C816,    o_SEP},
-    {"PEA",  o_Mode_65C816,    o_PEA},
+    {"PHD",  OP_Implied_65C816, 0x0B},
+    {"TCS",  OP_Implied_65C816, 0x1B},
+    {"PLD",  OP_Implied_65C816, 0x2B},
+    {"TSC",  OP_Implied_65C816, 0x3B},
+    {"WDM",  OP_Implied_65C816, 0x42},
+    {"PHK",  OP_Implied_65C816, 0x4B},
+    {"TCD",  OP_Implied_65C816, 0x5B},
+    {"RTL",  OP_Implied_65C816, 0x6B},
+    {"TDC",  OP_Implied_65C816, 0x7B},
+    {"PHB",  OP_Implied_65C816, 0x8B},
+    {"TXY",  OP_Implied_65C816, 0x9B},
+    {"PLB",  OP_Implied_65C816, 0xAB},
+    {"TYX",  OP_Implied_65C816, 0xBB},
+    {"WAI",  OP_Implied_65C816, 0xCB},
+    {"STP",  OP_Implied_65C816, 0xDB},
+    {"XBA",  OP_Implied_65C816, 0xEB},
+    {"XCE",  OP_Implied_65C816, 0xFB},
+    {"PER",  OP_BranchW,        0x62},
+    {"BRL",  OP_BranchW,        0x82},
+    {"MVP",  OP_BlockMove,      0x44},
+    {"MVN",  OP_BlockMove,      0x54},
+    {"COP",  OP_COP,            0x02},
+    {"JSL",  OP_Mode_65C816,    MOP_JSL},
+    {"REP",  OP_Mode_65C816,    MOP_REP},
+    {"PEI",  OP_Mode_65C816,    MOP_PEI},
+    {"JML",  OP_Mode_65C816,    MOP_JML},
+    {"SEP",  OP_Mode_65C816,    MOP_SEP},
+    {"PEA",  OP_Mode_65C816,    MOP_PEA},
 
     // These set the hint for whether A / X / Y immediate operands
     // They are OFF for 8-bit or ON for 16-bit
-    {".LONGA", o_LONGA,  0}, // for A (and C)
-    {".LONGI", o_LONGI,  0}, // for X and Y
+    {".LONGA", OP_LONGA,  0}, // for A (and C)
+    {".LONGI", OP_LONGI,  0}, // for X and Y
 
 //  undocumented instructions for original 6502 only
 //  see http://www.s-direktnet.de/homepages/k_nadj/opcodes.html
-    {"NOP3", o_Implied_6502U, 0x0400},  // 3-cycle NOP
-    {"LAX",  o_Mode_6502U,    o_LAX},   // LDA + LDX
-    {"DCP",  o_Mode_6502U,    o_DCP},   // DEC + CMP (also called DCM)
-    {"ISB",  o_Mode_6502U,    o_ISB},   // INC + SBC (also called INS and ISC)
-    {"RLA",  o_Mode_6502U,    o_RLA},   // ROL + AND
-    {"RRA",  o_Mode_6502U,    o_RRA},   // ROR + ADC
-    {"SAX",  o_Mode_6502U,    o_SAX},   // store (A & X) (also called AXS)
-    {"SLO",  o_Mode_6502U,    o_SLO},   // ASL + ORA (also called ASO)
-    {"SRE",  o_Mode_6502U,    o_SRE},   // LSR + EOR (also called LSE)
-    {"ANC",  o_Mode_6502U,    o_ANC},   // AND# with bit 7 copied to C flag (also called AAC)
-    {"ARR",  o_Mode_6502U,    o_ARR},   // AND# + RORA with strange flag results
-    {"ASR",  o_Mode_6502U,    o_ASR},   // AND# + LSRA (also called ALR)
-    {"SBX",  o_Mode_6502U,    o_SBX},   // X = (A & X) - #nn (also called ASX and SAX)
+    {"NOP3", OP_Implied_6502U, 0x0400},  // 3-cycle NOP
+    {"LAX",  OP_Mode_6502U,    MOP_LAX},   // LDA + LDX
+    {"DCP",  OP_Mode_6502U,    MOP_DCP},   // DEC + CMP (also called DCM)
+    {"ISB",  OP_Mode_6502U,    MOP_ISB},   // INC + SBC (also called INS and ISC)
+    {"RLA",  OP_Mode_6502U,    MOP_RLA},   // ROL + AND
+    {"RRA",  OP_Mode_6502U,    MOP_RRA},   // ROR + ADC
+    {"SAX",  OP_Mode_6502U,    MOP_SAX},   // store (A & X) (also called AXS)
+    {"SLO",  OP_Mode_6502U,    MOP_SLO},   // ASL + ORA (also called ASO)
+    {"SRE",  OP_Mode_6502U,    MOP_SRE},   // LSR + EOR (also called LSE)
+    {"ANC",  OP_Mode_6502U,    MOP_ANC},   // AND# with bit 7 copied to C flag (also called AAC)
+    {"ARR",  OP_Mode_6502U,    MOP_ARR},   // AND# + RORA with strange flag results
+    {"ASR",  OP_Mode_6502U,    MOP_ASR},   // AND# + LSRA (also called ALR)
+    {"SBX",  OP_Mode_6502U,    MOP_SBX},   // X = (A & X) - #nn (also called ASX and SAX)
 
-    {"",     o_Illegal, 0}
+    {"",     OP_Illegal, 0}
 };
 
 
@@ -427,71 +427,71 @@ static int M6502_DoCPUOpcode(int typ, int parm)
     int     token;
     int     opcode;
     int     mode;
-    const   uint8_t *modes;     // pointer to current o_Mode instruction's opcodes
+    const   uint8_t *modes;     // pointer to current OP_Mode instruction's opcodes
 
     switch (typ)
     {
-        case o_Implied_65C816:
+        case OP_Implied_65C816:
             if (curCPU != CPU_65C816) return 0;
             FALLTHROUGH;
-        case o_Implied_65C02:
+        case OP_Implied_65C02:
             if (curCPU != CPU_65C02 && curCPU != CPU_65C816) return 0;
             FALLTHROUGH;
-        case o_Implied_6502U:
-            if (typ == o_Implied_6502U && curCPU != CPU_6502U) return 0;
+        case OP_Implied_6502U:
+            if (typ == OP_Implied_6502U && curCPU != CPU_6502U) return 0;
             FALLTHROUGH;
-        case o_Implied:
+        case OP_Implied:
             if (parm > 256)
             {
-                InstrBB(parm >> 8, parm & 255);
+                INSTR_BB(parm >> 8, parm & 255);
             }
             else
             {
-                InstrB (parm);
+                INSTR_B (parm);
             }
             break;
 
-        case o_Branch_65C02:
+        case OP_Branch_65C02:
             if (curCPU == CPU_6502) return 0;
             FALLTHROUGH;
-        case o_Branch:
-            val = EvalBranch(2);
-            InstrBB(parm, val);
+        case OP_Branch:
+            val = EXPR_EvalBranch(2);
+            INSTR_BB(parm, val);
             break;
 
-        case o_Mode_65C816:
+        case OP_Mode_65C816:
             if (curCPU != CPU_65C816) return 0;
             FALLTHROUGH;
-        case o_Mode_65C02:
+        case OP_Mode_65C02:
             if (curCPU != CPU_65C02 && curCPU != CPU_65C816) return 0;
             FALLTHROUGH;
-        case o_Mode_6502U:
-            if (typ == o_Mode_6502U && curCPU != CPU_6502U) return 0;
+        case OP_Mode_6502U:
+            if (typ == OP_Mode_6502U && curCPU != CPU_6502U) return 0;
             FALLTHROUGH;
-        case o_Mode:
+        case OP_Mode:
             instrLen = 0;
             oldLine = linePtr;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
 
             if      (curCPU == CPU_65C02)  modes = mode2op65C02;
             else if (curCPU == CPU_65C816) modes = mode2op65C816;
             else                           modes = mode2op6502;
-            modes = modes + parm * a_Max;
+            modes = modes + parm * MADR_Max;
 
             opcode = 0;
-            mode = a_None;
+            mode = MADR_None;
             val  = 0;
 
             if (!token)
             {
-                mode = a_Acc;    // accumulator
+                mode = MADR_Acc;    // accumulator
             }
             else
             {
                 switch (token)
                 {
                     case '#':   // immediate
-                        mode = a_Imm;
+                        mode = MADR_Imm;
                         opcode = modes[mode];
                         // check for 65C816 16-bit immediate
                         if (curCPU == CPU_65C816)
@@ -504,13 +504,13 @@ static int M6502_DoCPUOpcode(int typ, int parm)
 
                             // peek at next token and check for '<' or '>' address force
                             oldLine = linePtr;
-                            token = GetWord(word);
+                            token = TOKEN_GetWord(word);
                             if ((can_longa || can_longi) && (token == '<' || token == '>'))
                             {
                                 // use 16-bit mode if '>' forced
                                 if (token == '>')
                                 {
-                                    mode = a_Imm16;
+                                    mode = MADR_Imm16;
                                 }
                             }
                             else
@@ -520,33 +520,33 @@ static int M6502_DoCPUOpcode(int typ, int parm)
                                 // and generate 16-bit immediate if set
                                 if ((longa && can_longa) || (longi && can_longi))
                                 {
-                                    mode = a_Imm16;
+                                    mode = MADR_Imm16;
                                 }
                             }
                         }
-                        val = Eval();
+                        val = EXPR_Eval();
                         break;
 
                     case '(':   // indirect X,Y
-                        val   = Eval();
-                        token = GetWord(word);
+                        val   = EXPR_Eval();
+                        token = TOKEN_GetWord(word);
                         switch (token)
                         {
                             case ',':   // (val,X)
-                                switch (GetReg("X S"))
+                                switch (REG_Get("X S"))
                                 {
                                     case 0: // ,X
-                                        RParen();
-                                        mode = a_Inx;
+                                        TOKEN_RParen();
+                                        mode = MADR_Inx;
                                         break;
 
                                     case 1: // ,S
                                         if (curCPU == CPU_65C816)
                                         {
-                                            if (RParen()) break;
-                                            if (Comma()) break;
-                                            if (Expect("Y")) break;
-                                            mode = a_SIY;
+                                            if (TOKEN_RParen()) break;
+                                            if (TOKEN_Comma()) break;
+                                            if (TOKEN_Expect("Y")) break;
+                                            mode = MADR_SIY;
                                         }
                                     default:
                                         ; // fall through to report bad mode
@@ -554,42 +554,42 @@ static int M6502_DoCPUOpcode(int typ, int parm)
                                 break;
 
                             case ')':   // (val) -and- (val),Y
-                                token = GetWord(word);
+                                token = TOKEN_GetWord(word);
                                 switch (token)
                                 {
                                     case 0:
-                                        mode = a_Ind;
+                                        mode = MADR_Ind;
                                         if (val >= 0 && val < 256 && evalKnown &&
-                                                (modes[a_Zpi] != 0))
+                                                (modes[MADR_Zpi] != 0))
                                         {
-                                            mode = a_Zpi;
+                                            mode = MADR_Zpi;
                                         }
                                         else
                                         {
-                                            mode = a_Ind;
+                                            mode = MADR_Ind;
                                         }
                                         break;
                                     case ',':
-                                        Expect("Y");
-                                        mode = a_Iny;
+                                        TOKEN_Expect("Y");
+                                        mode = MADR_Iny;
                                         break;
                                 }
                                 break;
 
                             default:
-                                mode = a_None;
+                                mode = MADR_None;
                                 break;
                         }
                         break;
 
-                    case '[':   // a_DIL [d] and a_DIY [d],Y
+                    case '[':   // MADR_DIL [d] and MADR_DIY [d],Y
                         if (curCPU == CPU_65C816)
                         {
-                            val = Eval();
-                            Expect("]");
-                            mode = a_DIL;
+                            val = EXPR_Eval();
+                            TOKEN_Expect("]");
+                            mode = MADR_DIL;
                             oldLine = linePtr;
-                            switch (GetWord(word))
+                            switch (TOKEN_GetWord(word))
                             {
                                 default:
                                     linePtr = oldLine;
@@ -599,13 +599,13 @@ static int M6502_DoCPUOpcode(int typ, int parm)
                                     break;
 
                                 case ',':
-                                    if (GetReg("Y") == 0)
+                                    if (REG_Get("Y") == 0)
                                     {
-                                        mode = a_DIY;
+                                        mode = MADR_DIY;
                                     }
                                     else
                                     {
-                                        mode = a_None;
+                                        mode = MADR_None;
                                     }
                             }
                             break;
@@ -614,14 +614,14 @@ static int M6502_DoCPUOpcode(int typ, int parm)
                         FALLTHROUGH;
 
                     default:    // everything else
-                        if (FindReg(word, "A") == 0)
+                        if (REG_Find(word, "A") == 0)
                         {
                             // accumulator
-                            token = GetWord(word);
+                            token = TOKEN_GetWord(word);
                             if (token == 0)
                             {
                                 // mustn't have anything after the 'A'
-                                mode = a_Acc;
+                                mode = MADR_Acc;
                             }
                         }
                         else
@@ -638,7 +638,7 @@ static int M6502_DoCPUOpcode(int typ, int parm)
                                 // check for a second '>' to force 24-bit mode
                                 // this will cause no difference if only 16-bit mode is available
                                 oldLine = linePtr;
-                                token = GetWord(word);
+                                token = TOKEN_GetWord(word);
                                 if (token == '>')
                                 {
                                     force24 = true;
@@ -654,56 +654,56 @@ static int M6502_DoCPUOpcode(int typ, int parm)
                                 linePtr = oldLine;
                             }
 
-                            val   = Eval();
-                            token = GetWord(word);
+                            val   = EXPR_Eval();
+                            token = TOKEN_GetWord(word);
 
                             switch (token)
                             {
                                 case 0:     // abs or zpg
                                     if (val >= 0 && val < 256 && !forceabs &&
-                                            evalKnown && (modes[a_Zpg] != 0))
+                                            evalKnown && (modes[MADR_Zpg] != 0))
                                     {
-                                        mode = a_Zpg;
+                                        mode = MADR_Zpg;
                                     }
                                     else
                                     {
-                                        mode = a_Abs;
+                                        mode = MADR_Abs;
                                     }
-                                    if (evalKnown && modes[a_AbL] != 0 && ((val & 0xFF0000) != 0 || force24))
+                                    if (evalKnown && modes[MADR_AbL] != 0 && ((val & 0xFF0000) != 0 || force24))
                                     {
-                                        mode = a_AbL;
+                                        mode = MADR_AbL;
                                     }
                                     break;
 
                                 case ',':   // indexed ,x or ,y or ,s
-                                    switch (GetReg("X Y S"))
+                                    switch (REG_Get("X Y S"))
                                     {
                                         case 0: // ,X
                                             if (val >= 0 && val < 256 && !forceabs &&
-                                                    (evalKnown || modes[a_Abx] == 0))
+                                                    (evalKnown || modes[MADR_Abx] == 0))
                                             {
-                                                mode = a_Zpx;
+                                                mode = MADR_Zpx;
                                             }
                                             else
                                             {
-                                                mode = a_Abx;
+                                                mode = MADR_Abx;
                                             }
-                                            if (evalKnown && modes[a_ALX] != 0 && ((val & 0xFF0000) != 0 || force24))
+                                            if (evalKnown && modes[MADR_ALX] != 0 && ((val & 0xFF0000) != 0 || force24))
                                             {
-                                                mode = a_ALX;
+                                                mode = MADR_ALX;
                                             }
                                             break;
 
                                         case 1: // ,Y
                                             if (val >= 0 && val < 256 && !forceabs &&
-                                                    (evalKnown || modes[a_Aby] == 0)
-                                                    && modes[a_Zpy] != 0)
+                                                    (evalKnown || modes[MADR_Aby] == 0)
+                                                    && modes[MADR_Zpy] != 0)
                                             {
-                                                mode = a_Zpy;
+                                                mode = MADR_Zpy;
                                             }
                                             else
                                             {
-                                                mode = a_Aby;
+                                                mode = MADR_Aby;
                                             }
                                             break;
 
@@ -712,11 +712,11 @@ static int M6502_DoCPUOpcode(int typ, int parm)
                                             {
                                                 if (forceabs)
                                                 {
-                                                    BadMode();
+                                                    TOKEN_BadMode();
                                                 }
                                                 else
                                                 {
-                                                    mode = a_Stk;
+                                                    mode = MADR_Stk;
                                                 }
                                             }
                                     }
@@ -728,134 +728,134 @@ static int M6502_DoCPUOpcode(int typ, int parm)
             }
 
             // determine opcode if it is isn't known yet
-            if (!opcode && mode != a_None)
+            if (!opcode && mode != MADR_None)
             {
                 opcode = modes[mode];
                 if (opcode == 0)
                 {
-                    mode = a_None;
+                    mode = MADR_None;
                 }
             }
 
             instrLen = 0;
             switch (mode)
             {
-                case a_None:
-                    Error("Invalid addressing mode");
+                case MADR_None:
+                    ASMX_Error("Invalid addressing mode");
                     break;
 
-                case a_Acc:
-                    InstrB(opcode);
+                case MADR_Acc:
+                    INSTR_B(opcode);
                     break;
 
-                case a_Inx:
+                case MADR_Inx:
                     if (opcode == 0x7C || opcode == 0xFC)
                     {
                         // 65C02 JMP (abs,X) / 65C816 JSR (abs,X)
-                        InstrBW(opcode, val);
+                        INSTR_BW(opcode, val);
                         break;
                     }
                 // else fall through
 
-                case a_Zpg:
-                case a_Iny:
-                case a_Zpx:
-                case a_Zpy:
-                case a_Zpi:
-                case a_Stk:
-                case a_DIL:
-                case a_DIY:
-                case a_SIY:
+                case MADR_Zpg:
+                case MADR_Iny:
+                case MADR_Zpx:
+                case MADR_Zpy:
+                case MADR_Zpi:
+                case MADR_Stk:
+                case MADR_DIL:
+                case MADR_DIY:
+                case MADR_SIY:
                     val = (short) val;
                     if (!errFlag && (val < 0 || val > 255))
                     {
-                        Error("Byte out of range");
+                        ASMX_Error("Byte out of range");
                     }
-                    InstrBB(opcode, val & 0xFF);
+                    INSTR_BB(opcode, val & 0xFF);
                     break;
 
-                case a_Imm:
+                case MADR_Imm:
                     val = (short) val;
                     if (!errFlag && (val < -128 || val > 255))
                     {
-                        Error("Byte out of range");
+                        ASMX_Error("Byte out of range");
                     }
-                    InstrBB(opcode, val & 0xFF);
+                    INSTR_BB(opcode, val & 0xFF);
                     break;
 
-                case a_Imm16:
-                    InstrBW(opcode, val & 0xFFFF);
+                case MADR_Imm16:
+                    INSTR_BW(opcode, val & 0xFFFF);
                     break;
 
-                case a_Abs:
-                case a_Abx:
-                case a_Aby:
-                case a_Ind:
-                    InstrBW(opcode, val);
+                case MADR_Abs:
+                case MADR_Abx:
+                case MADR_Aby:
+                case MADR_Ind:
+                    INSTR_BW(opcode, val);
                     break;
 
-                case a_AbL:
-                case a_ALX:
-                    InstrB3(opcode, val);
+                case MADR_AbL:
+                case MADR_ALX:
+                    INSTR_B3(opcode, val);
                     break;
             }
             break;
 
-        case o_RSMB:        //    RMBn/SMBn instructions
+        case OP_RSMB:        //    RMBn/SMBn instructions
             if (curCPU != CPU_65C02) return 0;
 
             // RMB/SMB zpg
-            val = Eval();
-            InstrBB(parm, val);
+            val = EXPR_Eval();
+            INSTR_BB(parm, val);
             break;
 
-        case o_BBRS:        //    BBRn/BBSn instructions
+        case OP_BBRS:        //    BBRn/BBSn instructions
             if (curCPU != CPU_65C02) return 0;
 
-            i = Eval();
-            Expect(",");
-            val = EvalBranch(3);
-            InstrBBB(parm, i, val);
+            i = EXPR_Eval();
+            TOKEN_Expect(",");
+            val = EXPR_EvalBranch(3);
+            INSTR_BBB(parm, i, val);
             break;
 
-        case o_BranchW:
+        case OP_BranchW:
             if (curCPU != CPU_65C816) return 0;
 
-            val = EvalWBranch(3);
-            InstrBW(parm, val);
+            val = EXPR_EvalWBranch(3);
+            INSTR_BW(parm, val);
             break;
 
-        case o_BlockMove:
+        case OP_BlockMove:
             if (curCPU != CPU_65C816) return 0;
 
-            val = Eval();
+            val = EXPR_Eval();
             if (!errFlag && (val < 0 || val > 255))
             {
-                Error("Byte out of range");
+                ASMX_Error("Byte out of range");
             }
 
-            if (Comma()) break;
+            if (TOKEN_Comma()) break;
 
-            i = Eval();
+            i = EXPR_Eval();
             if (!errFlag && (val < 0 || val > 255))
             {
-                Error("Byte out of range");
+                ASMX_Error("Byte out of range");
             }
 
-            InstrBBB(parm, i, val);
+            INSTR_BBB(parm, i, val);
             break;
 
-        case o_COP:
+        case OP_COP:
             if (curCPU != CPU_65C816) return 0;
 
-            Expect("#");
-            val = Eval();
+            TOKEN_Expect("#");
+            val = EXPR_Eval();
             if (!errFlag && (val < 0 || val > 255))
             {
-                Error("Byte out of range");
+                ASMX_Error("Byte out of range");
             }
 
-            InstrBB(parm, val);
+            INSTR_BB(parm, val);
             break;
 
         default:
@@ -877,27 +877,27 @@ static int M6502_DoCPULabelOp(int typ, int parm, char *labl)
 
     switch (typ)
     {
-        case o_LONGA:
+        case OP_LONGA:
             if (labl[0])
             {
-                Error("Label not allowed");
+                ASMX_Error("Label not allowed");
             }
-            GetWord(word);
+            TOKEN_GetWord(word);
             if (strcmp(word, "ON") == 0)       longa = true;
             else if (strcmp(word, "OFF") == 0)      longa = false;
-            else                                    IllegalOperand();
+            else                                    ASMX_IllegalOperand();
 
             break;
 
-        case o_LONGI:
+        case OP_LONGI:
             if (labl[0])
             {
-                Error("Label not allowed");
+                ASMX_Error("Label not allowed");
             }
-            GetWord(word);
+            TOKEN_GetWord(word);
             if (strcmp(word, "ON") == 0)       longi = true;
             else if (strcmp(word, "OFF") == 0)      longi = false;
-            else                                    IllegalOperand();
+            else                                    ASMX_IllegalOperand();
 
             break;
 
@@ -916,13 +916,13 @@ static void M6502_PassInit(void)
 }
 
 
-void Asm6502Init(void)
+void M6502_AsmInit(void)
 {
-    void *p = AddAsm(versionName, &M6502_DoCPUOpcode, &M6502_DoCPULabelOp, &M6502_PassInit);
+    void *p = ASMX_AddAsm(versionName, &M6502_DoCPUOpcode, &M6502_DoCPULabelOp, &M6502_PassInit);
 
-    AddCPU(p, "6502",   CPU_6502,   LITTLE_END, ADDR_16, LIST_24, 8, 0, M6502_opcdTab);
-    AddCPU(p, "65C02",  CPU_65C02,  LITTLE_END, ADDR_16, LIST_24, 8, 0, M6502_opcdTab);
-    AddCPU(p, "6502U",  CPU_6502U,  LITTLE_END, ADDR_16, LIST_24, 8, 0, M6502_opcdTab);
-    AddCPU(p, "65816",  CPU_65C816, LITTLE_END, ADDR_24, LIST_24, 8, 0, M6502_opcdTab);
-    AddCPU(p, "65C816", CPU_65C816, LITTLE_END, ADDR_24, LIST_24, 8, 0, M6502_opcdTab);
+    ASMX_AddCPU(p, "6502",   CPU_6502,   END_LITTLE, ADDR_16, LIST_24, 8, 0, M6502_opcdTab);
+    ASMX_AddCPU(p, "65C02",  CPU_65C02,  END_LITTLE, ADDR_16, LIST_24, 8, 0, M6502_opcdTab);
+    ASMX_AddCPU(p, "6502U",  CPU_6502U,  END_LITTLE, ADDR_16, LIST_24, 8, 0, M6502_opcdTab);
+    ASMX_AddCPU(p, "65816",  CPU_65C816, END_LITTLE, ADDR_24, LIST_24, 8, 0, M6502_opcdTab);
+    ASMX_AddCPU(p, "65C816", CPU_65C816, END_LITTLE, ADDR_24, LIST_24, 8, 0, M6502_opcdTab);
 }

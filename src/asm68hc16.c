@@ -1,20 +1,20 @@
-// asm68HC16.c
+// asmM68HC16.c
 
-#define versionName "68HC16 assembler"
+#define versionName "M68HC16 assembler"
 #include "asmx.h"
 
 enum
 {
-    o_Inherent,     // implied instructions
-    o_Branch,       // short relative branch instructions
-    o_LBranch,      // long relative branch instructions
+    OP_Inherent,     // implied instructions
+    OP_Branch,       // short relative branch instructions
+    OP_LBranch,      // long relative branch instructions
     o_ImmediateW,   // immediate word instructions (ORP and ANDP)
     o_AIX,          // AIX/AIY/AIZ/AIS instructions
     o_MAC,          // MAC/RMAC instructions
     o_PSHM,         // PSHM instruction
     o_PULM,         // PULM instruction
     o_MOVB,         // MOVB/MOVW instructions
-    o_Logical,      // byte-data logical instructions
+    OP_Logical,      // byte-data logical instructions
     o_LogicalW,     // word-data logical instructions
     o_STE,          // STE instruction
     o_ADDE,         // ADDE instruction
@@ -25,185 +25,185 @@ enum
     o_STX,          // STX/STY/STZ/STS instructions
     o_LDX,          // LDX/LDY/LDZ/LDS instructions
     o_ArithX,       // arithmetic operations on X register
-    o_JMP,          // JMP/JSR instructions
+    OP_JMP,          // JMP/JSR instructions
     o_STD,          // STD instruction
     o_StoreAB,      // STAA/STAB instructions
     o_ADDD,         // ADDD instruction
     o_ArithW,       // word-data arithmetic instructions
-    o_Arith,        // byte-data arithmetic instructions
+    OP_Arith,        // byte-data arithmetic instructions
 
-//  o_Foo = o_LabelOp,
+//  o_Foo = OP_LabelOp,
 };
 
 static const struct OpcdRec M68HC16_opcdTab[] =
 {
-    {"ABA",   o_Inherent, 0x370B},
-    {"ABX",   o_Inherent, 0x374F},
-    {"ABY",   o_Inherent, 0x375F},
-    {"ABZ",   o_Inherent, 0x376F},
-    {"ACE",   o_Inherent, 0x3722},
-    {"ACED",  o_Inherent, 0x3723},
-    {"ADE",   o_Inherent, 0x2778},
-    {"ADX",   o_Inherent, 0x37CD},
-    {"ADY",   o_Inherent, 0x37DD},
-    {"ADZ",   o_Inherent, 0x37ED},
-    {"AEX",   o_Inherent, 0x374D},
-    {"AEY",   o_Inherent, 0x375D},
-    {"AEZ",   o_Inherent, 0x376D},
-    {"ASLA",  o_Inherent, 0x3704},
-    {"ASLB",  o_Inherent, 0x3714},
-    {"ASLD",  o_Inherent, 0x27F4},
-    {"ASLE",  o_Inherent, 0x2774},
-    {"ASLM",  o_Inherent, 0x27B6},
-    {"ASRA",  o_Inherent, 0x370D},
-    {"ASRB",  o_Inherent, 0x371D},
-    {"ASRD",  o_Inherent, 0x27FD},
-    {"ASRE",  o_Inherent, 0x277D},
-    {"ASRM",  o_Inherent, 0x27BA},
-    {"BGND",  o_Inherent, 0x37A6},
-    {"CBA",   o_Inherent, 0x371B},
-    {"CLRA",  o_Inherent, 0x3705},
-    {"CLRB",  o_Inherent, 0x3715},
-    {"CLRD",  o_Inherent, 0x27F5},
-    {"CLRE",  o_Inherent, 0x2775},
-    {"CLRM",  o_Inherent, 0x27B7},
-    {"COMA",  o_Inherent, 0x3700},
-    {"COMB",  o_Inherent, 0x3710},
-    {"COMD",  o_Inherent, 0x27F0},
-    {"COME",  o_Inherent, 0x2770},
-    {"DAA",   o_Inherent, 0x3721},
-    {"DECA",  o_Inherent, 0x3701},
-    {"DECB",  o_Inherent, 0x3711},
-    {"DECE",  o_Inherent, 0x2771},
-    {"EDIV",  o_Inherent, 0x3728},
-    {"EDIVS", o_Inherent, 0x3729},
-    {"EMUL",  o_Inherent, 0x3725},
-    {"EMULS", o_Inherent, 0x3726},
-    {"FDIV",  o_Inherent, 0x372B},
-    {"FMULS", o_Inherent, 0x3727},
-    {"IDIV",  o_Inherent, 0x372A},
-    {"INCA",  o_Inherent, 0x3703},
-    {"INCB",  o_Inherent, 0x3713},
-    {"INCE",  o_Inherent, 0x2773},
-    {"LDHI",  o_Inherent, 0x27B0},
-    {"LPSTOP",o_Inherent, 0x27F1},
-    {"LSRA",  o_Inherent, 0x370F},
-    {"LSRB",  o_Inherent, 0x371F},
-    {"LSRD",  o_Inherent, 0x27FF},
-    {"LSRE",  o_Inherent, 0x277F},
-    {"MUL",   o_Inherent, 0x3724},
-    {"NEGA",  o_Inherent, 0x3702},
-    {"NEGB",  o_Inherent, 0x3712},
-    {"NEGD",  o_Inherent, 0x27F2},
-    {"NEGE",  o_Inherent, 0x2772},
-    {"NOP",   o_Inherent, 0x27CC},
-    {"PSHA",  o_Inherent, 0x3708},
-    {"PSHB",  o_Inherent, 0x3718},
-    {"PSHMAC",o_Inherent, 0x27B8},
-    {"PULA",  o_Inherent, 0x3709},
-    {"PULB",  o_Inherent, 0x3719},
-    {"PULMAC",o_Inherent, 0x27B9},
-    {"ROLA",  o_Inherent, 0x370C},
-    {"ROLB",  o_Inherent, 0x371C},
-    {"ROLD",  o_Inherent, 0x27FC},
-    {"ROLE",  o_Inherent, 0x277C},
-    {"RORA",  o_Inherent, 0x370E},
-    {"RORB",  o_Inherent, 0x371E},
-    {"RORD",  o_Inherent, 0x27FE},
-    {"RORE",  o_Inherent, 0x277E},
-    {"RTI",   o_Inherent, 0x2777},
-    {"RTS",   o_Inherent, 0x27F7},
-    {"SBA",   o_Inherent, 0x370A},
-    {"SDE",   o_Inherent, 0x2779},
-    {"SWI",   o_Inherent, 0x3720},
-    {"SXT",   o_Inherent, 0x27F8},
-    {"TAB",   o_Inherent, 0x3717},
-    {"TAP",   o_Inherent, 0x37FD},
-    {"TBA",   o_Inherent, 0x3707},
-    {"TBEK",  o_Inherent, 0x27FA},
-    {"TBSK",  o_Inherent, 0x379F},
-    {"TBXK",  o_Inherent, 0x379C},
-    {"TBYK",  o_Inherent, 0x379D},
-    {"TBZK",  o_Inherent, 0x379E},
-    {"TDE",   o_Inherent, 0x277B},
-    {"TDMSK", o_Inherent, 0x372F},
-    {"TDP",   o_Inherent, 0x372D},
-    {"TED",   o_Inherent, 0x27FB},
-    {"TEDM",  o_Inherent, 0x27B1},
-    {"TEKB",  o_Inherent, 0x27BB},
-    {"TEM",   o_Inherent, 0x27B2},
-    {"TMER",  o_Inherent, 0x27B4},
-    {"TMET",  o_Inherent, 0x27B5},
-    {"TMXED", o_Inherent, 0x27B3},
-    {"TPA",   o_Inherent, 0x37FC},
-    {"TPD",   o_Inherent, 0x372C},
-    {"TSKB",  o_Inherent, 0x37AF},
-    {"TSTA",  o_Inherent, 0x3706},
-    {"TSTB",  o_Inherent, 0x3716},
-    {"TSTD",  o_Inherent, 0x27F6},
-    {"TSTE",  o_Inherent, 0x2776},
-    {"TSX",   o_Inherent, 0x27CF},
-    {"TSY",   o_Inherent, 0x275F},
-    {"TSZ",   o_Inherent, 0x276F},
-    {"TXKB",  o_Inherent, 0x37AC},
-    {"TXS",   o_Inherent, 0x374E},
-    {"TXY",   o_Inherent, 0x275C},
-    {"TXZ",   o_Inherent, 0x276C},
-    {"TYKB",  o_Inherent, 0x37AD},
-    {"TYS",   o_Inherent, 0x375E},
-    {"TYX",   o_Inherent, 0x27CD},
-    {"TYZ",   o_Inherent, 0x276D},
-    {"TZKB",  o_Inherent, 0x37AE},
-    {"TZS",   o_Inherent, 0x376E},
-    {"TZX",   o_Inherent, 0x27CE},
-    {"TZY",   o_Inherent, 0x275E},
-    {"WAI",   o_Inherent, 0x27F3},
-    {"XGAB",  o_Inherent, 0x371A},
-    {"XGDE",  o_Inherent, 0x277A},
-    {"XGDX",  o_Inherent, 0x37CC},
-    {"XGDY",  o_Inherent, 0x37DC},
-    {"XGDZ",  o_Inherent, 0x37EC},
-    {"XGEX",  o_Inherent, 0x374C},
-    {"XGEY",  o_Inherent, 0x375C},
-    {"XGEZ",  o_Inherent, 0x376C},
+    {"ABA",   OP_Inherent, 0x370B},
+    {"ABX",   OP_Inherent, 0x374F},
+    {"ABY",   OP_Inherent, 0x375F},
+    {"ABZ",   OP_Inherent, 0x376F},
+    {"ACE",   OP_Inherent, 0x3722},
+    {"ACED",  OP_Inherent, 0x3723},
+    {"ADE",   OP_Inherent, 0x2778},
+    {"ADX",   OP_Inherent, 0x37CD},
+    {"ADY",   OP_Inherent, 0x37DD},
+    {"ADZ",   OP_Inherent, 0x37ED},
+    {"AEX",   OP_Inherent, 0x374D},
+    {"AEY",   OP_Inherent, 0x375D},
+    {"AEZ",   OP_Inherent, 0x376D},
+    {"ASLA",  OP_Inherent, 0x3704},
+    {"ASLB",  OP_Inherent, 0x3714},
+    {"ASLD",  OP_Inherent, 0x27F4},
+    {"ASLE",  OP_Inherent, 0x2774},
+    {"ASLM",  OP_Inherent, 0x27B6},
+    {"ASRA",  OP_Inherent, 0x370D},
+    {"ASRB",  OP_Inherent, 0x371D},
+    {"ASRD",  OP_Inherent, 0x27FD},
+    {"ASRE",  OP_Inherent, 0x277D},
+    {"ASRM",  OP_Inherent, 0x27BA},
+    {"BGND",  OP_Inherent, 0x37A6},
+    {"CBA",   OP_Inherent, 0x371B},
+    {"CLRA",  OP_Inherent, 0x3705},
+    {"CLRB",  OP_Inherent, 0x3715},
+    {"CLRD",  OP_Inherent, 0x27F5},
+    {"CLRE",  OP_Inherent, 0x2775},
+    {"CLRM",  OP_Inherent, 0x27B7},
+    {"COMA",  OP_Inherent, 0x3700},
+    {"COMB",  OP_Inherent, 0x3710},
+    {"COMD",  OP_Inherent, 0x27F0},
+    {"COME",  OP_Inherent, 0x2770},
+    {"DAA",   OP_Inherent, 0x3721},
+    {"DECA",  OP_Inherent, 0x3701},
+    {"DECB",  OP_Inherent, 0x3711},
+    {"DECE",  OP_Inherent, 0x2771},
+    {"EDIV",  OP_Inherent, 0x3728},
+    {"EDIVS", OP_Inherent, 0x3729},
+    {"EMUL",  OP_Inherent, 0x3725},
+    {"EMULS", OP_Inherent, 0x3726},
+    {"FDIV",  OP_Inherent, 0x372B},
+    {"FMULS", OP_Inherent, 0x3727},
+    {"IDIV",  OP_Inherent, 0x372A},
+    {"INCA",  OP_Inherent, 0x3703},
+    {"INCB",  OP_Inherent, 0x3713},
+    {"INCE",  OP_Inherent, 0x2773},
+    {"LDHI",  OP_Inherent, 0x27B0},
+    {"LPSTOP",OP_Inherent, 0x27F1},
+    {"LSRA",  OP_Inherent, 0x370F},
+    {"LSRB",  OP_Inherent, 0x371F},
+    {"LSRD",  OP_Inherent, 0x27FF},
+    {"LSRE",  OP_Inherent, 0x277F},
+    {"MUL",   OP_Inherent, 0x3724},
+    {"NEGA",  OP_Inherent, 0x3702},
+    {"NEGB",  OP_Inherent, 0x3712},
+    {"NEGD",  OP_Inherent, 0x27F2},
+    {"NEGE",  OP_Inherent, 0x2772},
+    {"NOP",   OP_Inherent, 0x27CC},
+    {"PSHA",  OP_Inherent, 0x3708},
+    {"PSHB",  OP_Inherent, 0x3718},
+    {"PSHMAC",OP_Inherent, 0x27B8},
+    {"PULA",  OP_Inherent, 0x3709},
+    {"PULB",  OP_Inherent, 0x3719},
+    {"PULMAC",OP_Inherent, 0x27B9},
+    {"ROLA",  OP_Inherent, 0x370C},
+    {"ROLB",  OP_Inherent, 0x371C},
+    {"ROLD",  OP_Inherent, 0x27FC},
+    {"ROLE",  OP_Inherent, 0x277C},
+    {"RORA",  OP_Inherent, 0x370E},
+    {"RORB",  OP_Inherent, 0x371E},
+    {"RORD",  OP_Inherent, 0x27FE},
+    {"RORE",  OP_Inherent, 0x277E},
+    {"RTI",   OP_Inherent, 0x2777},
+    {"RTS",   OP_Inherent, 0x27F7},
+    {"SBA",   OP_Inherent, 0x370A},
+    {"SDE",   OP_Inherent, 0x2779},
+    {"SWI",   OP_Inherent, 0x3720},
+    {"SXT",   OP_Inherent, 0x27F8},
+    {"TAB",   OP_Inherent, 0x3717},
+    {"TAP",   OP_Inherent, 0x37FD},
+    {"TBA",   OP_Inherent, 0x3707},
+    {"TBEK",  OP_Inherent, 0x27FA},
+    {"TBSK",  OP_Inherent, 0x379F},
+    {"TBXK",  OP_Inherent, 0x379C},
+    {"TBYK",  OP_Inherent, 0x379D},
+    {"TBZK",  OP_Inherent, 0x379E},
+    {"TDE",   OP_Inherent, 0x277B},
+    {"TDMSK", OP_Inherent, 0x372F},
+    {"TDP",   OP_Inherent, 0x372D},
+    {"TED",   OP_Inherent, 0x27FB},
+    {"TEDM",  OP_Inherent, 0x27B1},
+    {"TEKB",  OP_Inherent, 0x27BB},
+    {"TEM",   OP_Inherent, 0x27B2},
+    {"TMER",  OP_Inherent, 0x27B4},
+    {"TMET",  OP_Inherent, 0x27B5},
+    {"TMXED", OP_Inherent, 0x27B3},
+    {"TPA",   OP_Inherent, 0x37FC},
+    {"TPD",   OP_Inherent, 0x372C},
+    {"TSKB",  OP_Inherent, 0x37AF},
+    {"TSTA",  OP_Inherent, 0x3706},
+    {"TSTB",  OP_Inherent, 0x3716},
+    {"TSTD",  OP_Inherent, 0x27F6},
+    {"TSTE",  OP_Inherent, 0x2776},
+    {"TSX",   OP_Inherent, 0x27CF},
+    {"TSY",   OP_Inherent, 0x275F},
+    {"TSZ",   OP_Inherent, 0x276F},
+    {"TXKB",  OP_Inherent, 0x37AC},
+    {"TXS",   OP_Inherent, 0x374E},
+    {"TXY",   OP_Inherent, 0x275C},
+    {"TXZ",   OP_Inherent, 0x276C},
+    {"TYKB",  OP_Inherent, 0x37AD},
+    {"TYS",   OP_Inherent, 0x375E},
+    {"TYX",   OP_Inherent, 0x27CD},
+    {"TYZ",   OP_Inherent, 0x276D},
+    {"TZKB",  OP_Inherent, 0x37AE},
+    {"TZS",   OP_Inherent, 0x376E},
+    {"TZX",   OP_Inherent, 0x27CE},
+    {"TZY",   OP_Inherent, 0x275E},
+    {"WAI",   OP_Inherent, 0x27F3},
+    {"XGAB",  OP_Inherent, 0x371A},
+    {"XGDE",  OP_Inherent, 0x277A},
+    {"XGDX",  OP_Inherent, 0x37CC},
+    {"XGDY",  OP_Inherent, 0x37DC},
+    {"XGDZ",  OP_Inherent, 0x37EC},
+    {"XGEX",  OP_Inherent, 0x374C},
+    {"XGEY",  OP_Inherent, 0x375C},
+    {"XGEZ",  OP_Inherent, 0x376C},
 
-    {"BCC",   o_Branch,   0xB4}, // aka BHS
-    {"BCS",   o_Branch,   0xB5}, // aka BLO
-    {"BEQ",   o_Branch,   0xB7},
-    {"BGE",   o_Branch,   0xBC},
-    {"BGT",   o_Branch,   0xBE},
-    {"BHI",   o_Branch,   0xB2},
-    {"BLE",   o_Branch,   0xBF},
-    {"BLS",   o_Branch,   0xB3},
-    {"BLT",   o_Branch,   0xBD},
-    {"BMI",   o_Branch,   0xBB},
-    {"BNE",   o_Branch,   0xB6},
-    {"BPL",   o_Branch,   0xBA},
-    {"BRA",   o_Branch,   0xB0},
-    {"BRN",   o_Branch,   0xB1},
-    {"BSR",   o_Branch,   0x36},
-    {"BVC",   o_Branch,   0xB8},
-    {"BVS",   o_Branch,   0xB9},
+    {"BCC",   OP_Branch,   0xB4}, // aka BHS
+    {"BCS",   OP_Branch,   0xB5}, // aka BLO
+    {"BEQ",   OP_Branch,   0xB7},
+    {"BGE",   OP_Branch,   0xBC},
+    {"BGT",   OP_Branch,   0xBE},
+    {"BHI",   OP_Branch,   0xB2},
+    {"BLE",   OP_Branch,   0xBF},
+    {"BLS",   OP_Branch,   0xB3},
+    {"BLT",   OP_Branch,   0xBD},
+    {"BMI",   OP_Branch,   0xBB},
+    {"BNE",   OP_Branch,   0xB6},
+    {"BPL",   OP_Branch,   0xBA},
+    {"BRA",   OP_Branch,   0xB0},
+    {"BRN",   OP_Branch,   0xB1},
+    {"BSR",   OP_Branch,   0x36},
+    {"BVC",   OP_Branch,   0xB8},
+    {"BVS",   OP_Branch,   0xB9},
 
-    {"LBCC",  o_LBranch,  0x3784},    // aka LBHS
-    {"LBCS",  o_LBranch,  0x3785},    // aka LBLO
-    {"LBEQ",  o_LBranch,  0x3787},
-    {"LBEV",  o_LBranch,  0x3791},
-    {"LBGE",  o_LBranch,  0x378C},
-    {"LBGT",  o_LBranch,  0x378E},
-    {"LBHI",  o_LBranch,  0x3782},
-    {"LBLE",  o_LBranch,  0x378F},
-    {"LBLS",  o_LBranch,  0x3783},
-    {"LBLT",  o_LBranch,  0x378D},
-    {"LBMI",  o_LBranch,  0x378B},
-    {"LBMV",  o_LBranch,  0x3790},
-    {"LBNE",  o_LBranch,  0x3786},
-    {"LBPL",  o_LBranch,  0x378A},
-    {"LBRA",  o_LBranch,  0x3780},
-    {"LBRN",  o_LBranch,  0x3781},
-    {"LBSR",  o_LBranch,  0x27F9},
-    {"LBVC",  o_LBranch,  0x3788},
-    {"LBVS",  o_LBranch,  0x3789},
+    {"LBCC",  OP_LBranch,  0x3784},    // aka LBHS
+    {"LBCS",  OP_LBranch,  0x3785},    // aka LBLO
+    {"LBEQ",  OP_LBranch,  0x3787},
+    {"LBEV",  OP_LBranch,  0x3791},
+    {"LBGE",  OP_LBranch,  0x378C},
+    {"LBGT",  OP_LBranch,  0x378E},
+    {"LBHI",  OP_LBranch,  0x3782},
+    {"LBLE",  OP_LBranch,  0x378F},
+    {"LBLS",  OP_LBranch,  0x3783},
+    {"LBLT",  OP_LBranch,  0x378D},
+    {"LBMI",  OP_LBranch,  0x378B},
+    {"LBMV",  OP_LBranch,  0x3790},
+    {"LBNE",  OP_LBranch,  0x3786},
+    {"LBPL",  OP_LBranch,  0x378A},
+    {"LBRA",  OP_LBranch,  0x3780},
+    {"LBRN",  OP_LBranch,  0x3781},
+    {"LBSR",  OP_LBranch,  0x27F9},
+    {"LBVC",  OP_LBranch,  0x3788},
+    {"LBVS",  OP_LBranch,  0x3789},
 
     {"ANDP",  o_ImmediateW, 0x373A},
     {"ORP",   o_ImmediateW, 0x373B},
@@ -250,17 +250,17 @@ static const struct OpcdRec M68HC16_opcdTab[] =
     {"SBCE", o_ArithE,   0x02},
     {"SUBE", o_ArithE,   0x00},
 
-    {"ASL",  o_Logical,  0x04},
-    {"ASR",  o_Logical,  0x0D},
-    {"CLR",  o_Logical,  0x05},
-    {"COM",  o_Logical,  0x00},
-    {"DEC",  o_Logical,  0x01},
-    {"INC",  o_Logical,  0x03},
-    {"LSR",  o_Logical,  0x0F},
-    {"NEG",  o_Logical,  0x02},
-    {"ROL",  o_Logical,  0x0C},
-    {"ROR",  o_Logical,  0x0E},
-    {"TST",  o_Logical,  0x06},
+    {"ASL",  OP_Logical,  0x04},
+    {"ASR",  OP_Logical,  0x0D},
+    {"CLR",  OP_Logical,  0x05},
+    {"COM",  OP_Logical,  0x00},
+    {"DEC",  OP_Logical,  0x01},
+    {"INC",  OP_Logical,  0x03},
+    {"LSR",  OP_Logical,  0x0F},
+    {"NEG",  OP_Logical,  0x02},
+    {"ROL",  OP_Logical,  0x0C},
+    {"ROR",  OP_Logical,  0x0E},
+    {"TST",  OP_Logical,  0x06},
 
     {"BCLRW", o_BCLRW,   0x2708},
     {"BSETW", o_BCLRW,   0x2709},
@@ -283,8 +283,8 @@ static const struct OpcdRec M68HC16_opcdTab[] =
     {"CPZ",   o_ArithX,  0x4E},
     {"LDS",   o_ArithX,  0xCF},
 
-    {"JMP",   o_JMP,     0x4B},
-    {"JSR",   o_JMP,     0x89},
+    {"JMP",   OP_JMP,     0x4B},
+    {"JSR",   OP_JMP,     0x89},
 
     {"STD",   o_STD,     0x378A},
     {"STAA",  o_StoreAB, 0x174A},
@@ -298,42 +298,42 @@ static const struct OpcdRec M68HC16_opcdTab[] =
     {"ORD",   o_ArithW,  0x3787},
     {"SBCD",  o_ArithW,  0x3782},
     {"SUBD",  o_ArithW,  0x3780},
-    {"ADCA",  o_Arith,   0x1743},
-    {"ADCB",  o_Arith,   0x17C3},
-    {"ADDA",  o_Arith,   0x1741},
-    {"ADDB",  o_Arith,   0x17C1},
-    {"ANDA",  o_Arith,   0x1746},
-    {"ANDB",  o_Arith,   0x17C6},
-    {"BITA",  o_Arith,   0x1749},
-    {"BITB",  o_Arith,   0x17C9},
-    {"CMPA",  o_Arith,   0x1748},
-    {"CMPB",  o_Arith,   0x17C8},
-    {"EORA",  o_Arith,   0x1744},
-    {"EORB",  o_Arith,   0x17C4},
-    {"LDAA",  o_Arith,   0x1745},
-    {"LDAB",  o_Arith,   0x17C5},
-    {"ORAA",  o_Arith,   0x1747},
-    {"ORAB",  o_Arith,   0x17C7},
-    {"SBCA",  o_Arith,   0x1742},
-    {"SBCB",  o_Arith,   0x17C2},
-    {"SUBA",  o_Arith,   0x1740},
-    {"SUBB",  o_Arith,   0x17C0},
+    {"ADCA",  OP_Arith,   0x1743},
+    {"ADCB",  OP_Arith,   0x17C3},
+    {"ADDA",  OP_Arith,   0x1741},
+    {"ADDB",  OP_Arith,   0x17C1},
+    {"ANDA",  OP_Arith,   0x1746},
+    {"ANDB",  OP_Arith,   0x17C6},
+    {"BITA",  OP_Arith,   0x1749},
+    {"BITB",  OP_Arith,   0x17C9},
+    {"CMPA",  OP_Arith,   0x1748},
+    {"CMPB",  OP_Arith,   0x17C8},
+    {"EORA",  OP_Arith,   0x1744},
+    {"EORB",  OP_Arith,   0x17C4},
+    {"LDAA",  OP_Arith,   0x1745},
+    {"LDAB",  OP_Arith,   0x17C5},
+    {"ORAA",  OP_Arith,   0x1747},
+    {"ORAB",  OP_Arith,   0x17C7},
+    {"SBCA",  OP_Arith,   0x1742},
+    {"SBCB",  OP_Arith,   0x17C2},
+    {"SUBA",  OP_Arith,   0x1740},
+    {"SUBB",  OP_Arith,   0x17C0},
 
-    {"",     o_Illegal,  0}
+    {"",     OP_Illegal,  0}
 };
 
 
 // --------------------------------------------------------------
 
-static int GetIndex(void)
+static int M68HC16_GetIndex(void)
 {
     Str255  word;
 
     char *oldLine = linePtr;
-    int token = GetWord(word);
+    int token = TOKEN_GetWord(word);
     if (token == ',')
     {
-        token = GetReg("X Y Z");
+        token = REG_Get("X Y Z");
         if (token >= 0) return token;
     }
     linePtr = oldLine;
@@ -353,67 +353,67 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 
     switch (typ)
     {
-        case o_Inherent:
-            InstrX(parm);
+        case OP_Inherent:
+            INSTR_X(parm);
             break;
 
-        case o_Branch:
-            val = EvalBranch(2);
-            InstrXB(parm, val);
+        case OP_Branch:
+            val = EXPR_EvalBranch(2);
+            INSTR_XB(parm, val);
             break;
 
-        case o_LBranch:
+        case OP_LBranch:
             if (parm < 256)
             {
-                val = EvalLBranch(3);
+                val = EXPR_EvalLBranch(3);
             }
             else
             {
-                val = EvalLBranch(4);
+                val = EXPR_EvalLBranch(4);
             }
-            InstrXW(parm, val);
+            INSTR_XW(parm, val);
             break;
 
         case o_ImmediateW:
-            Expect("#");
-            val = Eval();
-            InstrXW(parm, val);
+            TOKEN_Expect("#");
+            val = EXPR_Eval();
+            INSTR_XW(parm, val);
             break;
 
         case o_AIX:
-            Expect("#");
-            val = Eval();
+            TOKEN_Expect("#");
+            val = EXPR_Eval();
             if (evalKnown && -128 <= val && val <= 127)
             {
-                InstrXB(parm, val);
+                INSTR_XB(parm, val);
             }
             else
             {
-                InstrXW(parm + 0x3700, val);
+                INSTR_XW(parm + 0x3700, val);
             }
             break;
 
         case o_MAC:
             oldLine = linePtr;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             if (token == '#')
             {
-                val = Eval();
-                InstrXB(parm, val);
+                val = EXPR_Eval();
+                INSTR_XB(parm, val);
             }
             else
             {
                 linePtr = oldLine;
-                val = Eval();
-                Comma();
-                val2 = Eval();
+                val = EXPR_Eval();
+                TOKEN_Comma();
+                val2 = EXPR_Eval();
                 if (val < 0 || val > 15 || val2 < 0 || val2 > 15)
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                 }
                 else
                 {
-                    InstrXB(parm, val * 16 + val2);
+                    INSTR_XB(parm, val * 16 + val2);
                 }
             }
             break;
@@ -421,13 +421,13 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
         case o_PSHM:
         case o_PULM:
             val = 0;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             while (token)
             {
-                reg = FindReg(word, "D E X Y Z K CCR");
+                reg = REG_Find(word, "D E X Y Z K CCR");
                 if (reg < 0)
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                 }
                 else
                 {
@@ -438,7 +438,7 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
                     reg = 1 << reg;
                     if (val & reg)
                     {
-                        Error("PSHM/PULM register used twice");
+                        ASMX_Error("PSHM/PULM register used twice");
                     }
                     else
                     {
@@ -446,13 +446,13 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
                     }
                 }
 
-                token = GetWord(word);
+                token = TOKEN_GetWord(word);
                 if (token == ',')
                 {
-                    val2 = GetWord(word);
+                    val2 = TOKEN_GetWord(word);
                     if (val2 == 0)
                     {
-                        MissingOperand();
+                        ASMX_MissingOperand();
                         break;
                     }
                 }
@@ -460,11 +460,11 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 
             if (val == 0)
             {
-                Warning("PSHM/PULM with no registers");
+                ASMX_Warning("PSHM/PULM with no registers");
             }
             else
             {
-                InstrXB(parm, val);
+                INSTR_XB(parm, val);
             }
 
             break;
@@ -474,28 +474,28 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
             // $xxxx,$yy,X = parm+$32
             // $xx,X,$yyyy = parm+$30
 
-            val = Eval();
-            reg = GetIndex();
+            val = EXPR_Eval();
+            reg = M68HC16_GetIndex();
             if (reg == 0)   // $xx,X,$yyyy
             {
-                CheckByte(val);
-                Comma();
-                val2 = Eval();
-                InstrXBW(parm + 0x30, val, val2);
+                EXPR_CheckByte(val);
+                TOKEN_Comma();
+                val2 = EXPR_Eval();
+                INSTR_XBW(parm + 0x30, val, val2);
             }
             else if (reg < 0)
             {
-                Comma();
-                val2 = Eval();
-                reg = GetIndex();
+                TOKEN_Comma();
+                val2 = EXPR_Eval();
+                reg = M68HC16_GetIndex();
                 if (reg == 0)   // $xxxx,$yy,X
                 {
-                    CheckByte(val2);
-                    InstrXBW(parm + 0x32, val2, val);
+                    EXPR_CheckByte(val2);
+                    INSTR_XBW(parm + 0x32, val2, val);
                 }
                 else if (reg < 0)     // $xxxx,$yyyy
                 {
-                    InstrXWW(parm + 0x37FE, val, val2);
+                    INSTR_XWW(parm + 0x37FE, val, val2);
                     if (listWid == LIST_24)
                     {
                         hexSpaces = 0x14;
@@ -507,12 +507,12 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
                 }
                 else
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                 }
             }
             else
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
             }
             break;
 
@@ -522,20 +522,20 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
             // $xxxx,Z = parm+$2720
             // $xxxx   = parm+$2730
 
-            val = Eval();
-            reg = GetIndex();
+            val = EXPR_Eval();
+            reg = M68HC16_GetIndex();
             if (reg < 0)
             {
                 // no index register
-                InstrXW(parm + 0x2730, val);
+                INSTR_XW(parm + 0x2730, val);
             }
             else
             {
-                InstrXW(parm + 0x2700 + reg*16, val);
+                INSTR_XW(parm + 0x2700 + reg*16, val);
             }
             break;
 
-        case o_Logical:
+        case OP_Logical:
             // $xx,X   = parm+$00
             // $xx,Y   = parm+$10
             // $xx,Z   = parm+$20
@@ -549,22 +549,22 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
             // E       = parm+$2770
             // M: ASLM=27B6 ASRM=27BA CLRM=27B7
 
-            val = Eval();
-            reg = GetIndex();
+            val = EXPR_Eval();
+            reg = M68HC16_GetIndex();
             if (reg < 0)
             {
                 // no index register
-                InstrXW(parm + 0x1730, val);
+                INSTR_XW(parm + 0x1730, val);
             }
             else
             {
                 if (evalKnown && 0 <= val && val <= 255)
                 {
-                    InstrXB(parm +          reg*16, val);
+                    INSTR_XB(parm +          reg*16, val);
                 }
                 else
                 {
-                    InstrXW(parm + 0x1700 + reg*16, val);
+                    INSTR_XW(parm + 0x1700 + reg*16, val);
                 }
             }
             break;
@@ -580,38 +580,38 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
             // $xxxx   = parm+$3770
 
             oldLine = linePtr;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             if (token == '#' && typ != o_STE)
             {
-                val = Eval();
+                val = EXPR_Eval();
                 if (evalKnown && typ == o_ADDE && -128 <= val && val <= 127)
                 {
-                    InstrXB(         0x7C, val);
+                    INSTR_XB(         0x7C, val);
                 }
                 else
                 {
-                    InstrXW(parm + 0x3730, val);
+                    INSTR_XW(parm + 0x3730, val);
                 }
             }
             else
             {
                 linePtr = oldLine;
-                val = Eval();
-                reg = GetIndex();
+                val = EXPR_Eval();
+                reg = M68HC16_GetIndex();
                 if (reg < 0)
                 {
                     // no index register
-                    InstrXW(parm + 0x3770, val);
+                    INSTR_XW(parm + 0x3770, val);
                 }
                 else
                 {
                     if (evalKnown && 0 <= val && val <= 255)
                     {
-                        InstrXB(parm +          reg*16, val);
+                        INSTR_XB(parm +          reg*16, val);
                     }
                     else
                     {
-                        InstrXW(parm + 0x3740 + reg*16, val);
+                        INSTR_XW(parm + 0x3740 + reg*16, val);
                     }
                 }
             }
@@ -636,47 +636,47 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
             // $xx,Y,#$mm   = (~parm & 0x01)*$40 + $9B
             // $xx,Z,#$mm   = (~parm & 0x01)*$40 + $AB
 
-            val = Eval();
+            val = EXPR_Eval();
             known = evalKnown;
-            reg = GetIndex();
-            Comma();
-            Expect("#");
-            val2 = EvalByte();
+            reg = M68HC16_GetIndex();
+            TOKEN_Comma();
+            TOKEN_Expect("#");
+            val2 = EXPR_EvalByte();
             if (typ == o_BRCLR)
             {
-                Comma();
+                TOKEN_Comma();
                 if (known && 0 <= val && val <= 255)
                 {
-                    val3 = EvalBranch(4);
+                    val3 = EXPR_EvalBranch(4);
                     if (reg < 0)
                     {
                         reg = 3;
                     }
-                    InstrXBBB((~parm & 0x01)*0x40 + 0x8B + reg*16, val2, val, val3);
+                    INSTR_XBBB((~parm & 0x01)*0x40 + 0x8B + reg*16, val2, val, val3);
                 }
                 else
                 {
-                    val3 = EvalBranch(5);
+                    val3 = EXPR_EvalBranch(5);
                     if (reg < 0)
                     {
                         reg = 3;
                     }
-                    InstrXBWB((parm&0xFF) + reg*16, val2, val, val3);
+                    INSTR_XBWB((parm&0xFF) + reg*16, val2, val, val3);
                 }
             }
             else if (reg < 0)
             {
-                InstrXBW(parm + 0x30, val2, val);
+                INSTR_XBW(parm + 0x30, val2, val);
             }
             else
             {
                 if (known && typ == o_BCLR && 0 <= val && val <= 255)
                 {
-                    InstrXBB(parm + 0x1700 + reg*16, val2, val);
+                    INSTR_XBB(parm + 0x1700 + reg*16, val2, val);
                 }
                 else
                 {
-                    InstrXBW(parm +          reg*16, val2, val);
+                    INSTR_XBW(parm +          reg*16, val2, val);
                 }
             }
             break;
@@ -695,60 +695,60 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
             // #$xxxx  = parm+$3730-$40 (o_LDX only)
 
             oldLine = linePtr;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             if (token == '#' && typ != o_STX)
             {
-                val = Eval();
+                val = EXPR_Eval();
                 if (typ == o_LDX)
                 {
-                    InstrXW(parm + 0x3730 - 0x40, val);
+                    INSTR_XW(parm + 0x3730 - 0x40, val);
                 }
                 else
                 {
-                    InstrXW(parm + 0x3730, val);
+                    INSTR_XW(parm + 0x3730, val);
                 }
             }
             else
             {
                 linePtr = oldLine;
-                val = Eval();
-                reg = GetIndex();
+                val = EXPR_Eval();
+                reg = M68HC16_GetIndex();
                 if (reg < 0)
                 {
                     // no index register
-                    InstrXW(parm + 0x1730, val);
+                    INSTR_XW(parm + 0x1730, val);
                 }
                 else
                 {
                     if (evalKnown && 0 <= val && val <= 255)
                     {
-                        InstrXB(parm +          reg*16, val);
+                        INSTR_XB(parm +          reg*16, val);
                     }
                     else
                     {
-                        InstrXW(parm + 0x1700 + reg*16, val);
+                        INSTR_XW(parm + 0x1700 + reg*16, val);
                     }
                 }
             }
             break;
 
-        case o_JMP:
+        case OP_JMP:
             // JMP=$4B, JSR=$89
             // $xxxx    = $7A+(parm & $80)
             // $xxxxx,X = parm+$00
             // $xxxxx,Y = parm+$10
             // $xxxxx,Z = parm+$20
 
-            val = Eval();
-            reg = GetIndex();
+            val = EXPR_Eval();
+            reg = M68HC16_GetIndex();
             if (reg < 0)
             {
                 // no index register
-                InstrXW(0x7A + (parm & 0x80), val);
+                INSTR_XW(0x7A + (parm & 0x80), val);
             }
             else
             {
-                InstrX3(parm + reg*16, val & 0xFFFFF); // 20-bit address
+                INSTR_X3(parm + reg*16, val & 0xFFFFF); // 20-bit address
             }
             break;
 
@@ -756,7 +756,7 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
         case o_StoreAB:
         case o_ADDD:
         case o_ArithW:
-        case o_Arith:
+        case OP_Arith:
             // #$xx     = $FC (ADDD only)
             // #$xxxx   = parm+$30 (o_ArithW only)
             // $xxxx,X  = parm+$00 (parm+$40 o_ArithW,o_ADDD,o_STD)
@@ -766,71 +766,71 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
             // $xx,X    = (parm & 0xFF)+$00
             // $xx,Y    = (parm & 0xFF)+$10
             // $xx,Z    = (parm & 0xFF)+$20
-            // #$xx     = (parm & 0xFF)+$30 (o_Arith only)
+            // #$xx     = (parm & 0xFF)+$30 (OP_Arith only)
             // E,X      = (parm & 0xFF)+$2700
             // E,Y      = (parm & 0xFF)+$2710
             // E,Z      = (parm & 0xFF)+$2720
 
             oldLine = linePtr;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             if (token == '#' && typ != o_StoreAB && typ != o_STD)
             {
-                val = Eval();
+                val = EXPR_Eval();
                 if        (evalKnown && typ == o_ADDD  && -128 <= val && val <= 127)
                 {
-                    InstrXB(                0xFC, val);
+                    INSTR_XB(                0xFC, val);
                 }
-                else if (evalKnown && typ == o_Arith && -128 <= val && val <= 127)
+                else if (evalKnown && typ == OP_Arith && -128 <= val && val <= 127)
                 {
-                    InstrXB((parm & 0xFF) + 0x30, val);
+                    INSTR_XB((parm & 0xFF) + 0x30, val);
                 }
                 else
                 {
-                    InstrXW( parm         + 0x30, val);
+                    INSTR_XW( parm         + 0x30, val);
                 }
             }
-            else if (FindReg(word, "E") == 0)
+            else if (REG_Find(word, "E") == 0)
             {
-                reg = GetIndex();
+                reg = M68HC16_GetIndex();
                 if (reg < 0)
                 {
-                    BadMode();
+                    TOKEN_BadMode();
                 }
                 else
                 {
-                    InstrX((parm & 0xFF) + 0x2700 + reg*16);
+                    INSTR_X((parm & 0xFF) + 0x2700 + reg*16);
                 }
             }
             else
             {
                 linePtr = oldLine;
-                val = Eval();
-                reg = GetIndex();
+                val = EXPR_Eval();
+                reg = M68HC16_GetIndex();
                 if (reg < 0)
                 {
                     // no index register
                     if (typ == o_ArithW || typ == o_ADDD || typ == o_STD)
                     {
-                        InstrXW(parm + 0x70, val);
+                        INSTR_XW(parm + 0x70, val);
                     }
                     else
                     {
-                        InstrXW(parm + 0x30, val);
+                        INSTR_XW(parm + 0x30, val);
                     }
                 }
                 else
                 {
                     if (evalKnown && 0 <= val && val <= 255)
                     {
-                        InstrXB((parm & 0xFF) + reg*16, val);
+                        INSTR_XB((parm & 0xFF) + reg*16, val);
                     }
                     else if (typ == o_ArithW || typ == o_ADDD || typ == o_STD)
                     {
-                        InstrXW( parm + 0x40  + reg*16, val);
+                        INSTR_XW( parm + 0x40  + reg*16, val);
                     }
                     else
                     {
-                        InstrXW( parm +         reg*16, val);
+                        INSTR_XW( parm +         reg*16, val);
                     }
                 }
             }
@@ -844,9 +844,9 @@ static int M68HC16_DoCPUOpcode(int typ, int parm)
 }
 
 
-void Asm68HC16Init(void)
+void M68HC16_AsmInit(void)
 {
-    void *p = AddAsm(versionName, &M68HC16_DoCPUOpcode, NULL, NULL);
+    void *p = ASMX_AddAsm(versionName, &M68HC16_DoCPUOpcode, NULL, NULL);
 
-    AddCPU(p, "68HC16", 0, BIG_END, ADDR_16, LIST_24, 8, 0, M68HC16_opcdTab);
+    ASMX_AddCPU(p, "68HC16", 0, END_BIG, ADDR_16, LIST_24, 8, 0, M68HC16_opcdTab);
 }

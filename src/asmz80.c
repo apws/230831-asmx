@@ -1,6 +1,6 @@
-// asmz80.c
+// asmZ80.c
 
-#define versionName "Z-80 assembler"
+#define versionName "Z80 assembler"
 //#define NICE_ADD // allow ADD/ADC/SBC without "A,"
 #include "asmx.h"
 
@@ -14,40 +14,40 @@ enum
 
 enum
 {
-    o_None,     // No operands
-    o_NoneNGB,  // No operands, not in GBZ80
-    o_NoneGB,   // No operands, GBZ80-only
-    o_None180,  // No operands, Z180 only
+    OP_None,     // No operands
+    OP_NoneNGB,  // No operands, not in GBZ80
+    OP_NoneGB,   // No operands, GBZ80-only
+    OP_None180,  // No operands, Z180 only
 
-    o_LD,       // Generic LD opcode
-    o_EX,       // Generic EX opcode
-    o_ADD,      // Generic ADD opcode
-    o_ADC_SBC,  // Generic ADC and SBC opcodes
-    o_INC_DEC,  // Generic INC and DEC opcodes
-    o_JP_CALL,  // Generic JP and CALL opcodes
-    o_JR,       // Generic JR opcode
-    o_RET,      // Generic RET opcode
-    o_IN,       // Generic IN opcode
-    o_OUT,      // Generic OUT opcode
+    OP_LD,       // Generic LD opcode
+    OP_EX,       // Generic EX opcode
+    OP_ADD,      // Generic ADD opcode
+    OP_ADC_SBC,  // Generic ADC and SBC opcodes
+    OP_INC_DEC,  // Generic INC and DEC opcodes
+    OP_JP_CALL,  // Generic JP and CALL opcodes
+    OP_JR,       // Generic JR opcode
+    OP_RET,      // Generic RET opcode
+    OP_IN,       // Generic IN opcode
+    OP_OUT,      // Generic OUT opcode
 
-    o_PushPop,  // PUSH and POP instructions
-    o_Arith,    // Arithmetic instructions
-    o_Rotate,   // Z-80 rotate instructions
-//  o_Bit,      // BIT, RES, and SET instructions (moved to LabelOp for SET fall-back)
-    o_IM,       // IM instruction
-    o_DJNZ,     // DJNZ instruction
-    o_RST,      // RST instruction
+    OP_PushPop,  // PUSH and POP instructions
+    OP_Arith,    // Arithmetic instructions
+    OP_Rotate,   // Z-80 rotate instructions
+//  OP_Bit,      // BIT, RES, and SET instructions (moved to LabelOp for SET fall-back)
+    OP_IM,       // IM instruction
+    OP_DJNZ,     // DJNZ instruction
+    OP_RST,      // RST instruction
 
-    o_SWAP,     // SWAP instruction for GBZ80
-    o_LDH,      // LDH instruction for GBZ80
+    OP_SWAP,     // SWAP instruction for GBZ80
+    OP_LDH,      // LDH instruction for GBZ80
 
-    o_IN0,      // IN0 opcode, Z180 only
-    o_OUT0,     // OUT0 opcode, Z180 only
-    o_TST,      // TST opcode, Z180 only
-    o_MLT,      // MLT opcode, Z180 only
-    o_TSTIO,    // TSTIO opcode, Z180 only
+    OP_IN0,      // IN0 opcode, Z180 only
+    OP_OUT0,     // OUT0 opcode, Z180 only
+    OP_TST,      // TST opcode, Z180 only
+    OP_MLT,      // MLT opcode, Z180 only
+    OP_TSTIO,    // TSTIO opcode, Z180 only
 
-    o_Bit = o_LabelOp   // BIT, RES, and SET instructions need to be pseudo-op to allow SET fall-back
+    OP_Bit = OP_LabelOp   // BIT, RES, and SET instructions need to be pseudo-op to allow SET fall-back
 };
 
 const char conds[] = "NZ Z NC C PO PE P M";
@@ -60,147 +60,147 @@ const char Z80_IN0_OUT0_regs[] = "B C D E H L F A";
 
 enum regType    // these are keyed to Z80_regs[] above
 {
-    reg_B,          //  0
-    reg_C,          //  1
-    reg_D,          //  2
-    reg_E,          //  3
-    reg_H,          //  4
-    reg_L,          //  5
-    reg_M,          //  6
-    reg_A,          //  7
-    reg_I,          //  8
-    reg_R,          //  9
-    reg_BC,         // 10
-    reg_DE,         // 11
-    reg_HL,         // 12
-    reg_SP,         // 13
-    reg_IX,         // 14
-    reg_IY,         // 15
-    reg_AF,         // 16
-    reg_HLD,        // 17 GBZ80 HL with post-decrement
-    reg_HLI,        // 18 GBZ80 HL with post-increment
-    reg_Paren       // 19
+    REG_B,          //  0
+    REG_C,          //  1
+    REG_D,          //  2
+    REG_E,          //  3
+    REG_H,          //  4
+    REG_L,          //  5
+    REG_M,          //  6
+    REG_A,          //  7
+    REG_I,          //  8
+    REG_R,          //  9
+    REG_BC,         // 10
+    REG_DE,         // 11
+    REG_HL,         // 12
+    REG_SP,         // 13
+    REG_IX,         // 14
+    REG_IY,         // 15
+    REG_AF,         // 16
+    REG_HLD,        // 17 GBZ80 HL with post-decrement
+    REG_HLI,        // 18 GBZ80 HL with post-increment
+    REG_Paren       // 19
 };
 
 static const struct OpcdRec Z80_opcdTab[] =
 {
-    {"NOP",  o_None,    0x00},
-    {"RLCA", o_None,    0x07},
-    {"RRCA", o_None,    0x0F},
-    {"RLA",  o_None,    0x17},
-    {"RRA",  o_None,    0x1F},
-    {"DAA",  o_None,    0x27},
-    {"CPL",  o_None,    0x2F},
-    {"SCF",  o_None,    0x37},
-    {"CCF",  o_None,    0x3F},
-    {"HALT", o_None,    0x76},
-    {"DI",   o_None,    0xF3},
-    {"EI",   o_None,    0xFB},
-    {"EXX",  o_NoneNGB, 0xD9},
-    {"NEG",  o_NoneNGB, 0xED44},
-    {"RETN", o_NoneNGB, 0xED45},
-    {"RETI", o_None,    0xED4D},
-    {"RRD",  o_NoneNGB, 0xED67},
-    {"RLD",  o_NoneNGB, 0xED6F},
-    {"LDI",  o_None,    0xEDA0},
-    {"CPI",  o_NoneNGB, 0xEDA1},
-    {"INI",  o_NoneNGB, 0xEDA2},
-    {"OUTI", o_NoneNGB, 0xEDA3},
-    {"LDIR", o_NoneNGB, 0xEDB0},
-    {"CPIR", o_NoneNGB, 0xEDB1},
-    {"INIR", o_NoneNGB, 0xEDB2},
-    {"OTIR", o_NoneNGB, 0xEDB3},
-    {"LDD",  o_None,    0xEDA8},
-    {"CPD",  o_NoneNGB, 0xEDA9},
-    {"IND",  o_NoneNGB, 0xEDAA},
-    {"OUTD", o_NoneNGB, 0xEDAB},
-    {"LDDR", o_NoneNGB, 0xEDB8},
-    {"CPDR", o_NoneNGB, 0xEDB9},
-    {"INDR", o_NoneNGB, 0xEDBA},
-    {"OTDR", o_NoneNGB, 0xEDBB},
+    {"NOP",  OP_None,    0x00},
+    {"RLCA", OP_None,    0x07},
+    {"RRCA", OP_None,    0x0F},
+    {"RLA",  OP_None,    0x17},
+    {"RRA",  OP_None,    0x1F},
+    {"DAA",  OP_None,    0x27},
+    {"CPL",  OP_None,    0x2F},
+    {"SCF",  OP_None,    0x37},
+    {"CCF",  OP_None,    0x3F},
+    {"HALT", OP_None,    0x76},
+    {"DI",   OP_None,    0xF3},
+    {"EI",   OP_None,    0xFB},
+    {"EXX",  OP_NoneNGB, 0xD9},
+    {"NEG",  OP_NoneNGB, 0xED44},
+    {"RETN", OP_NoneNGB, 0xED45},
+    {"RETI", OP_None,    0xED4D},
+    {"RRD",  OP_NoneNGB, 0xED67},
+    {"RLD",  OP_NoneNGB, 0xED6F},
+    {"LDI",  OP_None,    0xEDA0},
+    {"CPI",  OP_NoneNGB, 0xEDA1},
+    {"INI",  OP_NoneNGB, 0xEDA2},
+    {"OUTI", OP_NoneNGB, 0xEDA3},
+    {"LDIR", OP_NoneNGB, 0xEDB0},
+    {"CPIR", OP_NoneNGB, 0xEDB1},
+    {"INIR", OP_NoneNGB, 0xEDB2},
+    {"OTIR", OP_NoneNGB, 0xEDB3},
+    {"LDD",  OP_None,    0xEDA8},
+    {"CPD",  OP_NoneNGB, 0xEDA9},
+    {"IND",  OP_NoneNGB, 0xEDAA},
+    {"OUTD", OP_NoneNGB, 0xEDAB},
+    {"LDDR", OP_NoneNGB, 0xEDB8},
+    {"CPDR", OP_NoneNGB, 0xEDB9},
+    {"INDR", OP_NoneNGB, 0xEDBA},
+    {"OTDR", OP_NoneNGB, 0xEDBB},
 
-    {"LD",   o_LD,      0},
-    {"EX",   o_EX,      0},
+    {"LD",   OP_LD,      0},
+    {"EX",   OP_EX,      0},
 
-    {"ADD",  o_ADD,     0},
-    {"ADC",  o_ADC_SBC, 0},
-    {"SBC",  o_ADC_SBC, 1},
-    {"INC",  o_INC_DEC, 0},
-    {"DEC",  o_INC_DEC, 1},
+    {"ADD",  OP_ADD,     0},
+    {"ADC",  OP_ADC_SBC, 0},
+    {"SBC",  OP_ADC_SBC, 1},
+    {"INC",  OP_INC_DEC, 0},
+    {"DEC",  OP_INC_DEC, 1},
 
-    {"JP",   o_JP_CALL, 0xC3C2},
-    {"CALL", o_JP_CALL, 0xCDC4},
-    {"JR",   o_JR,      0},
-    {"RET",  o_RET,     0},
+    {"JP",   OP_JP_CALL, 0xC3C2},
+    {"CALL", OP_JP_CALL, 0xCDC4},
+    {"JR",   OP_JR,      0},
+    {"RET",  OP_RET,     0},
 
-    {"PUSH", o_PushPop, 0xC5},
-    {"POP",  o_PushPop, 0xC1},
+    {"PUSH", OP_PushPop, 0xC5},
+    {"POP",  OP_PushPop, 0xC1},
 
-    {"SUB",  o_Arith,   0xD690},
-    {"AND",  o_Arith,   0xE6A0},
-    {"XOR",  o_Arith,   0xEEA8},
-    {"OR",   o_Arith,   0xF6B0},
-    {"CP",   o_Arith,   0xFEB8},
+    {"SUB",  OP_Arith,   0xD690},
+    {"AND",  OP_Arith,   0xE6A0},
+    {"XOR",  OP_Arith,   0xEEA8},
+    {"OR",   OP_Arith,   0xF6B0},
+    {"CP",   OP_Arith,   0xFEB8},
 
-    {"RLC",  o_Rotate,  0x00},
-    {"RRC",  o_Rotate,  0x08},
-    {"RL",   o_Rotate,  0x10},
-    {"RR",   o_Rotate,  0x18},
-    {"SLA",  o_Rotate,  0x20},
-    {"SRA",  o_Rotate,  0x28},
-    {"SRL",  o_Rotate,  0x38},
+    {"RLC",  OP_Rotate,  0x00},
+    {"RRC",  OP_Rotate,  0x08},
+    {"RL",   OP_Rotate,  0x10},
+    {"RR",   OP_Rotate,  0x18},
+    {"SLA",  OP_Rotate,  0x20},
+    {"SRA",  OP_Rotate,  0x28},
+    {"SRL",  OP_Rotate,  0x38},
 
-    {"BIT",  o_Bit,     0x40},
-    {"RES",  o_Bit,     0x80},
-    {"SET",  o_Bit,     0xC0},
+    {"BIT",  OP_Bit,     0x40},
+    {"RES",  OP_Bit,     0x80},
+    {"SET",  OP_Bit,     0xC0},
 
-    {"IM",   o_IM,      0},
+    {"IM",   OP_IM,      0},
 
-    {"DJNZ", o_DJNZ,    0},
+    {"DJNZ", OP_DJNZ,    0},
 
-    {"IN",   o_IN,      0},
-    {"OUT",  o_OUT,     0},
+    {"IN",   OP_IN,      0},
+    {"OUT",  OP_OUT,     0},
 
-    {"RST",  o_RST,     0},
+    {"RST",  OP_RST,     0},
 
 //  Gameboy Z-80 specific instructions
 
-    {"STOP", o_NoneGB,  0x10},
-//  {"DEBUG",o_NoneGB,  0xED}, // does this really exist?
-    {"SWAP", o_SWAP,    0x00},
-    {"LDH",  o_LDH,     0x00},
+    {"STOP", OP_NoneGB,  0x10},
+//  {"DEBUG",OP_NoneGB,  0xED}, // does this really exist?
+    {"SWAP", OP_SWAP,    0x00},
+    {"LDH",  OP_LDH,     0x00},
 
 //  Z180 specific instructions
 
-    {"IN0",   o_IN0,     0xED00 }, // + (r << 3) : bb
-    {"OUT0",  o_OUT0,    0xED01 }, // + (r << 3) : bb
-    {"TST",   o_TST,     0xED04 }, // + (r << 3), or ED64 for TST (C),b
-    {"MLT",   o_MLT,     0xED4C }, // + (rr << 4)
-    {"TSTIO", o_TSTIO,   0xED74 }, // : bb
+    {"IN0",   OP_IN0,     0xED00 }, // + (r << 3) : bb
+    {"OUT0",  OP_OUT0,    0xED01 }, // + (r << 3) : bb
+    {"TST",   OP_TST,     0xED04 }, // + (r << 3), or ED64 for TST (C),b
+    {"MLT",   OP_MLT,     0xED4C }, // + (rr << 4)
+    {"TSTIO", OP_TSTIO,   0xED74 }, // : bb
 
-    {"SLP",   o_None180, 0xED76 },
-    {"OTIM",  o_None180, 0xED83 },
-    {"OTDM",  o_None180, 0xED8B },
-    {"OTIMR", o_None180, 0xED93 },
-    {"OTDMR", o_None180, 0xED9B },
+    {"SLP",   OP_None180, 0xED76 },
+    {"OTIM",  OP_None180, 0xED83 },
+    {"OTDM",  OP_None180, 0xED8B },
+    {"OTIMR", OP_None180, 0xED93 },
+    {"OTDMR", OP_None180, 0xED9B },
 
-    {"",    o_Illegal,  0}
+    {"",    OP_Illegal,  0}
 };
 
 
 // --------------------------------------------------------------
 
 
-static int IXOffset()
+static int Z80_IXOffset()
 {
     Str255  word;
 
     int val = 0;
     char *oldLine = linePtr;
-    int token = GetWord(word);
+    int token = TOKEN_GetWord(word);
     if (token == '+' || token == '-')
     {
-        val = Eval();
+        val = EXPR_Eval();
         if (token == '-')
         {
             val = -val;
@@ -211,86 +211,86 @@ static int IXOffset()
         linePtr = oldLine;
     }
 
-    RParen();
+    TOKEN_RParen();
 
     return val;
 }
 
 
-static int DDFD(int reg)
+static int Z80_DDFD(int reg)
 {
     switch (reg)
     {
         default:
-        case reg_HL:
+        case REG_HL:
             return      0;
-        case reg_IX:
+        case REG_IX:
             return 0xDD00;
-        case reg_IY:
+        case REG_IY:
             return 0xFD00;
     }
 }
 
 
-static void DoArith(int imm, int reg)
+static void Z80_DoArith(int imm, int reg)
 {
     int         reg2;
     int         val;
 
     char *oldLine = linePtr; // save position because of (HL) vs (expr)
 
-    switch ((reg2 = GetReg(Z80_regs)))
+    switch ((reg2 = REG_Get(Z80_regs)))
     {
         case reg_EOL:
             break;
 
         case reg_None:  // ADD A,nn
-            val = Eval();
-            InstrBB(imm, val);
+            val = EXPR_Eval();
+            INSTR_BB(imm, val);
             break;
 
-        case reg_B:
-        case reg_C:
-        case reg_D:
-        case reg_E:
-        case reg_H:
-        case reg_L:
-        case reg_A:     // ADD A,r
-            InstrB(reg + reg2);
+        case REG_B:
+        case REG_C:
+        case REG_D:
+        case REG_E:
+        case REG_H:
+        case REG_L:
+        case REG_A:     // ADD A,r
+            INSTR_B(reg + reg2);
             break;
 
-        case reg_Paren: // ADD A,(
-            switch ((reg2 = GetReg(Z80_regs)))
+        case REG_Paren: // ADD A,(
+            switch ((reg2 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_HL:
-                    if (RParen()) break;
-                    InstrB(reg+reg_M);
+                case REG_HL:
+                    if (TOKEN_RParen()) break;
+                    INSTR_B(reg+REG_M);
                     break;
 
-                case reg_IX:
-                case reg_IY:
+                case REG_IX:
+                case REG_IY:
                     if (curCPU == CPU_GBZ80)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                     }
-                    val = IXOffset();
-                    InstrXB(DDFD(reg2) + reg + reg_M, val);
+                    val = Z80_IXOffset();
+                    INSTR_XB(Z80_DDFD(reg2) + reg + REG_M, val);
                     break;
 
                 default:
                     // must be constant "(expression)" so try again that way
                     linePtr = oldLine;
-                    val = Eval();
-                    InstrBB(imm, val);
+                    val = EXPR_Eval();
+                    INSTR_BB(imm, val);
             }
             break;
 
         default:
-            IllegalOperand();
+            ASMX_IllegalOperand();
             break;
     }
 }
@@ -305,326 +305,326 @@ static int Z80_DoCPUOpcode(int typ, int parm)
     char *oldLine = linePtr;
     switch (typ)
     {
-        case o_None180:
+        case OP_None180:
             if (curCPU != CPU_Z180) return 0;
             FALLTHROUGH;
-        case o_None:
-        case o_NoneGB:
-        case o_NoneNGB:
+        case OP_None:
+        case OP_NoneGB:
+        case OP_NoneNGB:
             if (curCPU != CPU_GBZ80 || (parm & 0xFFF7) != 0xEDA0)
             {
                 // LDI/LDD 0xEDA0/0xEDA8
-                if ((typ == o_NoneGB)  && curCPU != CPU_GBZ80) return 0;
-                if ((typ == o_NoneNGB) && curCPU == CPU_GBZ80) return 0;
+                if ((typ == OP_NoneGB)  && curCPU != CPU_GBZ80) return 0;
+                if ((typ == OP_NoneNGB) && curCPU == CPU_GBZ80) return 0;
                 if (curCPU == CPU_GBZ80 && parm == 0xED4D)
                 {
                     parm = 0xD9; // GBZ80 RETI
                 }
-                InstrX(parm & 0xFFFF);
+                INSTR_X(parm & 0xFFFF);
                 break;
             }
 
             // fall-through for GBZ80 LDI/LDD:
             parm = ((parm & 0x08) << 1) | 0x22;
 
-            switch ((reg1 = GetReg(Z80_regs)))
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_A:     // A,(HL)
-                    if (Comma()) break;
-                    if (Expect("(")) break;
-                    switch ((reg1 = GetReg(Z80_regs)))
+                case REG_A:     // A,(HL)
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("(")) break;
+                    switch ((reg1 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_HL: // A,(HL)
-                            if (RParen()) break;
-                            InstrB(parm + 8);
+                        case REG_HL: // A,(HL)
+                            if (TOKEN_RParen()) break;
+                            INSTR_B(parm + 8);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case reg_Paren: // (HL),A
-                    switch ((reg1 = GetReg(Z80_regs)))
+                case REG_Paren: // (HL),A
+                    switch ((reg1 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_HL: // (HL),A
-                            if (RParen()) break;
-                            if (Comma()) break;
-                            if (Expect("A")) break;
-                            InstrB(parm);
+                        case REG_HL: // (HL),A
+                            if (TOKEN_RParen()) break;
+                            if (TOKEN_Comma()) break;
+                            if (TOKEN_Expect("A")) break;
+                            INSTR_B(parm);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_LD:
-            switch ((reg1 = GetReg(Z80_regs)))
+        case OP_LD:
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
                 case reg_None:  // LD nnnn,?
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
 
-                case reg_B:
-                case reg_C:
-                case reg_D:
-                case reg_E:
-                case reg_H:
-                case reg_L:
-                case reg_A:     // LD r,?
-                    if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs)))
+                case REG_B:
+                case REG_C:
+                case REG_D:
+                case REG_E:
+                case REG_H:
+                case REG_L:
+                case REG_A:     // LD r,?
+                    if (TOKEN_Comma()) break;
+                    switch ((reg2 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_B:
-                        case reg_C:
-                        case reg_D:
-                        case reg_E:
-                        case reg_H:
-                        case reg_L:
-                        case reg_A:     // LD r,r
-                            InstrB(0x40 + reg1*8 + reg2);
+                        case REG_B:
+                        case REG_C:
+                        case REG_D:
+                        case REG_E:
+                        case REG_H:
+                        case REG_L:
+                        case REG_A:     // LD r,r
+                            INSTR_B(0x40 + reg1*8 + reg2);
                             break;
 
-                        case reg_I:     // LD A,I
-                            if (reg1 != reg_A || curCPU == CPU_GBZ80)
+                        case REG_I:     // LD A,I
+                            if (reg1 != REG_A || curCPU == CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
                             }
-                            InstrX(0xED57);
+                            INSTR_X(0xED57);
                             break;
 
-                        case reg_R:     // LD A,R
-                            if (reg1 != reg_A || curCPU == CPU_GBZ80)
+                        case REG_R:     // LD A,R
+                            if (reg1 != REG_A || curCPU == CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
                             }
-                            InstrX(0xED5F);
+                            INSTR_X(0xED5F);
                             break;
 
-                        case reg_Paren:     // LD r,(?)
-                            switch ((reg2 = GetReg(Z80_regs)))
+                        case REG_Paren:     // LD r,(?)
+                            switch ((reg2 = REG_Get(Z80_regs)))
                             {
                                 case reg_EOL:
                                     break;
 
-                                case reg_BC:    // LD A,(BC)
-                                case reg_DE:    // LD A,(DE)
-                                    if (reg1 != reg_A)
+                                case REG_BC:    // LD A,(BC)
+                                case REG_DE:    // LD A,(DE)
+                                    if (reg1 != REG_A)
                                     {
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                     }
                                     else
                                     {
-                                        if (RParen()) break;
-                                        InstrB(0x0A + (reg2-reg_BC)*16);
+                                        if (TOKEN_RParen()) break;
+                                        INSTR_B(0x0A + (reg2-REG_BC)*16);
                                     }
                                     break;
 
-                                case reg_C:
+                                case REG_C:
                                     if (curCPU != CPU_GBZ80)
                                     {
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                     }
                                     else
                                     {
-                                        if (RParen()) break;
-                                        InstrB(0xF2); // LD A,(C)
+                                        if (TOKEN_RParen()) break;
+                                        INSTR_B(0xF2); // LD A,(C)
                                     }
                                     break;
 
-                                case reg_HLI:
+                                case REG_HLI:
                                     if (curCPU != CPU_GBZ80)
                                     {
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                     }
                                     else
                                     {
-                                        if (RParen()) break;
-                                        InstrB(0x2A); // LD A,(HLI)
+                                        if (TOKEN_RParen()) break;
+                                        INSTR_B(0x2A); // LD A,(HLI)
                                     }
                                     break;
 
-                                case reg_HLD:
+                                case REG_HLD:
                                     if (curCPU != CPU_GBZ80)
                                     {
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                     }
                                     else
                                     {
-                                        if (RParen()) break;
-                                        InstrB(0x3A); // LD A,(HLD)
+                                        if (TOKEN_RParen()) break;
+                                        INSTR_B(0x3A); // LD A,(HLD)
                                     }
                                     break;
 
-                                case reg_HL:    // LD r,(HL)
+                                case REG_HL:    // LD r,(HL)
                                     if (curCPU == CPU_GBZ80 && *linePtr == '+')
                                     {
                                         linePtr++;
-                                        if (RParen()) break;
-                                        InstrB(0x2A); // LD A,(HL+)
+                                        if (TOKEN_RParen()) break;
+                                        INSTR_B(0x2A); // LD A,(HL+)
                                     }
                                     else if (curCPU == CPU_GBZ80 && *linePtr == '-')
                                     {
                                         linePtr++;
-                                        if (RParen()) break;
-                                        InstrB(0x3A); // LD A,(HL-)
+                                        if (TOKEN_RParen()) break;
+                                        INSTR_B(0x3A); // LD A,(HL-)
                                     }
                                     else
                                     {
-                                        if (RParen()) break;
-                                        InstrB(0x40 + reg1*8 + reg_M);
+                                        if (TOKEN_RParen()) break;
+                                        INSTR_B(0x40 + reg1*8 + REG_M);
                                     }
                                     break;
 
-                                case reg_IX:    // LD r,(IX+d)
-                                case reg_IY:    // LD r,(IY+d)
+                                case REG_IX:    // LD r,(IX+d)
+                                case REG_IY:    // LD r,(IY+d)
                                     if (curCPU == CPU_GBZ80)
                                     {
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                         break;
                                     }
-                                    val = IXOffset();
-                                    InstrXB(DDFD(reg2) + 0x46 + reg1*8, val);
+                                    val = Z80_IXOffset();
+                                    INSTR_XB(Z80_DDFD(reg2) + 0x46 + reg1*8, val);
                                     break;
 
                                 case reg_None:  // LD A,(nnnn)
-                                    if (reg1 != reg_A)
+                                    if (reg1 != REG_A)
                                     {
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                     }
                                     else
                                     {
-                                        val = Eval();
-                                        if (RParen()) break;
+                                        val = EXPR_Eval();
+                                        if (TOKEN_RParen()) break;
                                         if (curCPU == CPU_GBZ80 && evalKnown && (val & 0xFF00) == 0xFF00)
                                         {
-                                            InstrBB(0xF0, 0xFF);
+                                            INSTR_BB(0xF0, 0xFF);
                                         }
                                         else if (curCPU == CPU_GBZ80)
                                         {
-                                            InstrBW(0xFA, val);
+                                            INSTR_BW(0xFA, val);
                                         }
                                         else
                                         {
-                                            InstrBW(0x3A, val);
+                                            INSTR_BW(0x3A, val);
                                         }
                                     }
                                     break;
 
                                 default:
-                                    IllegalOperand();
+                                    ASMX_IllegalOperand();
                                     break;
                             }
                             break;
 
                         case reg_None:  // LD r,nn
-                            InstrBB(0x06 + reg1*8, Eval());
+                            INSTR_BB(0x06 + reg1*8, EXPR_Eval());
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case reg_I:     // LD I,A
+                case REG_I:     // LD I,A
                     if (curCPU == CPU_GBZ80)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                     }
-                    if (Comma()) break;
-                    if (Expect("A")) break;
-                    InstrX(0xED47);
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
+                    INSTR_X(0xED47);
                     break;
 
-                case reg_R:     // LD R,A
+                case REG_R:     // LD R,A
                     if (curCPU == CPU_GBZ80)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                     }
-                    if (Comma()) break;
-                    if (Expect("A")) break;
-                    InstrX(0xED4F);
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
+                    INSTR_X(0xED4F);
                     break;
 
-                case reg_BC:
-                case reg_DE:
-                case reg_HL:
-                case reg_SP:    // LD rr,?
-                    if (Comma()) break;
+                case REG_BC:
+                case REG_DE:
+                case REG_HL:
+                case REG_SP:    // LD rr,?
+                    if (TOKEN_Comma()) break;
                     oldLine = linePtr; // save linePtr in case of backtracking
-                    switch ((reg2 = GetReg(Z80_regs)))
+                    switch ((reg2 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_HL:    // LD SP,HL/IX/IY
-                        case reg_IX:
-                        case reg_IY:
-                            if (reg1 != reg_SP)
+                        case REG_HL:    // LD SP,HL/IX/IY
+                        case REG_IX:
+                        case REG_IY:
+                            if (reg1 != REG_SP)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                             }
-                            else if (reg2 != reg_HL && curCPU == CPU_GBZ80)
+                            else if (reg2 != REG_HL && curCPU == CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                             }
                             else
                             {
-                                InstrX(DDFD(reg2) + 0xF9);
+                                INSTR_X(Z80_DDFD(reg2) + 0xF9);
                             }
                             break;
 
-                        case reg_Paren:
+                        case REG_Paren:
                             if (curCPU == CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                             }
-                            else if (reg1 == reg_HL)
+                            else if (reg1 == REG_HL)
                             {
-                                val = Eval();   // LD HL,(nnnn)
-                                if (RParen()) break;
-                                InstrBW(0x2A, val);
+                                val = EXPR_Eval();   // LD HL,(nnnn)
+                                if (TOKEN_RParen()) break;
+                                INSTR_BW(0x2A, val);
                             }
                             else
                             {
-                                val = Eval();   // LD BC/DE/SP,(nnnn)
-                                if (RParen()) break;
-                                InstrXW(0xED4B + (reg1-reg_BC)*16, val);
+                                val = EXPR_Eval();   // LD BC/DE/SP,(nnnn)
+                                if (TOKEN_RParen()) break;
+                                INSTR_XW(0xED4B + (reg1-REG_BC)*16, val);
                             }
 
                             // at this point, if there is any extra stuff on the line,
                             // backtrack and try again with reg_None case
                             // to handle the case of LD BC,(foo + 1) * 256, etc.
-                            token = GetWord(word);
+                            token = TOKEN_GetWord(word);
                             if (token == 0) break;
                             // note that if an error occurs, it will be repeated twice,
                             // and we have to return to avoid that, but we need to make sure
@@ -637,45 +637,45 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                             FALLTHROUGH;
 
                         case reg_None:  // LD rr,nnnn
-                            val = Eval();
-                            InstrBW(0x01 + (reg1-reg_BC)*16, val);
+                            val = EXPR_Eval();
+                            INSTR_BW(0x01 + (reg1-REG_BC)*16, val);
                             break;
 
-                        case reg_SP:
+                        case REG_SP:
                             if (curCPU == CPU_GBZ80)
                             {
-                                InstrB(0xF8); // LD HL,SP
+                                INSTR_B(0xF8); // LD HL,SP
                                 break;
                             }
                             FALLTHROUGH;
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case reg_IX:    // LD IX,?
-                case reg_IY:    // LD IY,?
+                case REG_IX:    // LD IX,?
+                case REG_IY:    // LD IY,?
                     if (curCPU == CPU_GBZ80)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                     }
-                    if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs)))
+                    if (TOKEN_Comma()) break;
+                    switch ((reg2 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_Paren: // LD IX,(nnnn)
-                            val = Eval();
-                            if (RParen()) break;
-                            InstrXW(DDFD(reg1) + 0x2A, val);
+                        case REG_Paren: // LD IX,(nnnn)
+                            val = EXPR_Eval();
+                            if (TOKEN_RParen()) break;
+                            INSTR_XW(Z80_DDFD(reg1) + 0x2A, val);
 
                             // at this point, if there is any extra stuff on the line,
                             // backtrack and try again with reg_None case
                             // to handle the case of LD IX,(foo + 1) * 256, etc.
-                            token = GetWord(word);
+                            token = TOKEN_GetWord(word);
                             if (token == 0) break;
                             // note that if an error occurs, it will be repeated twice,
                             // and we have to return to avoid that
@@ -684,307 +684,307 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                             FALLTHROUGH;
 
                         case reg_None:  // LD IX,nnnn
-                            val = Eval();
-                            InstrXW(DDFD(reg1) + 0x21, val);
+                            val = EXPR_Eval();
+                            INSTR_XW(Z80_DDFD(reg1) + 0x21, val);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case reg_Paren:     // LD (?),?
-                    switch ((reg1 = GetReg(Z80_regs)))
+                case REG_Paren:     // LD (?),?
+                    switch ((reg1 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
                         case reg_None:  // LD (nnnn),?
-                            val = Eval();
-                            if (RParen()) break;
-                            if (Comma()) break;
-                            switch ((reg2 = GetReg(Z80_regs)))
+                            val = EXPR_Eval();
+                            if (TOKEN_RParen()) break;
+                            if (TOKEN_Comma()) break;
+                            switch ((reg2 = REG_Get(Z80_regs)))
                             {
                                 case reg_EOL:
                                     break;
 
-                                case reg_A:
+                                case REG_A:
                                     if (curCPU == CPU_GBZ80 && evalKnown && (val & 0xFF00) == 0xFF00)
                                     {
-                                        InstrBB(0xE0, val);
+                                        INSTR_BB(0xE0, val);
                                     }
                                     else if (curCPU == CPU_GBZ80)
                                     {
-                                        InstrBW(0xEA, val);
+                                        INSTR_BW(0xEA, val);
                                     }
                                     else
                                     {
-                                        InstrBW(0x32, val);
+                                        INSTR_BW(0x32, val);
                                     }
                                     break;
 
-                                case reg_HL:
+                                case REG_HL:
                                     if (curCPU == CPU_GBZ80)
                                     {
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                     }
                                     else
                                     {
-                                        InstrBW(0x22, val);
+                                        INSTR_BW(0x22, val);
                                     }
                                     break;
 
-                                case reg_BC:
-                                case reg_DE:
-                                case reg_SP:
-                                    if (reg2 == reg_SP && curCPU == CPU_GBZ80)
+                                case REG_BC:
+                                case REG_DE:
+                                case REG_SP:
+                                    if (reg2 == REG_SP && curCPU == CPU_GBZ80)
                                     {
-                                        InstrBW(0x08, val);
+                                        INSTR_BW(0x08, val);
                                     }
                                     else if (curCPU == CPU_GBZ80)
                                     {
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                     }
                                     else
                                     {
-                                        InstrXW(0xED43 + (reg2-reg_BC)*16, val);
+                                        INSTR_XW(0xED43 + (reg2-REG_BC)*16, val);
                                     }
                                     break;
 
-                                case reg_IX:
-                                case reg_IY:
+                                case REG_IX:
+                                case REG_IY:
                                     if (curCPU == CPU_GBZ80)
                                     {
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                     }
                                     else
                                     {
-                                        InstrXW(DDFD(reg2) + 0x22, val);
+                                        INSTR_XW(Z80_DDFD(reg2) + 0x22, val);
                                     }
                                     break;
 
                                 default:
-                                    IllegalOperand();
+                                    ASMX_IllegalOperand();
                                     break;
                             }
                             break;
 
-                        case reg_BC:
-                        case reg_DE:
-                            if (RParen()) break;
-                            if (Comma()) break;
-                            if (Expect("A")) break;
-                            InstrB(0x02 + (reg1-reg_BC)*16);
+                        case REG_BC:
+                        case REG_DE:
+                            if (TOKEN_RParen()) break;
+                            if (TOKEN_Comma()) break;
+                            if (TOKEN_Expect("A")) break;
+                            INSTR_B(0x02 + (reg1-REG_BC)*16);
                             break;
 
-                        case reg_C:
+                        case REG_C:
                             if (curCPU != CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                             }
                             else
                             {
-                                if (RParen()) break;
-                                if (Comma()) break;
-                                if (Expect("A")) break;
-                                InstrB(0xE2); // LD (C),A
+                                if (TOKEN_RParen()) break;
+                                if (TOKEN_Comma()) break;
+                                if (TOKEN_Expect("A")) break;
+                                INSTR_B(0xE2); // LD (C),A
                             }
                             break;
 
-                        case reg_HLI:
+                        case REG_HLI:
                             if (curCPU != CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                             }
                             else
                             {
-                                if (RParen()) break;
-                                if (Comma()) break;
-                                if (Expect("A")) break;
-                                InstrB(0x22); // LD (HLI),A
+                                if (TOKEN_RParen()) break;
+                                if (TOKEN_Comma()) break;
+                                if (TOKEN_Expect("A")) break;
+                                INSTR_B(0x22); // LD (HLI),A
                             }
                             break;
 
-                        case reg_HLD:
+                        case REG_HLD:
                             if (curCPU != CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                             }
                             else
                             {
-                                if (RParen()) break;
-                                if (Comma()) break;
-                                if (Expect("A")) break;
-                                InstrB(0x32); // LD (HLD),A
+                                if (TOKEN_RParen()) break;
+                                if (TOKEN_Comma()) break;
+                                if (TOKEN_Expect("A")) break;
+                                INSTR_B(0x32); // LD (HLD),A
                             }
                             break;
 
-                        case reg_HL: // LD (HL),?
+                        case REG_HL: // LD (HL),?
                             if (curCPU == CPU_GBZ80 && *linePtr == '+')
                             {
                                 linePtr++;
-                                if (RParen()) break;
-                                if (Comma()) break;
-                                if (Expect("A")) break;
-                                InstrB(0x22); // LD (HL+),A
+                                if (TOKEN_RParen()) break;
+                                if (TOKEN_Comma()) break;
+                                if (TOKEN_Expect("A")) break;
+                                INSTR_B(0x22); // LD (HL+),A
                                 break;
                             }
                             else if (curCPU == CPU_GBZ80 && *linePtr == '-')
                             {
                                 linePtr++;
-                                if (RParen()) break;
-                                if (Comma()) break;
-                                if (Expect("A")) break;
-                                InstrB(0x32); // LD (HL-),A
+                                if (TOKEN_RParen()) break;
+                                if (TOKEN_Comma()) break;
+                                if (TOKEN_Expect("A")) break;
+                                INSTR_B(0x32); // LD (HL-),A
                                 break;
                             }
-                            if (RParen()) break;
-                            if (Comma()) break;
-                            switch ((reg2 = GetReg(Z80_regs)))
+                            if (TOKEN_RParen()) break;
+                            if (TOKEN_Comma()) break;
+                            switch ((reg2 = REG_Get(Z80_regs)))
                             {
                                 case reg_EOL:
                                     break;
 
                                 case reg_None:
-                                    val = Eval();
-                                    InstrBB(0x36, val);
+                                    val = EXPR_Eval();
+                                    INSTR_BB(0x36, val);
                                     break;
 
-                                case reg_B:
-                                case reg_C:
-                                case reg_D:
-                                case reg_E:
-                                case reg_H:
-                                case reg_L:
-                                case reg_A:
-                                    InstrB(0x70 + reg2);
+                                case REG_B:
+                                case REG_C:
+                                case REG_D:
+                                case REG_E:
+                                case REG_H:
+                                case REG_L:
+                                case REG_A:
+                                    INSTR_B(0x70 + reg2);
                                     break;
 
                                 default:
-                                    IllegalOperand();
+                                    ASMX_IllegalOperand();
                                     break;
                             }
                             break;
 
-                        case reg_IX:
-                        case reg_IY:    // LD (IX),?
+                        case REG_IX:
+                        case REG_IY:    // LD (IX),?
                             if (curCPU == CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
                             }
-                            val = IXOffset();
-                            if (Comma()) break;
-                            switch ((reg2 = GetReg(Z80_regs)))
+                            val = Z80_IXOffset();
+                            if (TOKEN_Comma()) break;
+                            switch ((reg2 = REG_Get(Z80_regs)))
                             {
                                 case reg_EOL:
                                     break;
 
                                 case reg_None:
-                                    reg2 = Eval();
-                                    InstrXBB(DDFD(reg1) + 0x36, val, reg2);
+                                    reg2 = EXPR_Eval();
+                                    INSTR_XBB(Z80_DDFD(reg1) + 0x36, val, reg2);
                                     break;
 
-                                case reg_B:
-                                case reg_C:
-                                case reg_D:
-                                case reg_E:
-                                case reg_H:
-                                case reg_L:
-                                case reg_A:
-                                    InstrXB(DDFD(reg1) + 0x70 + reg2, val);
+                                case REG_B:
+                                case REG_C:
+                                case REG_D:
+                                case REG_E:
+                                case REG_H:
+                                case REG_L:
+                                case REG_A:
+                                    INSTR_XB(Z80_DDFD(reg1) + 0x70 + reg2, val);
                                     break;
 
                                 default:
-                                    IllegalOperand();
+                                    ASMX_IllegalOperand();
                                     break;
                             }
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_EX:
+        case OP_EX:
             if (curCPU == CPU_GBZ80)
             {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs)))
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_DE:    // EX DE,HL }
-                    if (Comma()) break;
-                    if (Expect("HL")) break;
-                    InstrB(0xEB);
+                case REG_DE:    // EX DE,HL }
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("HL")) break;
+                    INSTR_B(0xEB);
                     break;
 
-                case reg_AF:    // EX AF,AF' }
-                    if (Comma()) break;
-                    if (Expect("AF")) break;
-                    if (Expect("'")) break;
-                    InstrB(0x08);
+                case REG_AF:    // EX AF,AF' }
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("AF")) break;
+                    if (TOKEN_Expect("'")) break;
+                    INSTR_B(0x08);
                     break;
 
-                case reg_Paren: // EX (SP),? }
-                    if (Expect("SP")) break;
-                    if (RParen()) break;
-                    if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs)))
+                case REG_Paren: // EX (SP),? }
+                    if (TOKEN_Expect("SP")) break;
+                    if (TOKEN_RParen()) break;
+                    if (TOKEN_Comma()) break;
+                    switch ((reg2 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_HL:
-                        case reg_IX:
-                        case reg_IY:
-                            InstrX(DDFD(reg2) + 0xE3);
+                        case REG_HL:
+                        case REG_IX:
+                        case REG_IY:
+                            INSTR_X(Z80_DDFD(reg2) + 0xE3);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_ADD:
-            switch ((reg1 = GetReg(Z80_regs)))
+        case OP_ADD:
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
 #ifdef NICE_ADD
-                case reg_Paren:
+                case REG_Paren:
                 case reg_None:
-                case reg_B: // ADD r
-                case reg_C:
-                case reg_D:
-                case reg_E:
-                case reg_H:
-                case reg_L:
+                case REG_B: // ADD r
+                case REG_C:
+                case REG_D:
+                case REG_E:
+                case REG_H:
+                case REG_L:
                     linePtr = oldLine;
-                    DoArith(0xC6, 0x80);
+                    Z80_DoArith(0xC6, 0x80);
                     break;
 #endif
 
-                case reg_A:
+                case REG_A:
 #ifdef NICE_ADD
                     oldLine = linePtr;
                     token = GetWord(word);
@@ -995,93 +995,93 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     }
                     linePtr = oldLine;
 #endif
-                    if (Comma()) break;
-                    DoArith(0xC6, 0x80);
+                    if (TOKEN_Comma()) break;
+                    Z80_DoArith(0xC6, 0x80);
                     break;
 
-                case reg_SP:
+                case REG_SP:
                     if (curCPU != CPU_GBZ80)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                     }
                     else
                     {
-                        if (Comma()) break;
-                        val = Eval();
+                        if (TOKEN_Comma()) break;
+                        val = EXPR_Eval();
                         if (val < -128 || val > 127)
                         {
-                            Error("Offset out of range");
+                            ASMX_Error("Offset out of range");
                         }
-                        InstrBB(0xE8, val);
+                        INSTR_BB(0xE8, val);
                     }
                     break;
 
 
-                case reg_IX:
-                case reg_IY:
+                case REG_IX:
+                case REG_IY:
                     if (curCPU == CPU_GBZ80)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                     }
                     FALLTHROUGH;
-                case reg_HL:
-                    if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs)))
+                case REG_HL:
+                    if (TOKEN_Comma()) break;
+                    switch ((reg2 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_HL:
-                        case reg_IX:
-                        case reg_IY:
+                        case REG_HL:
+                        case REG_IX:
+                        case REG_IY:
                             if (reg1 != reg2)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
                             }
-                            reg2 = reg_HL;
+                            reg2 = REG_HL;
                             FALLTHROUGH;
 
-                        case reg_BC:
-                        case reg_DE:
-                        case reg_SP:
-                            InstrX(DDFD(reg1) + 0x09 + (reg2-reg_BC)*16);
+                        case REG_BC:
+                        case REG_DE:
+                        case REG_SP:
+                            INSTR_X(Z80_DDFD(reg1) + 0x09 + (reg2-REG_BC)*16);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_ADC_SBC:
-            switch ((reg1 = GetReg(Z80_regs)))
+        case OP_ADC_SBC:
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
 #ifdef NICE_ADD
-                case reg_Paren:
+                case REG_Paren:
                 case reg_None:
-                case reg_B: // ADD r
-                case reg_C:
-                case reg_D:
-                case reg_E:
-                case reg_H:
-                case reg_L:
+                case REG_B: // ADD r
+                case REG_C:
+                case REG_D:
+                case REG_E:
+                case REG_H:
+                case REG_L:
                     linePtr = oldLine;
-                    DoArith(parm*16 + 0xCE, 0x88 + parm*16);
+                    Z80_DoArith(parm*16 + 0xCE, 0x88 + parm*16);
                     break;
 #endif
 
-                case reg_A:
+                case REG_A:
 #ifdef NICE_ADD
                     oldLine = linePtr;
                     token = GetWord(word);
@@ -1092,173 +1092,173 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     }
                     linePtr = oldLine;
 #endif
-                    if (Comma()) break;
-                    DoArith(parm*16 + 0xCE, 0x88 + parm*16); // had to move 0xCE because GCC complained?
+                    if (TOKEN_Comma()) break;
+                    Z80_DoArith(parm*16 + 0xCE, 0x88 + parm*16); // had to move 0xCE because GCC complained?
                     break;
 
-                case reg_HL:
+                case REG_HL:
                     if (curCPU == CPU_GBZ80)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                     }
-                    if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs)))
+                    if (TOKEN_Comma()) break;
+                    switch ((reg2 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_BC:
-                        case reg_DE:
-                        case reg_HL:
-                        case reg_SP:
-                            InstrX(0xED4A + (reg2-reg_BC)*16 - parm*8);
+                        case REG_BC:
+                        case REG_DE:
+                        case REG_HL:
+                        case REG_SP:
+                            INSTR_X(0xED4A + (reg2-REG_BC)*16 - parm*8);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_INC_DEC:
-            switch ((reg1 = GetReg(Z80_regs)))
+        case OP_INC_DEC:
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_B:
-                case reg_C:
-                case reg_D:
-                case reg_E:
-                case reg_H:
-                case reg_L:
-                case reg_A: // INC r
-                    InstrB(0x04 + reg1*8 + parm);
+                case REG_B:
+                case REG_C:
+                case REG_D:
+                case REG_E:
+                case REG_H:
+                case REG_L:
+                case REG_A: // INC r
+                    INSTR_B(0x04 + reg1*8 + parm);
                     break;
 
-                case reg_BC:
-                case reg_DE:
-                case reg_HL:
-                case reg_SP:    // INC rr
-                    InstrB(0x03 + (reg1-reg_BC)*16 + parm*8);
+                case REG_BC:
+                case REG_DE:
+                case REG_HL:
+                case REG_SP:    // INC rr
+                    INSTR_B(0x03 + (reg1-REG_BC)*16 + parm*8);
                     break;
 
-                case reg_IX:
-                case reg_IY:
+                case REG_IX:
+                case REG_IY:
                     if (curCPU == CPU_GBZ80)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                     }
                     else
                     {
-                        InstrX(DDFD(reg1) + 0x23 + parm*8);
+                        INSTR_X(Z80_DDFD(reg1) + 0x23 + parm*8);
                     }
                     break;
 
-                case reg_Paren: // INC (HL)
-                    switch ((reg1 = GetReg(Z80_regs)))
+                case REG_Paren: // INC (HL)
+                    switch ((reg1 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_HL:
-                            if (RParen()) break;
-                            InstrB(0x34 + parm);
+                        case REG_HL:
+                            if (TOKEN_RParen()) break;
+                            INSTR_B(0x34 + parm);
                             break;
 
-                        case reg_IX:
-                        case reg_IY:
+                        case REG_IX:
+                        case REG_IY:
                             if (curCPU == CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                             }
                             else
                             {
-                                val = IXOffset();
-                                InstrXB(DDFD(reg1) + 0x34 + parm, val);
+                                val = Z80_IXOffset();
+                                INSTR_XB(Z80_DDFD(reg1) + 0x34 + parm, val);
                             }
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_JP_CALL:
+        case OP_JP_CALL:
             oldLine = linePtr;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             if (token == '(')
             {
                 // JP (HL/IX/IY)
                 if (parm >> 8 != 0xC3)
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                 }
                 else
                 {
-                    reg1 = GetReg(Z80_regs);
-                    if (RParen()) break;
+                    reg1 = REG_Get(Z80_regs);
+                    if (TOKEN_RParen()) break;
                     switch (reg1)
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_HL:
-                            InstrB(0xE9);
+                        case REG_HL:
+                            INSTR_B(0xE9);
                             break;
 
-                        case reg_IX:
-                        case reg_IY:
+                        case REG_IX:
+                        case REG_IY:
                             if (curCPU == CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                             }
                             else
                             {
-                                InstrX(DDFD(reg1) + 0xE9);
+                                INSTR_X(Z80_DDFD(reg1) + 0xE9);
                             }
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                 }
             }
             else
             {
-                reg1 = FindReg(word, conds);
+                reg1 = REG_Find(word, conds);
                 if (reg1 < 0)
                 {
                     linePtr = oldLine;
-                    val = Eval();
-                    InstrBW(parm >> 8, val);
+                    val = EXPR_Eval();
+                    INSTR_BW(parm >> 8, val);
                 }
                 else
                 {
-                    if (Comma()) return 1;
-                    val = Eval();
+                    if (TOKEN_Comma()) return 1;
+                    val = EXPR_Eval();
                     if (curCPU == CPU_GBZ80 && reg1 > 3)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                     }
                     else
                     {
-                        InstrBW((parm & 255) + reg1*8, val);
+                        INSTR_BW((parm & 255) + reg1*8, val);
                     }
                 }
                 if ((parm >> 8) == 0xC3 && reg1 <= 3)
@@ -1267,311 +1267,311 @@ static int Z80_DoCPUOpcode(int typ, int parm)
                     if (-128 <= val && val <= 128 && !exactFlag)
                     {
                         // max is +128 because JR will save a byte
-                        Warning("JR instruction could be used here");
+                        ASMX_Warning("JR instruction could be used here");
                     }
                 }
             }
             break;
 
-        case o_JR:
-            switch ((reg1 = GetReg(conds)))
+        case OP_JR:
+            switch ((reg1 = REG_Get(conds)))
             {
                 case reg_EOL:
                     break;
 
                 case reg_None:
-                    val = EvalBranch(2);
-                    InstrBB(0x18, val);
+                    val = EXPR_EvalBranch(2);
+                    INSTR_BB(0x18, val);
                     break;
 
                 case 0:
                 case 1:
                 case 2:
                 case 3:
-                    if (Comma()) break;
-                    val = EvalBranch(2);
-                    InstrBB(0x20 + reg1*8, val);
+                    if (TOKEN_Comma()) break;
+                    val = EXPR_EvalBranch(2);
+                    INSTR_BB(0x20 + reg1*8, val);
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_RET:
-            if (GetWord(word) == 0)
+        case OP_RET:
+            if (TOKEN_GetWord(word) == 0)
             {
-                InstrB(0xC9);
+                INSTR_B(0xC9);
             }
             else
             {
-                reg1 = FindReg(word, conds);
+                reg1 = REG_Find(word, conds);
                 if (reg1 < 0)
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                 }
                 else if (curCPU == CPU_GBZ80 && reg1 > 3)
                 {
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                 }
                 else
                 {
-                    InstrB(0xC0 + reg1*8);
+                    INSTR_B(0xC0 + reg1*8);
                 }
             }
             break;
 
-        case o_IN:
+        case OP_IN:
             if (curCPU == CPU_GBZ80)
             {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs)))
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_B:
-                case reg_C:
-                case reg_D:
-                case reg_E:
-                case reg_H:
-                case reg_L:
-                case reg_A:
-                    if (Comma()) break;
-                    if (Expect("(")) break;
-                    switch ((reg2 = GetReg(Z80_regs)))
+                case REG_B:
+                case REG_C:
+                case REG_D:
+                case REG_E:
+                case REG_H:
+                case REG_L:
+                case REG_A:
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("(")) break;
+                    switch ((reg2 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
                         case reg_None:
-                            if (reg1 != reg_A)
+                            if (reg1 != REG_A)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                             }
                             else
                             {
-                                val = Eval();
-                                if (RParen()) break;
-                                InstrBB(0xDB, val);
+                                val = EXPR_Eval();
+                                if (TOKEN_RParen()) break;
+                                INSTR_BB(0xDB, val);
                             }
                             break;
 
-                        case reg_C:
-                            if (RParen()) break;
-                            InstrX(0xED40 + reg1*8);
+                        case REG_C:
+                            if (TOKEN_RParen()) break;
+                            INSTR_X(0xED40 + reg1*8);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_OUT:
+        case OP_OUT:
             if (curCPU == CPU_GBZ80)
             {
                 return 0;
             }
-            if (Expect("(")) break;
-            switch ((reg1 = GetReg(Z80_regs)))
+            if (TOKEN_Expect("(")) break;
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
                 case reg_None:
-                    val = Eval();
-                    if (RParen()) break;
-                    if (Comma()) break;
-                    if (Expect("A")) break;
-                    InstrBB(0xD3, val);
+                    val = EXPR_Eval();
+                    if (TOKEN_RParen()) break;
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
+                    INSTR_BB(0xD3, val);
                     break;
 
-                case reg_C:
-                    if (RParen()) break;
-                    if (Comma()) break;
-                    switch ((reg2 = GetReg(Z80_regs)))
+                case REG_C:
+                    if (TOKEN_RParen()) break;
+                    if (TOKEN_Comma()) break;
+                    switch ((reg2 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_B:
-                        case reg_C:
-                        case reg_D:
-                        case reg_E:
-                        case reg_H:
-                        case reg_L:
-                        case reg_A:
-                            InstrX(0xED41 + reg2*8);
+                        case REG_B:
+                        case REG_C:
+                        case REG_D:
+                        case REG_E:
+                        case REG_H:
+                        case REG_L:
+                        case REG_A:
+                            INSTR_X(0xED41 + reg2*8);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_PushPop:
-            switch ((reg1 = GetReg(Z80_regs)))
+        case OP_PushPop:
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_BC:
-                case reg_DE:
-                case reg_HL:
-                    InstrB(parm + (reg1-reg_BC)*16);
+                case REG_BC:
+                case REG_DE:
+                case REG_HL:
+                    INSTR_B(parm + (reg1-REG_BC)*16);
                     break;
 
-                case reg_AF:
-                    InstrB(parm + 0x30);
+                case REG_AF:
+                    INSTR_B(parm + 0x30);
                     break;
 
-                case reg_IX:
-                case reg_IY:
+                case REG_IX:
+                case REG_IY:
                     if (curCPU == CPU_GBZ80)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                     }
                     else
                     {
-                        InstrX(DDFD(reg1) + 0x20 + parm);
+                        INSTR_X(Z80_DDFD(reg1) + 0x20 + parm);
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_Arith:
-            DoArith(parm >> 8, parm & 255);
+        case OP_Arith:
+            Z80_DoArith(parm >> 8, parm & 255);
             break;
 
-        case o_Rotate:
-            switch ((reg1 = GetReg(Z80_regs)))
+        case OP_Rotate:
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_B:
-                case reg_C:
-                case reg_D:
-                case reg_E:
-                case reg_H:
-                case reg_L:
-                case reg_A:     // RLC r
-                    InstrX(0xCB00 + parm + reg1);
+                case REG_B:
+                case REG_C:
+                case REG_D:
+                case REG_E:
+                case REG_H:
+                case REG_L:
+                case REG_A:     // RLC r
+                    INSTR_X(0xCB00 + parm + reg1);
                     break;
 
-                case reg_Paren:
-                    switch ((reg1 = GetReg(Z80_regs)))
+                case REG_Paren:
+                    switch ((reg1 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_HL:
-                            if (RParen()) break;
-                            InstrX(0xCB00 + parm + reg_M);
+                        case REG_HL:
+                            if (TOKEN_RParen()) break;
+                            INSTR_X(0xCB00 + parm + REG_M);
                             break;
 
-                        case reg_IX:
-                        case reg_IY:
+                        case REG_IX:
+                        case REG_IY:
                             if (curCPU == CPU_GBZ80)
                             {
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
                             }
-                            val = IXOffset();
-                            InstrXBB(DDFD(reg1) + 0xCB, val, parm + reg_M);
+                            val = Z80_IXOffset();
+                            INSTR_XBB(Z80_DDFD(reg1) + 0xCB, val, parm + REG_M);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_IM:
+        case OP_IM:
             if (curCPU == CPU_GBZ80)
             {
                 return 0;
             }
-            switch (GetReg("0 1 2"))
+            switch (REG_Get("0 1 2"))
             {
                 case 0:
-                    InstrX(0xED46);
+                    INSTR_X(0xED46);
                     break;
                 case 1:
-                    InstrX(0xED56);
+                    INSTR_X(0xED56);
                     break;
                 case 2:
-                    InstrX(0xED5E);
+                    INSTR_X(0xED5E);
                     break;
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_DJNZ:
+        case OP_DJNZ:
             if (curCPU == CPU_GBZ80)
             {
                 return 0;
             }
-            val = EvalBranch(2);
-            InstrBB(0x10, val);
+            val = EXPR_EvalBranch(2);
+            INSTR_BB(0x10, val);
             break;
 
-        case o_RST:
-            val = Eval();
+        case OP_RST:
+            val = EXPR_Eval();
             if (0 <= val && val <= 7)
             {
-                InstrB(0xC7 + val*8);
+                INSTR_B(0xC7 + val*8);
             }
             else if ((val & 0xC7) == 0)
             {
                 // [$00,$08,$10,$18,$20,$28,$30,$38]
-                InstrB(0xC7 + val);
+                INSTR_B(0xC7 + val);
             }
             else
             {
-                IllegalOperand();
+                ASMX_IllegalOperand();
                 break;
             }
 
             // allow bytes to follow the RST address because
             // RST vectors are used this way so much
             oldLine = line;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             if (token == ',')
             {
                 while (token == ',' && instrLen < MAX_BYTSTR)
                 {
-                    bytStr[instrLen++] = Eval();
+                    bytStr[instrLen++] = EXPR_Eval();
                     oldLine = line;
-                    token = GetWord(word);
+                    token = TOKEN_GetWord(word);
                 }
                 instrLen = -instrLen;   // negative means we're using long DB listing format
             }
@@ -1581,231 +1581,231 @@ static int Z80_DoCPUOpcode(int typ, int parm)
             }
             break;
 
-        case o_SWAP:
+        case OP_SWAP:
             if (curCPU != CPU_GBZ80)
             {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs)))
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_B:
-                case reg_C:
-                case reg_D:
-                case reg_E:
-                case reg_H:
-                case reg_L:
-                case reg_A:     // SWAP r
-                    InstrX(0xCB30 + reg1);
+                case REG_B:
+                case REG_C:
+                case REG_D:
+                case REG_E:
+                case REG_H:
+                case REG_L:
+                case REG_A:     // SWAP r
+                    INSTR_X(0xCB30 + reg1);
                     break;
 
-                case reg_Paren:
-                    switch ((reg1 = GetReg(Z80_regs)))
+                case REG_Paren:
+                    switch ((reg1 = REG_Get(Z80_regs)))
                     {
                         case reg_EOL:
                             break;
 
-                        case reg_HL: // SWAP (HL)
-                            if (RParen()) break;
-                            InstrX(0xCB36);
+                        case REG_HL: // SWAP (HL)
+                            if (TOKEN_RParen()) break;
+                            INSTR_X(0xCB36);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_LDH:
+        case OP_LDH:
             if (curCPU != CPU_GBZ80)
             {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs)))
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_A:     // A,(nn)
-                    if (Comma()) break;
-                    if (Expect("(")) break;
-                    val = Eval();
-                    if (RParen()) break;
+                case REG_A:     // A,(nn)
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("(")) break;
+                    val = EXPR_Eval();
+                    if (TOKEN_RParen()) break;
                     if ((val & 0xFF00) != 0 && (val & 0xFF00) != 0xFF00)
                     {
-                        Error("LDH address out of range");
+                        ASMX_Error("LDH address out of range");
                     }
-                    InstrBB(0xF0, val);
+                    INSTR_BB(0xF0, val);
                     break;
 
-                case reg_Paren: // (nn),A
-                    val = Eval();
-                    if (RParen()) break;
-                    if (Comma()) break;
-                    if (Expect("A")) break;
+                case REG_Paren: // (nn),A
+                    val = EXPR_Eval();
+                    if (TOKEN_RParen()) break;
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("A")) break;
                     if ((val & 0xFF00) != 0 && (val & 0xFF00) != 0xFF00)
                     {
-                        Error("LDH address out of range");
+                        ASMX_Error("LDH address out of range");
                     }
-                    InstrBB(0xE0, val);
+                    INSTR_BB(0xE0, val);
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_IN0:
+        case OP_IN0:
             if (curCPU != CPU_Z180)
             {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_IN0_OUT0_regs)))
+            switch ((reg1 = REG_Get(Z80_IN0_OUT0_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_B:
-                case reg_C:
-                case reg_D:
-                case reg_E:
-                case reg_H:
-                case reg_L:
-                case reg_M: // Note: "F" becomes Reg_M
-                case reg_A:
-                    if (Comma()) break;
-                    if (Expect("(")) break;
-                    val = Eval();
-                    if (RParen()) break;
-                    InstrXB(parm + reg1*8, val);
+                case REG_B:
+                case REG_C:
+                case REG_D:
+                case REG_E:
+                case REG_H:
+                case REG_L:
+                case REG_M: // Note: "F" becomes Reg_M
+                case REG_A:
+                    if (TOKEN_Comma()) break;
+                    if (TOKEN_Expect("(")) break;
+                    val = EXPR_Eval();
+                    if (TOKEN_RParen()) break;
+                    INSTR_XB(parm + reg1*8, val);
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_OUT0:
+        case OP_OUT0:
             if (curCPU != CPU_Z180)
             {
                 return 0;
             }
-            if (Expect("(")) break;
-            val = Eval();
-            if (RParen()) break;
-            if (Comma()) break;
-            switch ((reg1 = GetReg(Z80_IN0_OUT0_regs)))
+            if (TOKEN_Expect("(")) break;
+            val = EXPR_Eval();
+            if (TOKEN_RParen()) break;
+            if (TOKEN_Comma()) break;
+            switch ((reg1 = REG_Get(Z80_IN0_OUT0_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_B:
-                case reg_C:
-                case reg_D:
-                case reg_E:
-                case reg_H:
-                case reg_L:
-                case reg_M: // Note: "F" becomes Reg_M
-                case reg_A:
-                    InstrXB(parm + reg1*8, val);
+                case REG_B:
+                case REG_C:
+                case REG_D:
+                case REG_E:
+                case REG_H:
+                case REG_L:
+                case REG_M: // Note: "F" becomes Reg_M
+                case REG_A:
+                    INSTR_XB(parm + reg1*8, val);
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_TST:
+        case OP_TST:
             if (curCPU != CPU_Z180)
             {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs)))
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_B:
-                case reg_C:
-                case reg_D:
-                case reg_E:
-                case reg_H:
-                case reg_L:
-                case reg_A:
-                    InstrX(parm + reg1*8);
+                case REG_B:
+                case REG_C:
+                case REG_D:
+                case REG_E:
+                case REG_H:
+                case REG_L:
+                case REG_A:
+                    INSTR_X(parm + reg1*8);
                     break;
 
-                case reg_Paren:
-                    switch ((reg1 = GetReg("HL C")))
+                case REG_Paren:
+                    switch ((reg1 = REG_Get("HL C")))
                     {
                         case reg_EOL:
                             break;
 
                         case 0: // TST (HL)
-                            if (RParen()) break;
-                            InstrX(parm + reg_M*8);
+                            if (TOKEN_RParen()) break;
+                            INSTR_X(parm + REG_M*8);
                             break;
 
                         case 1: // TST (C),b
-                            if (RParen()) break;
-                            if (Comma()) break;
-                            val = Eval();
-                            InstrXB(0xED64, val);
+                            if (TOKEN_RParen()) break;
+                            if (TOKEN_Comma()) break;
+                            val = EXPR_Eval();
+                            INSTR_XB(0xED64, val);
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_MLT:
+        case OP_MLT:
             if (curCPU != CPU_Z180)
             {
                 return 0;
             }
-            switch ((reg1 = GetReg(Z80_regs)))
+            switch ((reg1 = REG_Get(Z80_regs)))
             {
                 case reg_EOL:
                     break;
 
-                case reg_BC:
-                case reg_DE:
-                case reg_HL:
-                case reg_SP:
-                    InstrX(parm + (reg1-reg_BC)*16);
+                case REG_BC:
+                case REG_DE:
+                case REG_HL:
+                case REG_SP:
+                    INSTR_X(parm + (reg1-REG_BC)*16);
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_TSTIO:
+        case OP_TSTIO:
             if (curCPU != CPU_Z180)
             {
                 return 0;
             }
-            val = Eval();
-            InstrXB(parm, val);
+            val = EXPR_Eval();
+            INSTR_XB(parm, val);
             break;
 
         default:
@@ -1827,75 +1827,75 @@ static int Z80_DoCPULabelOp(int typ, int parm, char *labl)
 
     switch (typ)
     {
-        // o_Bit needs to be implemented like a pseudo-op so that
+        // OP_Bit needs to be implemented like a pseudo-op so that
         //        SET can fall back to the standard SET pseudo-op
-        case o_Bit:
+        case OP_Bit:
             oldLine = linePtr;
-            reg1 = Eval();                  // get bit number
-            token = GetWord(word);          // attempt to get comma
+            reg1 = EXPR_Eval();                  // get bit number
+            token = TOKEN_GetWord(word);          // attempt to get comma
             // if end of line and SET opcode
             if (token == 0 && parm == 0xC0)
             {
                 linePtr = oldLine;
                 if (!errFlag || pass < 2)   // don't double-error on second pass
                 {
-                    DoLabelOp(o_EQU, 1, labl);  // fall back to SET pseudo-op
+                    ASMX_DoLabelOp(OP_EQU, 1, labl);  // fall back to SET pseudo-op
                 }
             }
             else
             {
-                DefSym(labl, locPtr, false, false); // define label if present
+                SYM_Def(labl, locPtr, false, false); // define label if present
                 showAddr = true;
                 if (token != ',')           // validate that comma is present
                 {
-                    Error("\",\" expected");
+                    ASMX_Error("\",\" expected");
                     break;
                 }
-                switch ((reg2 = GetReg(Z80_regs)))
+                switch ((reg2 = REG_Get(Z80_regs)))
                 {
                     case reg_EOL:
                         break;
 
-                    case reg_B:
-                    case reg_C:
-                    case reg_D:
-                    case reg_E:
-                    case reg_H:
-                    case reg_L:
-                    case reg_A:         // BIT n,r
-                        InstrX(0xCB00 + parm + reg1*8 + reg2);
+                    case REG_B:
+                    case REG_C:
+                    case REG_D:
+                    case REG_E:
+                    case REG_H:
+                    case REG_L:
+                    case REG_A:         // BIT n,r
+                        INSTR_X(0xCB00 + parm + reg1*8 + reg2);
                         break;
 
-                    case reg_Paren:     // BIT n,(HL)
-                        switch ((reg2 = GetReg(Z80_regs)))
+                    case REG_Paren:     // BIT n,(HL)
+                        switch ((reg2 = REG_Get(Z80_regs)))
                         {
                             case reg_EOL:
                                 break;
 
-                            case reg_HL:
-                                if (RParen()) break;
-                                InstrX(0xCB00 + parm + reg1*8 + reg_M);
+                            case REG_HL:
+                                if (TOKEN_RParen()) break;
+                                INSTR_X(0xCB00 + parm + reg1*8 + REG_M);
                                 break;
 
-                            case reg_IX:
-                            case reg_IY:
+                            case REG_IX:
+                            case REG_IY:
                                 if (curCPU == CPU_GBZ80)
                                 {
-                                    IllegalOperand();
+                                    ASMX_IllegalOperand();
                                     break;
                                 }
-                                val = IXOffset();
-                                InstrXBB(DDFD(reg2) + 0xCB, val, parm + reg1*8 + reg_M);
+                                val = Z80_IXOffset();
+                                INSTR_XBB(Z80_DDFD(reg2) + 0xCB, val, parm + reg1*8 + REG_M);
                                 break;
 
                             default:
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
                         }
                         break;
 
                     default:            // invalid or unknown register
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
                 }
             }
@@ -1909,16 +1909,16 @@ static int Z80_DoCPULabelOp(int typ, int parm, char *labl)
 }
 
 
-void AsmZ80Init(void)
+void Z80_AsmInit(void)
 {
-    void *p = AddAsm(versionName, &Z80_DoCPUOpcode, &Z80_DoCPULabelOp, NULL);
+    void *p = ASMX_AddAsm(versionName, &Z80_DoCPUOpcode, &Z80_DoCPULabelOp, NULL);
 
     enum   // standard CPU options
     {
         OPT = (OPT_ATSYM | OPT_DOLLARSYM),
     };
 
-    AddCPU(p, "Z80",   CPU_Z80,   LITTLE_END, ADDR_16, LIST_24, 8, OPT, Z80_opcdTab);
-    AddCPU(p, "Z180",  CPU_Z180,  LITTLE_END, ADDR_16, LIST_24, 8, OPT, Z80_opcdTab);
-    AddCPU(p, "GBZ80", CPU_GBZ80, LITTLE_END, ADDR_16, LIST_24, 8, OPT, Z80_opcdTab);
+    ASMX_AddCPU(p, "Z80",   CPU_Z80,   END_LITTLE, ADDR_16, LIST_24, 8, OPT, Z80_opcdTab);
+    ASMX_AddCPU(p, "Z180",  CPU_Z180,  END_LITTLE, ADDR_16, LIST_24, 8, OPT, Z80_opcdTab);
+    ASMX_AddCPU(p, "GBZ80", CPU_GBZ80, END_LITTLE, ADDR_16, LIST_24, 8, OPT, Z80_opcdTab);
 }

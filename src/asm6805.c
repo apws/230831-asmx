@@ -1,27 +1,27 @@
-// asm6805.c
+// asmM6805.c
 
-#define versionName "6805 assembler"
+#define versionName "M6805 assembler"
 #include "asmx.h"
 
 enum
 {
-    o_Inherent,     // implied instructions
-    o_Relative,     // branch instructions
-    o_Bit,          // BCLR/BSET
-    o_BRelative,    // BRSET/BRCLR
-    o_Logical,      // instructions with multiple addressing modes
-    o_Arith,        // arithmetic instructions with multiple addressing modes
-    o_Store,        // STA/STX/JMP/JSR - same as o_Arith except no immediate allowed
+    OP_Inherent,     // implied instructions
+    OP_Relative,     // branch instructions
+    OP_Bit,          // BCLR/BSET
+    OP_BRelative,    // BRSET/BRCLR
+    OP_Logical,      // instructions with multiple addressing modes
+    OP_Arith,        // arithmetic instructions with multiple addressing modes
+    OP_Store,        // STA/STX/JMP/JSR - same as OP_Arith except no immediate allowed
 
-    o_Inh08,        // 68HCS08 inherent instructions
-    o_Rel08,        // 68HCS08 branch instructions and DBNZA/DBNZX
-    o_AIS_AIX,      // 68HCS08 AIS and AIX instructions
-    o_LDHX,         // 68HCS08 LDHX, STHX, CPHX instructions
-    o_CBEQA,        // 68HCS08 CBEQA, CBEQX instructions
-    o_CBEQ,         // 68HCS08 CBEQ, DBNZ instructions
-    o_MOV,          // 68HCS08 MOV instruction
+    OP_Inh08,        // 68HCS08 inherent instructions
+    OP_Rel08,        // 68HCS08 branch instructions and DBNZA/DBNZX
+    OP_AIS_AIX,      // 68HCS08 AIS and AIX instructions
+    OP_LDHX,         // 68HCS08 LDHX, STHX, CPHX instructions
+    OP_CBEQA,        // 68HCS08 CBEQA, CBEQX instructions
+    OP_CBEQ,         // 68HCS08 CBEQ, DBNZ instructions
+    OP_MOV,          // 68HCS08 MOV instruction
 
-//  o_Foo = o_LabelOp,
+//  o_Foo = OP_LabelOp,
 };
 
 enum cputype
@@ -32,144 +32,144 @@ enum cputype
 
 static const struct OpcdRec M6805_opcdTab[] =
 {
-    {"NEGA",  o_Inherent, 0x40},
-    {"COMA",  o_Inherent, 0x43},
-    {"LSRA",  o_Inherent, 0x44},
-    {"RORA",  o_Inherent, 0x46},
-    {"ASRA",  o_Inherent, 0x47},
-    {"ASLA",  o_Inherent, 0x48},
-    {"LSLA",  o_Inherent, 0x48},
-    {"ROLA",  o_Inherent, 0x49},
-    {"DECA",  o_Inherent, 0x4A},
-    {"INCA",  o_Inherent, 0x4C},
-    {"TSTA",  o_Inherent, 0x4D},
-    {"CLRA",  o_Inherent, 0x4F},
+    {"NEGA",  OP_Inherent, 0x40},
+    {"COMA",  OP_Inherent, 0x43},
+    {"LSRA",  OP_Inherent, 0x44},
+    {"RORA",  OP_Inherent, 0x46},
+    {"ASRA",  OP_Inherent, 0x47},
+    {"ASLA",  OP_Inherent, 0x48},
+    {"LSLA",  OP_Inherent, 0x48},
+    {"ROLA",  OP_Inherent, 0x49},
+    {"DECA",  OP_Inherent, 0x4A},
+    {"INCA",  OP_Inherent, 0x4C},
+    {"TSTA",  OP_Inherent, 0x4D},
+    {"CLRA",  OP_Inherent, 0x4F},
 
-    {"NEGX",  o_Inherent, 0x50},
-    {"COMX",  o_Inherent, 0x53},
-    {"LSRX",  o_Inherent, 0x54},
-    {"RORX",  o_Inherent, 0x56},
-    {"ASRX",  o_Inherent, 0x57},
-    {"ASLX",  o_Inherent, 0x58},
-    {"LSLX",  o_Inherent, 0x58},
-    {"ROLX",  o_Inherent, 0x59},
-    {"DECX",  o_Inherent, 0x5A},
-    {"INCX",  o_Inherent, 0x5C},
-    {"TSTX",  o_Inherent, 0x5D},
-    {"CLRX",  o_Inherent, 0x5F},
+    {"NEGX",  OP_Inherent, 0x50},
+    {"COMX",  OP_Inherent, 0x53},
+    {"LSRX",  OP_Inherent, 0x54},
+    {"RORX",  OP_Inherent, 0x56},
+    {"ASRX",  OP_Inherent, 0x57},
+    {"ASLX",  OP_Inherent, 0x58},
+    {"LSLX",  OP_Inherent, 0x58},
+    {"ROLX",  OP_Inherent, 0x59},
+    {"DECX",  OP_Inherent, 0x5A},
+    {"INCX",  OP_Inherent, 0x5C},
+    {"TSTX",  OP_Inherent, 0x5D},
+    {"CLRX",  OP_Inherent, 0x5F},
 
-    {"MUL",   o_Inherent, 0x42},
-    {"RTI",   o_Inherent, 0x80},
-    {"RTS",   o_Inherent, 0x81},
-    {"SWI",   o_Inherent, 0x83},
-    {"STOP",  o_Inherent, 0x8E},
-    {"WAIT",  o_Inherent, 0x8F},
-    {"TAX",   o_Inherent, 0x97},
-    {"CLC",   o_Inherent, 0x98},
-    {"SEC",   o_Inherent, 0x99},
-    {"CLI",   o_Inherent, 0x9A},
-    {"SEI",   o_Inherent, 0x9B},
-    {"RSP",   o_Inherent, 0x9C},
-    {"NOP",   o_Inherent, 0x9D},
-    {"TXA",   o_Inherent, 0x9F},
+    {"MUL",   OP_Inherent, 0x42},
+    {"RTI",   OP_Inherent, 0x80},
+    {"RTS",   OP_Inherent, 0x81},
+    {"SWI",   OP_Inherent, 0x83},
+    {"STOP",  OP_Inherent, 0x8E},
+    {"WAIT",  OP_Inherent, 0x8F},
+    {"TAX",   OP_Inherent, 0x97},
+    {"CLC",   OP_Inherent, 0x98},
+    {"SEC",   OP_Inherent, 0x99},
+    {"CLI",   OP_Inherent, 0x9A},
+    {"SEI",   OP_Inherent, 0x9B},
+    {"RSP",   OP_Inherent, 0x9C},
+    {"NOP",   OP_Inherent, 0x9D},
+    {"TXA",   OP_Inherent, 0x9F},
 
-    {"BRA",   o_Relative, 0x20},
-    {"BRN",   o_Relative, 0x21},
-    {"BHI",   o_Relative, 0x22},
-    {"BLS",   o_Relative, 0x23},
-    {"BCC",   o_Relative, 0x24},
-    {"BCS",   o_Relative, 0x25},
-    {"BHS",   o_Relative, 0x24},
-    {"BLO",   o_Relative, 0x25},
-    {"BNE",   o_Relative, 0x26},
-    {"BEQ",   o_Relative, 0x27},
-    {"BHCC",  o_Relative, 0x28},
-    {"BHCS",  o_Relative, 0x29},
-    {"BPL",   o_Relative, 0x2A},
-    {"BMI",   o_Relative, 0x2B},
-    {"BMC",   o_Relative, 0x2C},
-    {"BMS",   o_Relative, 0x2D},
-    {"BIL",   o_Relative, 0x2E},
-    {"BIH",   o_Relative, 0x2F},
+    {"BRA",   OP_Relative, 0x20},
+    {"BRN",   OP_Relative, 0x21},
+    {"BHI",   OP_Relative, 0x22},
+    {"BLS",   OP_Relative, 0x23},
+    {"BCC",   OP_Relative, 0x24},
+    {"BCS",   OP_Relative, 0x25},
+    {"BHS",   OP_Relative, 0x24},
+    {"BLO",   OP_Relative, 0x25},
+    {"BNE",   OP_Relative, 0x26},
+    {"BEQ",   OP_Relative, 0x27},
+    {"BHCC",  OP_Relative, 0x28},
+    {"BHCS",  OP_Relative, 0x29},
+    {"BPL",   OP_Relative, 0x2A},
+    {"BMI",   OP_Relative, 0x2B},
+    {"BMC",   OP_Relative, 0x2C},
+    {"BMS",   OP_Relative, 0x2D},
+    {"BIL",   OP_Relative, 0x2E},
+    {"BIH",   OP_Relative, 0x2F},
 
-    {"BSR",   o_Relative, 0xAD},
+    {"BSR",   OP_Relative, 0xAD},
 
-    {"NEG",   o_Logical,  0x00}, // o_Logical: direct = $30; ix1 = $60, idx = $70
-    {"COM",   o_Logical,  0x03},
-    {"LSR",   o_Logical,  0x04},
-    {"ROR",   o_Logical,  0x06},
-    {"ASR",   o_Logical,  0x07},
-    {"ASL",   o_Logical,  0x08},
-    {"LSL",   o_Logical,  0x08},
-    {"ROL",   o_Logical,  0x09},
-    {"DEC",   o_Logical,  0x0A},
-    {"INC",   o_Logical,  0x0C},
-    {"TST",   o_Logical,  0x0D},
-    {"CLR",   o_Logical,  0x0F},
+    {"NEG",   OP_Logical,  0x00}, // OP_Logical: direct = $30; ix1 = $60, idx = $70
+    {"COM",   OP_Logical,  0x03},
+    {"LSR",   OP_Logical,  0x04},
+    {"ROR",   OP_Logical,  0x06},
+    {"ASR",   OP_Logical,  0x07},
+    {"ASL",   OP_Logical,  0x08},
+    {"LSL",   OP_Logical,  0x08},
+    {"ROL",   OP_Logical,  0x09},
+    {"DEC",   OP_Logical,  0x0A},
+    {"INC",   OP_Logical,  0x0C},
+    {"TST",   OP_Logical,  0x0D},
+    {"CLR",   OP_Logical,  0x0F},
 
 
-    {"SUB",   o_Arith,    0x00}, // o_Arith: immediate = $80, direct = $90, ix2 = $A0
-    {"CMP",   o_Arith,    0x01}, //           ix1 = $E0, extended = $F0
-    {"SBC",   o_Arith,    0x02},
-    {"CPX",   o_Arith,    0x03},
-    {"AND",   o_Arith,    0x04},
-    {"BIT",   o_Arith,    0x05},
-    {"LDA",   o_Arith,    0x06},
-    {"STA",   o_Store,    0x07},
-    {"EOR",   o_Arith,    0x08},
-    {"ADC",   o_Arith,    0x09},
-    {"ORA",   o_Arith,    0x0A},
-    {"ADD",   o_Arith,    0x0B},
-    {"JMP",   o_Store,    0x0C},
-    {"JSR",   o_Store,    0x0D},
-    {"LDX",   o_Arith,    0x0E},
-    {"STX",   o_Store,    0x0F},
+    {"SUB",   OP_Arith,    0x00}, // OP_Arith: immediate = $80, direct = $90, ix2 = $A0
+    {"CMP",   OP_Arith,    0x01}, //           ix1 = $E0, extended = $F0
+    {"SBC",   OP_Arith,    0x02},
+    {"CPX",   OP_Arith,    0x03},
+    {"AND",   OP_Arith,    0x04},
+    {"BIT",   OP_Arith,    0x05},
+    {"LDA",   OP_Arith,    0x06},
+    {"STA",   OP_Store,    0x07},
+    {"EOR",   OP_Arith,    0x08},
+    {"ADC",   OP_Arith,    0x09},
+    {"ORA",   OP_Arith,    0x0A},
+    {"ADD",   OP_Arith,    0x0B},
+    {"JMP",   OP_Store,    0x0C},
+    {"JSR",   OP_Store,    0x0D},
+    {"LDX",   OP_Arith,    0x0E},
+    {"STX",   OP_Store,    0x0F},
 
-    {"BSET",  o_Bit,      0x10},
-    {"BCLR",  o_Bit,      0x11},
-    {"BRSET", o_BRelative,0x00},
-    {"BRCLR", o_BRelative,0x01},
+    {"BSET",  OP_Bit,      0x10},
+    {"BCLR",  OP_Bit,      0x11},
+    {"BRSET", OP_BRelative,0x00},
+    {"BRCLR", OP_BRelative,0x01},
 
     // 68HCS08 opcodes
 
-    {"DIV",   o_Inh08,    0x52},
-    {"NSA",   o_Inh08,    0x62},
-    {"DAA",   o_Inh08,    0x72},
-    {"BGND",  o_Inh08,    0x82},
-    {"TAP",   o_Inh08,    0x84},
-    {"TPA",   o_Inh08,    0x85},
-    {"PULA",  o_Inh08,    0x86},
-    {"PSHA",  o_Inh08,    0x87},
-    {"PULX",  o_Inh08,    0x88},
-    {"PSHX",  o_Inh08,    0x89},
-    {"PULH",  o_Inh08,    0x8A},
-    {"PSHH",  o_Inh08,    0x8B},
-    {"CLRH",  o_Inh08,    0x8C},
-    {"TXS",   o_Inh08,    0x94},
-    {"TSX",   o_Inh08,    0x95},
+    {"DIV",   OP_Inh08,    0x52},
+    {"NSA",   OP_Inh08,    0x62},
+    {"DAA",   OP_Inh08,    0x72},
+    {"BGND",  OP_Inh08,    0x82},
+    {"TAP",   OP_Inh08,    0x84},
+    {"TPA",   OP_Inh08,    0x85},
+    {"PULA",  OP_Inh08,    0x86},
+    {"PSHA",  OP_Inh08,    0x87},
+    {"PULX",  OP_Inh08,    0x88},
+    {"PSHX",  OP_Inh08,    0x89},
+    {"PULH",  OP_Inh08,    0x8A},
+    {"PSHH",  OP_Inh08,    0x8B},
+    {"CLRH",  OP_Inh08,    0x8C},
+    {"TXS",   OP_Inh08,    0x94},
+    {"TSX",   OP_Inh08,    0x95},
 
-    {"BGE",   o_Rel08,    0x90},
-    {"BLT",   o_Rel08,    0x91},
-    {"BGT",   o_Rel08,    0x92},
-    {"BLE",   o_Rel08,    0x93},
-    {"DBNZA", o_Rel08,    0x4B},
-    {"DBNZX", o_Rel08,    0x5B},
+    {"BGE",   OP_Rel08,    0x90},
+    {"BLT",   OP_Rel08,    0x91},
+    {"BGT",   OP_Rel08,    0x92},
+    {"BLE",   OP_Rel08,    0x93},
+    {"DBNZA", OP_Rel08,    0x4B},
+    {"DBNZX", OP_Rel08,    0x5B},
 
-    {"AIS",   o_AIS_AIX,  0xA7},
-    {"AIX",   o_AIS_AIX,  0xAF},
+    {"AIS",   OP_AIS_AIX,  0xA7},
+    {"AIX",   OP_AIS_AIX,  0xAF},
 
-    {"LDHX",  o_LDHX,     0x0E},
-    {"STHX",  o_LDHX,     0x0F},
-    {"CPHX",  o_LDHX,     0x03},
-    {"CBEQA", o_CBEQA,    0x41},
-    {"CBEQX", o_CBEQA,    0x51},
+    {"LDHX",  OP_LDHX,     0x0E},
+    {"STHX",  OP_LDHX,     0x0F},
+    {"CPHX",  OP_LDHX,     0x03},
+    {"CBEQA", OP_CBEQA,    0x41},
+    {"CBEQX", OP_CBEQA,    0x51},
 
-    {"CBEQ",  o_CBEQ,     0x01},
-    {"DBNZ",  o_CBEQ,     0x0B},
+    {"CBEQ",  OP_CBEQ,     0x01},
+    {"DBNZ",  OP_CBEQ,     0x0B},
 
-    {"MOV",   o_MOV,         0},
+    {"MOV",   OP_MOV,         0},
 
-    {"",      o_Illegal,     0}
+    {"",      OP_Illegal,     0}
 };
 
 
@@ -187,48 +187,48 @@ static int M6805_DoCPUOpcode(int typ, int parm)
 
     switch (typ)
     {
-        case o_Inh08:       // 68HCS08 inherent instructions
+        case OP_Inh08:       // 68HCS08 inherent instructions
             if (curCPU != CPU_68HCS08) return 0;
             FALLTHROUGH;
-        case o_Inherent:
-            InstrB(parm);
+        case OP_Inherent:
+            INSTR_B(parm);
             break;
 
-        case o_Rel08:       // 68HCS08 branch instructions and DBNZA/DBNZX
+        case OP_Rel08:       // 68HCS08 branch instructions and DBNZA/DBNZX
             if (curCPU != CPU_68HCS08) return 0;
             FALLTHROUGH;
-        case o_Relative:
-            val = EvalBranch(2);
-            InstrBB(parm, val);
+        case OP_Relative:
+            val = EXPR_EvalBranch(2);
+            INSTR_BB(parm, val);
             break;
 
-        case o_Logical:
+        case OP_Logical:
             oldLine = linePtr;
-            token = GetWord(word);  // look for ",X"
+            token = TOKEN_GetWord(word);  // look for ",X"
             if (token == ',')
             {
-                if (Expect("X")) break;
-                InstrB(parm + 0x70);
+                if (TOKEN_Expect("X")) break;
+                INSTR_B(parm + 0x70);
                 break;
             }
 
             linePtr = oldLine;
-            val = Eval();
+            val = EXPR_Eval();
 
             oldLine = linePtr;
-            token = GetWord(word);  // look for ",X"
+            token = TOKEN_GetWord(word);  // look for ",X"
             switch (token)
             {
                 case 0:
-                    InstrBB(parm + 0x30, val);  // no ",X", so must be direct
+                    INSTR_BB(parm + 0x30, val);  // no ",X", so must be direct
                     break;
 
                 case ',':
-                    switch ((reg = GetReg("X SP")))
+                    switch ((reg = REG_Get("X SP")))
                     {
                         default:
                         case reg_None:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
 
                         case reg_EOL: // EOL
@@ -240,43 +240,43 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                         case 0: // SP
                             if (evalKnown && val == 0 && parm < 256)
                             {
-                                InstrB(parm + 0x70); // 0,X
+                                INSTR_B(parm + 0x70); // 0,X
                             }
                             else
                             {
-                                InstrXB(parm + 0x60, val); // ix1,X / sp1,SP
+                                INSTR_XB(parm + 0x60, val); // ix1,X / sp1,SP
                             }
                     }
                     break;
 
                 default:
                     linePtr = oldLine;
-                    Comma();
+                    TOKEN_Comma();
                     break;
             }
             break;
 
-        case o_Arith:
-        case o_Store:
+        case OP_Arith:
+        case OP_Store:
             oldLine = linePtr;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             switch (token)
             {
                 case '#': // immediate
-                    if (typ == o_Store)
+                    if (typ == OP_Store)
                     {
-                        Error("Invalid addressing mode");
+                        ASMX_Error("Invalid addressing mode");
                     }
                     else
                     {
-                        val = Eval();
-                        InstrBB(parm + 0xA0, val);
+                        val = EXPR_Eval();
+                        INSTR_BB(parm + 0xA0, val);
                     }
                     break;
 
                 case ',': // ,X
-                    if (Expect("X")) break;
-                    InstrB(parm + 0xF0);
+                    if (TOKEN_Expect("X")) break;
+                    INSTR_B(parm + 0xF0);
                     break;
 
                 default:
@@ -292,31 +292,31 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                         linePtr = oldLine;
                     }
 
-                    val = Eval();
+                    val = EXPR_Eval();
 
                     oldLine = linePtr;
-                    token = GetWord(word);
+                    token = TOKEN_GetWord(word);
                     switch (token)
                     {
                         case 0: // dir or ext
                             if ((force != '>' && evalKnown && (val & 0xFF00) >> 8 == 0)
                                     || force == '<')
                             {
-                                CheckByte(val);
-                                InstrBB(parm + 0xB0, val);  // <$xx
+                                EXPR_CheckByte(val);
+                                INSTR_BB(parm + 0xB0, val);  // <$xx
                             }
                             else
                             {
-                                InstrBW(parm + 0xC0, val);   // >$xxxx
+                                INSTR_BW(parm + 0xC0, val);   // >$xxxx
                             }
                             break;
 
                         case ',': // ix1,X or ix2,X
-                            switch ((reg = GetReg("X SP")))
+                            switch ((reg = REG_Get("X SP")))
                             {
                                 default:
                                 case reg_None:
-                                    IllegalOperand();
+                                    ASMX_IllegalOperand();
                                     break;
 
                                 case reg_EOL: // EOL
@@ -325,7 +325,7 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                                 case 1:
                                     if (parm == 0x0C || parm == 0x0D)   // JMP / JSR
                                     {
-                                        BadMode();
+                                        TOKEN_BadMode();
                                         break;
                                     }
                                     parm = parm + 0x9E00;
@@ -333,99 +333,99 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                                 case 0:
                                     if (evalKnown && val == 0 && parm < 256)   // 0,X
                                     {
-                                        InstrB(parm + 0xF0);
+                                        INSTR_B(parm + 0xF0);
                                     }
                                     else if ((force != '>' && evalKnown &&
                                               (val & 0xFF00) >> 8 == 0)
                                              || force == '<')
                                     {
-                                        CheckByte(val);
-                                        InstrXB(parm + 0xE0, val); // ix1,X / sp1,SP
+                                        EXPR_CheckByte(val);
+                                        INSTR_XB(parm + 0xE0, val); // ix1,X / sp1,SP
                                     }
                                     else
                                     {
-                                        InstrXW(parm + 0xD0, val); // ix2,X / sp2,SP
+                                        INSTR_XW(parm + 0xD0, val); // ix2,X / sp2,SP
                                     }
                             }
                             break;
 
                         default:
                             linePtr = oldLine;
-                            Comma();
+                            TOKEN_Comma();
                             break;
                     }
             }
             break;
 
-        case o_Bit:
-            val = Eval();   // bit number
+        case OP_Bit:
+            val = EXPR_Eval();   // bit number
             if (val < 0 || val > 7)
             {
-                Error("Bit number must be 0 - 7");
+                ASMX_Error("Bit number must be 0 - 7");
             }
 
             oldLine = linePtr;  // eat optional comma after bit number
-            if (GetWord(word) != ',')
+            if (TOKEN_GetWord(word) != ',')
             {
                 linePtr = oldLine;
             }
 
-            val2 = Eval();      // direct page address or offset
+            val2 = EXPR_Eval();      // direct page address or offset
             reg = 0;
 
-            InstrBB(parm + val*2, val2);
+            INSTR_BB(parm + val*2, val2);
             break;
 
-        case o_BRelative:
-            val = Eval();   // bit number
+        case OP_BRelative:
+            val = EXPR_Eval();   // bit number
             if (val < 0 || val > 7)
             {
-                Error("Bit number must be 0 - 7");
+                ASMX_Error("Bit number must be 0 - 7");
             }
 
             oldLine = linePtr;  // eat optional comma after bit number
-            if (GetWord(word) != ',')
+            if (TOKEN_GetWord(word) != ',')
             {
                 linePtr = oldLine;
             }
 
-            val2 = Eval();      // direct page address or offset
+            val2 = EXPR_Eval();      // direct page address or offset
             reg = 0;
 
             oldLine = linePtr;  // eat optional comma after direct page address
-            if (GetWord(word) != ',')
+            if (TOKEN_GetWord(word) != ',')
             {
                 linePtr = oldLine;
             }
 
-            val3 = EvalBranch(3);  // offset
+            val3 = EXPR_EvalBranch(3);  // offset
 
-            InstrBBB(parm + val*2, val2, val3);
+            INSTR_BBB(parm + val*2, val2, val3);
             break;
 
-        case o_AIS_AIX:      // 68HCS08 AIS and AIX instructions
+        case OP_AIS_AIX:      // 68HCS08 AIS and AIX instructions
             if (curCPU != CPU_68HCS08) return 0;
-            if (Expect("#")) break; // immediate only
-            val = Eval();
-            CheckStrictByte(val);
-            InstrBB(parm, val);
+            if (TOKEN_Expect("#")) break; // immediate only
+            val = EXPR_Eval();
+            EXPR_CheckStrictByte(val);
+            INSTR_BB(parm, val);
             break;
 
-        case o_LDHX:        // 68HCS08 LDHX, STHX, CPHX instructions
+        case OP_LDHX:        // 68HCS08 LDHX, STHX, CPHX instructions
             if (curCPU != CPU_68HCS08) return 0;
             oldLine = linePtr;
-            token = GetWord(word);
+            token = TOKEN_GetWord(word);
             switch (token)
             {
                 case '#': // 45 LDHX #imm / 65 CPHX #imm
                     if (parm == 0x0F)
                     {
-                        BadMode();
+                        TOKEN_BadMode();
                     }
                     else
                     {
-                        val = Eval();
-                        InstrBW(0x45 + (parm & 0x01)*0x20, val);
+                        val = EXPR_Eval();
+                        INSTR_BW(0x45 + (parm & 0x01)*0x20, val);
                         break;
                     }
                     break;
@@ -433,12 +433,12 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                 case ',': // 9EAE LDHX ,X
                     if (parm != 0x0E)
                     {
-                        BadMode();
+                        TOKEN_BadMode();
                     }
                     else
                     {
-                        if (Expect("X")) break;
-                        InstrX(0x9EAE);
+                        if (TOKEN_Expect("X")) break;
+                        INSTR_X(0x9EAE);
                         break;
                     }
                     break;
@@ -454,16 +454,16 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                         linePtr = oldLine;
                     }
 
-                    val = Eval();
+                    val = EXPR_Eval();
 
                     oldLine = linePtr;
-                    token = GetWord(word);
+                    token = TOKEN_GetWord(word);
                     if (token == 0)   // dir or ext
                     {
                         if ((force != '>' && evalKnown && (val & 0xFF00) >> 8 == 0)
                                 || force == '<')
                         {
-                            CheckByte(val);
+                            EXPR_CheckByte(val);
                             switch (parm)
                             {
                                 case 0x0E:
@@ -476,7 +476,7 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                                     parm = 0x75;
                                     break; // CPHX
                             }
-                            InstrBB(parm, val); // ix1,X / sp1,SP
+                            INSTR_BB(parm, val); // ix1,X / sp1,SP
                         }
                         else
                         {
@@ -492,18 +492,18 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                                     parm = 0x3E;
                                     break; // CPHX
                             }
-                            InstrBW(parm, val); // ix2,X / sp2,SP
+                            INSTR_BW(parm, val); // ix2,X / sp2,SP
                         }
                     }
                     else     // ofs,reg
                     {
                         linePtr = oldLine;
-                        if (Comma()) break;
-                        switch ((reg = GetReg("X SP")))
+                        if (TOKEN_Comma()) break;
+                        switch ((reg = REG_Get("X SP")))
                         {
                             default:
                             case reg_None:
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
 
                             case reg_EOL: // EOL
@@ -512,24 +512,24 @@ static int M6805_DoCPUOpcode(int typ, int parm)
                             case 0: // X
                                 if (parm != 0x0E)   // LDHX
                                 {
-                                    BadMode();
+                                    TOKEN_BadMode();
                                     break;
                                 }
                                 if ((force != '>' && evalKnown && (val & 0xFF00) >> 8 == 0)
                                         || force == '<')
                                 {
-                                    CheckByte(val);
-                                    InstrXB(parm + 0x9EC0, val); // ix1,X
+                                    EXPR_CheckByte(val);
+                                    INSTR_XB(parm + 0x9EC0, val); // ix1,X
                                 }
                                 else
                                 {
-                                    InstrXW(parm + 0x9EB0, val); // ix2,X
+                                    INSTR_XW(parm + 0x9EB0, val); // ix2,X
                                 }
                                 break;
 
                             case 1: // SP
-                                CheckByte(val);
-                                InstrXB(parm + 0x9EF0, val); // sp1,SP
+                                EXPR_CheckByte(val);
+                                INSTR_XB(parm + 0x9EF0, val); // sp1,SP
                                 break;
                         }
                     }
@@ -537,61 +537,61 @@ static int M6805_DoCPUOpcode(int typ, int parm)
             }
             break;
 
-        case o_CBEQA:       // 68HCS08 CBEQA, CBEQX instructions
+        case OP_CBEQA:       // 68HCS08 CBEQA, CBEQX instructions
             if (curCPU != CPU_68HCS08) return 0;
-            if (Expect("#")) break; // immediate only
-            val = EvalByte();
-            if (Comma()) break;
-            val2 = EvalBranch(3);
-            InstrBBB(parm, val, val2);
+            if (TOKEN_Expect("#")) break; // immediate only
+            val = EXPR_EvalByte();
+            if (TOKEN_Comma()) break;
+            val2 = EXPR_EvalBranch(3);
+            INSTR_BBB(parm, val, val2);
             break;
 
-        case o_CBEQ:        // 68HCS08 CBEQ, DBNZ instructions
+        case OP_CBEQ:        // 68HCS08 CBEQ, DBNZ instructions
             if (curCPU != CPU_68HCS08) return 0;
             oldLine = linePtr;
-            if (GetWord(word) == ',')
+            if (TOKEN_GetWord(word) == ',')
             {
-                if (Expect("X")) break;
-                if (parm == 0x01 && Expect("+")) break;
-                if (Comma()) break;
-                val = EvalBranch(2);
-                InstrBB(parm + 0x70, val);
+                if (TOKEN_Expect("X")) break;
+                if (parm == 0x01 && TOKEN_Expect("+")) break;
+                if (TOKEN_Comma()) break;
+                val = EXPR_EvalBranch(2);
+                INSTR_BB(parm + 0x70, val);
             }
             else
             {
                 linePtr = oldLine;
-                val = EvalByte();
-                if (Comma()) break;
-                switch (reg = (GetReg("X SP")))
+                val = EXPR_EvalByte();
+                if (TOKEN_Comma()) break;
+                switch (reg = (REG_Get("X SP")))
                 {
                     case 0: // ,X or ,X+
                         oldLine = linePtr;
-                        if (parm == 0x01 && GetWord(word) != '+')
+                        if (parm == 0x01 && TOKEN_GetWord(word) != '+')
                         {
                             linePtr = oldLine;
                             FALLTHROUGH;
                         case reg_None:
-                            val2 = EvalBranch(3);
-                            InstrBBB(parm + 0x30, val, val2);
+                            val2 = EXPR_EvalBranch(3);
+                            INSTR_BBB(parm + 0x30, val, val2);
                             break;
                         }
                         FALLTHROUGH;
                     case 1: // ,SP
                         if (reg == 1) parm = parm + 0x9E00;
-                        if (Comma()) break;
+                        if (TOKEN_Comma()) break;
                         if (reg == 1)
                         {
-                            val2 = EvalBranch(4);
+                            val2 = EXPR_EvalBranch(4);
                         }
                         else
                         {
-                            val2 = EvalBranch(3);
+                            val2 = EXPR_EvalBranch(3);
                         }
-                        InstrXBB(parm + 0x60, val, val2);
+                        INSTR_XBB(parm + 0x60, val, val2);
                         break;
 
                     default:
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                         break;
 
                     case reg_EOL: // EOL
@@ -600,40 +600,40 @@ static int M6805_DoCPUOpcode(int typ, int parm)
             }
             break;
 
-        case o_MOV:         // 68HCS08 MOV instruction
+        case OP_MOV:         // 68HCS08 MOV instruction
             if (curCPU != CPU_68HCS08) return 0;
             oldLine = linePtr;
-            switch (GetWord(word))
+            switch (TOKEN_GetWord(word))
             {
                 case ',':
-                    if (Expect("X")) break;
-                    if (Expect("+")) break;
-                    if (Comma()) break;
-                    val = EvalByte();
-                    InstrBB(0x7E, val); // MOV ,X+,dir
+                    if (TOKEN_Expect("X")) break;
+                    if (TOKEN_Expect("+")) break;
+                    if (TOKEN_Comma()) break;
+                    val = EXPR_EvalByte();
+                    INSTR_BB(0x7E, val); // MOV ,X+,dir
                     break;
 
                 case '#':
-                    val = EvalByte();
-                    if (Comma()) break;
-                    val2 = EvalByte();
-                    InstrBBB(0x6E, val, val2); // MOV imm,dir
+                    val = EXPR_EvalByte();
+                    if (TOKEN_Comma()) break;
+                    val2 = EXPR_EvalByte();
+                    INSTR_BBB(0x6E, val, val2); // MOV imm,dir
                     break;
 
                 default:
                     linePtr = oldLine;
-                    val = EvalByte();
-                    if (Comma()) break;
+                    val = EXPR_EvalByte();
+                    if (TOKEN_Comma()) break;
                     oldLine = linePtr;
-                    if (GetReg("X") == 0 && (GetReg("+") == 0))
+                    if (REG_Get("X") == 0 && (REG_Get("+") == 0))
                     {
-                        InstrBB(0x5E, val); // 5E MOV dir,X+
+                        INSTR_BB(0x5E, val); // 5E MOV dir,X+
                     }
                     else
                     {
                         linePtr = oldLine;
-                        val2 = EvalByte();
-                        InstrBBB(0x4E, val, val2); // 4E MOV dir,dir
+                        val2 = EXPR_EvalByte();
+                        INSTR_BBB(0x4E, val, val2); // 4E MOV dir,dir
                     }
                     break;
             }
@@ -647,11 +647,11 @@ static int M6805_DoCPUOpcode(int typ, int parm)
 }
 
 
-void Asm6805Init(void)
+void M6805_AsmInit(void)
 {
-    void *p = AddAsm(versionName, &M6805_DoCPUOpcode, NULL, NULL);
+    void *p = ASMX_AddAsm(versionName, &M6805_DoCPUOpcode, NULL, NULL);
 
-    AddCPU(p, "6805",    CPU_6805,    BIG_END, ADDR_16, LIST_24, 8, 0, M6805_opcdTab);
-    AddCPU(p, "68HC05",  CPU_6805,    BIG_END, ADDR_16, LIST_24, 8, 0, M6805_opcdTab);
-    AddCPU(p, "68HCS08", CPU_68HCS08, BIG_END, ADDR_16, LIST_24, 8, 0, M6805_opcdTab);
+    ASMX_AddCPU(p, "6805",    CPU_6805,    END_BIG, ADDR_16, LIST_24, 8, 0, M6805_opcdTab);
+    ASMX_AddCPU(p, "68HC05",  CPU_6805,    END_BIG, ADDR_16, LIST_24, 8, 0, M6805_opcdTab);
+    ASMX_AddCPU(p, "68HCS08", CPU_68HCS08, END_BIG, ADDR_16, LIST_24, 8, 0, M6805_opcdTab);
 }

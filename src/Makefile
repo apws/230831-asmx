@@ -63,7 +63,7 @@ uninstall:
 	rm -f $(INSTALL_DIR)/asm1802
 	rm -f $(INSTALL_DIR)/asm6502
 	rm -f $(INSTALL_DIR)/asm6809
-	rm -f $(INSTALL_DIR)/asm68hc11
+	rm -f $(INSTALL_DIR)/asm68xx
 	rm -f $(INSTALL_DIR)/asm68hc16
 	rm -f $(INSTALL_DIR)/asm68k
 	rm -f $(INSTALL_DIR)/asm8051

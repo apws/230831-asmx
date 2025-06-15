@@ -1,4 +1,4 @@
-// asmz8.c
+// asmZ8.c
 
 #define versionName "Z8 assembler"
 #include "asmx.h"
@@ -10,80 +10,80 @@ extern FILE *listing; // listing output file
 
 enum instrType
 {
-    o_None,     // no operands
-    o_LD,       // LD - load a register
-    o_JR,       // JR - relative jump
-    o_JP,       // JP - absolute or register jump
-    o_DJNZ,     // DJNZ - decrement and jump if not zero
-    o_CALL,     // CALL - call a subroutine
-    o_OneB,     // x0 x1 - single byte operand
-    o_OneW,     // x0 x1 - single word operand, must be even address
-    o_Two,      // x2..x6 - two operand
-    o_LDE_LDC,  // LDE and LDC instructions
-    o_LDEI_LDCI,// LDEI and LDCI instructions
-    o_SRP,      // SRP instruction
+    OP_None,     // no operands
+    OP_LD,       // LD - load a register
+    OP_JR,       // JR - relative jump
+    OP_JP,       // JP - absolute or register jump
+    OP_DJNZ,     // DJNZ - decrement and jump if not zero
+    OP_CALL,     // CALL - call a subroutine
+    OP_OneB,     // x0 x1 - single byte operand
+    OP_OneW,     // x0 x1 - single word operand, must be even address
+    OP_Two,      // x2..x6 - two operand
+    OP_LDE_LDC,  // LDE and LDC instructions
+    OP_LDEI_LDCI,// LDEI and LDCI instructions
+    OP_SRP,      // SRP instruction
 
-    o_RP = o_LabelOp, // RP pseudo-op
+    OP_RP = OP_LabelOp, // RP pseudo-op
 };
 
 struct OpcdRec Z8_opcdTab[] =
 {
-    {"WDH", o_None, 0x4F},
-    {"WDT", o_None, 0x5F},
-    {"STOP",o_None, 0x6F},
-    {"HALT",o_None, 0x7F},
-    {"DI",  o_None, 0x8F},
-    {"EI",  o_None, 0x9F},
-    {"RET", o_None, 0xAF},
-    {"IRET",o_None, 0xBF},
-    {"RCF", o_None, 0xCF},
-    {"SCF", o_None, 0xDF},
-    {"CCF", o_None, 0xEF},
-    {"NOP", o_None, 0xFF},
+    {"WDH", OP_None, 0x4F},
+    {"WDT", OP_None, 0x5F},
+    {"STOP",OP_None, 0x6F},
+    {"HALT",OP_None, 0x7F},
+    {"DI",  OP_None, 0x8F},
+    {"EI",  OP_None, 0x9F},
+    {"RET", OP_None, 0xAF},
+    {"IRET",OP_None, 0xBF},
+    {"RCF", OP_None, 0xCF},
+    {"SCF", OP_None, 0xDF},
+    {"CCF", OP_None, 0xEF},
+    {"NOP", OP_None, 0xFF},
 
-    {"LD",  o_LD,   0x00},
-    {"JR",  o_JR,   0x00},
-    {"JP",  o_JP,   0x00},
-    {"DJNZ",o_DJNZ, 0x00},
-    {"CALL",o_CALL, 0x00},
+    {"LD",  OP_LD,   0x00},
+    {"JR",  OP_JR,   0x00},
+    {"JP",  OP_JP,   0x00},
+    {"DJNZ",OP_DJNZ, 0x00},
+    {"CALL",OP_CALL, 0x00},
 
-    {"DEC", o_OneB, 0x00},
-    {"RLC", o_OneB, 0x10},
-    {"INC", o_OneB, 0x20}, // this also has a unique INC Rr form
-    {"DA",  o_OneB, 0x40},
-    {"POP", o_OneB, 0x50},
-    {"COM", o_OneB, 0x60},
-    {"PUSH",o_OneB, 0x70},
-    {"DECW",o_OneW, 0x80},
-    {"RL",  o_OneB, 0x90},
-    {"INCW",o_OneW, 0xA0},
-    {"CLR", o_OneB, 0xB0},
-    {"RRC", o_OneB, 0xC0},
-    {"SRA", o_OneB, 0xD0},
-    {"RR",  o_OneB, 0xE0},
-    {"SWAP",o_OneB, 0xF0},
+    {"DEC", OP_OneB, 0x00},
+    {"RLC", OP_OneB, 0x10},
+    {"INC", OP_OneB, 0x20}, // this also has a unique INC Rr form
+    {"DA",  OP_OneB, 0x40},
+    {"POP", OP_OneB, 0x50},
+    {"COM", OP_OneB, 0x60},
+    {"PUSH",OP_OneB, 0x70},
+    {"DECW",OP_OneW, 0x80},
+    {"RL",  OP_OneB, 0x90},
+    {"INCW",OP_OneW, 0xA0},
+    {"CLR", OP_OneB, 0xB0},
+    {"RRC", OP_OneB, 0xC0},
+    {"SRA", OP_OneB, 0xD0},
+    {"RR",  OP_OneB, 0xE0},
+    {"SWAP",OP_OneB, 0xF0},
 
-    {"ADD", o_Two, 0x00},
-    {"ADC", o_Two, 0x10},
-    {"SUB", o_Two, 0x20},
-    {"SBC", o_Two, 0x30},
-    {"OR",  o_Two, 0x40},
-    {"AND", o_Two, 0x50},
-    {"TCM", o_Two, 0x60},
-    {"TM",  o_Two, 0x70},
-    {"CP",  o_Two, 0xA0},
-    {"XOR", o_Two, 0xB0},
+    {"ADD", OP_Two, 0x00},
+    {"ADC", OP_Two, 0x10},
+    {"SUB", OP_Two, 0x20},
+    {"SBC", OP_Two, 0x30},
+    {"OR",  OP_Two, 0x40},
+    {"AND", OP_Two, 0x50},
+    {"TCM", OP_Two, 0x60},
+    {"TM",  OP_Two, 0x70},
+    {"CP",  OP_Two, 0xA0},
+    {"XOR", OP_Two, 0xB0},
 
-    {"LDE", o_LDE_LDC,  0x82}, // 82 LDE  r,@rr   92 LDE  @rr,r
-    {"LDC", o_LDE_LDC,  0xC2}, // C2 LDC  r,@rr   D2 LDC  @rr,r
-    {"LDEI",o_LDEI_LDCI,0x83}, // 83 LDEI @r,@rr  93 LDEI @rr,@r
-    {"LDCI",o_LDEI_LDCI,0xC3}, // C3 LDCI @r,@rr  D3 LDCI @rr,@r
+    {"LDE", OP_LDE_LDC,  0x82}, // 82 LDE  r,@rr   92 LDE  @rr,r
+    {"LDC", OP_LDE_LDC,  0xC2}, // C2 LDC  r,@rr   D2 LDC  @rr,r
+    {"LDEI",OP_LDEI_LDCI,0x83}, // 83 LDEI @r,@rr  93 LDEI @rr,@r
+    {"LDCI",OP_LDEI_LDCI,0xC3}, // C3 LDCI @r,@rr  D3 LDCI @rr,@r
 
-    {"SRP", o_SRP, 0x00},
+    {"SRP", OP_SRP, 0x00},
 
-    {"RP",  o_RP,  0x00},
+    {"RP",  OP_RP,  0x00},
 
-    {"",    o_Illegal,  0}
+    {"",    OP_Illegal,  0}
 };
 
 
@@ -92,7 +92,7 @@ int rpReg; // current RP register set pointer
 // --------------------------------------------------------------
 
 
-enum   // registers returned by Get_Z8_Reg()
+enum   // registers returned by Z8_GetReg()
 {
     // reg_EOL and reg_None are also returned by Get_Z8_reg
 
@@ -117,28 +117,28 @@ enum   // registers returned by Get_Z8_Reg()
     reg_Ind,    // '@' found without a register name
 };
 
-enum   // types returned by RegType()
+enum   // types returned by Z8_RegType()
 {
-    // reg_EOL and reg_None are also returned by RegType()
-    type_Unk,   // unknown
-    type_Reg,   // R0 - R15
-    type_RReg,  // RR0 - RR14
-    type_Ir,    // @R0 - @R15
-    type_Irr,   // @RR0 - @RR14
-    type_Ind,   // @
-    type_Imm,   // #
+    // reg_EOL and reg_None are also returned by Z8_RegType()
+    RTYP_Unk,   // unknown
+    RTYP_Reg,   // R0 - R15
+    RTYP_RReg,  // RR0 - RR14
+    RTYP_Ir,    // @R0 - @R15
+    RTYP_Irr,   // @RR0 - @RR14
+    RTYP_Ind,   // @
+    RTYP_Imm,   // #
 };
 
 
 // Gets a Z8 register name and returns it as a token
 // Indirect and immediate have the line pointer ready to call Eval()
-static int Get_Z8_Reg()
+static int Z8_GetReg()
 {
     char    *oldLine;
 
     oldLine = linePtr;
 
-    int reg = GetReg("R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 "
+    int reg = REG_Get("R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 "
                      "@ # RR0 RR2 RR4 RR6 RR8 RR10 RR12 RR14");
     switch (reg)
     {
@@ -160,7 +160,7 @@ static int Get_Z8_Reg()
             return reg_Imm;
 
         case 16: // @
-            reg = GetReg("R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 "
+            reg = REG_Get("R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 "
                          "RR0 RR2 RR4 RR6 RR8 RR10 RR12 RR14");
             if (reg < 0)
             {
@@ -179,7 +179,7 @@ static int Get_Z8_Reg()
 
 
 // returns the type of a register token
-static int RegType(int reg)
+static int Z8_RegType(int reg)
 {
     // reg_None and reg_EOL
     // reg_None is generally followed by a register address expression
@@ -190,39 +190,39 @@ static int RegType(int reg)
     // RP byte registers
     if (reg_R0 <= reg && reg <= reg_R15)
     {
-        return type_Reg;
+        return RTYP_Reg;
     }
     // RP word registers
     if (reg_RR0 <= reg && reg <= reg_RR15)
     {
-        return type_RReg;
+        return RTYP_RReg;
     }
     // Indirect RP byte registers
     if (reg_IR0 <= reg && reg <= reg_IR15)
     {
-        return type_Ir;
+        return RTYP_Ir;
     }
     // Indirect RP word registers
     if (reg_IRR0 <= reg && reg <= reg_IRR15)
     {
-        return type_Irr;
+        return RTYP_Irr;
     }
     // Immediate value
     if (reg == reg_Imm)
     {
-        return type_Imm;
+        return RTYP_Imm;
     }
     // Indirect register
     if (reg == reg_Ind)
     {
-        return type_Ind;
+        return RTYP_Ind;
     }
-    return type_Unk;
+    return RTYP_Unk;
 }
 
 
 // returns the register number of a register token
-static int RegNum(int reg)
+static int Z8_RegNum(int reg)
 {
     if (reg_R0 <= reg && reg <= reg_R15)
     {
@@ -246,14 +246,14 @@ static int RegNum(int reg)
 
 // checks if a register address is in the current RP range
 // note that this depends on evalKnown and must be done immediately after Eval()
-static bool IsRP(int reg)
+static bool Z8_IsRP(int reg)
 {
     return evalKnown && rpReg >= 0 && (reg & 0xF0) == rpReg;
 }
 
 
 // checks that a register number is valid as an operand
-static void CheckZ8Reg(int reg)
+static void Z8_CheckReg(int reg)
 {
     // register number must be in 0x00 - 0xFF range
     if (reg < 0 || reg > 0xFF ||
@@ -261,15 +261,15 @@ static void CheckZ8Reg(int reg)
             (0xE0 <= reg && reg <= 0xEF))
     {
         // could also check 80-DF range on 124-byte RAM cores
-        Error("Invalid register");
+        ASMX_Error("Invalid register");
     }
 }
 
 
 // get the condition code for a JP or JR instruction
-static int GetZ8Cond()
+static int Z8_GetCond()
 {
-    int reg = GetReg("F LT LE ULE OV MI EQ C T GE GT UGT NOV PL NZ NC ULT UGE");
+    int reg = REG_Get("F LT LE ULE OV MI EQ C T GE GT UGT NOV PL NZ NC ULT UGE");
     switch (reg)
     {
         case 16:
@@ -282,7 +282,7 @@ static int GetZ8Cond()
 
     if (reg >= 0)
     {
-        Comma();
+        TOKEN_Comma();
     }
     else
     {
@@ -305,93 +305,93 @@ int Z8_DoCPUOpcode(int typ, int parm)
 
     switch (typ)
     {
-        case o_None:
-            InstrB(parm);
+        case OP_None:
+            INSTR_B(parm);
             break;
 
-        case o_LD:
+        case OP_LD:
             // LD - load a register
-            reg1 = Get_Z8_Reg();
-            switch (RegType(reg1))
+            reg1 = Z8_GetReg();
+            switch (Z8_RegType(reg1))
             {
-                case type_Reg:
+                case RTYP_Reg:
                     // LD Rr,
-                    Comma();
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    TOKEN_Comma();
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Imm:
+                        case RTYP_Imm:
                             // LD Rr,#imm => rC ii
-                            val = Eval();
-                            InstrBB(RegNum(reg1)*16 + 0x0C, val);
+                            val = EXPR_Eval();
+                            INSTR_BB(Z8_RegNum(reg1)*16 + 0x0C, val);
                             break;
 
-                        case type_Reg:
+                        case RTYP_Reg:
                             // LD Rr,Rr => r8 Er
-                            InstrBB(RegNum(reg1)*16 + 0x08, 0xE0 + (reg2 & 0x0F));
+                            INSTR_BB(Z8_RegNum(reg1)*16 + 0x08, 0xE0 + (reg2 & 0x0F));
                             break;
 
-                        case type_Ir:
+                        case RTYP_Ir:
                             // LD Rr,@Rr => E3 ds
-                            InstrBB(0xE3, RegNum(reg1)*16 + RegNum(reg2));
+                            INSTR_BB(0xE3, Z8_RegNum(reg1)*16 + Z8_RegNum(reg2));
                             break;
 
                         case reg_None:
                             // LD Rr,reg
-                            reg2 = Eval();
+                            reg2 = EXPR_Eval();
                             // can't use GetReg because it will complain about EOL
                             oldLine = linePtr;
-                            if (GetWord(word) == '(')
+                            if (TOKEN_GetWord(word) == '(')
                             {
                                 // LD Rr,ofs(Rr)
                                 val = reg2;
-                                reg2 = Get_Z8_Reg();
-                                switch (RegType(reg2))
+                                reg2 = Z8_GetReg();
+                                switch (Z8_RegType(reg2))
                                 {
-                                    case type_Reg:
+                                    case RTYP_Reg:
                                         // LD Rr,ofs(Rr) => C7 ds oo
-                                        Expect(")");
-                                        InstrBBB(0xC7, RegNum(reg1)*16 + RegNum(reg2), val);
+                                        TOKEN_Expect(")");
+                                        INSTR_BBB(0xC7, Z8_RegNum(reg1)*16 + Z8_RegNum(reg2), val);
                                         break;
 
                                     case reg_EOL:
                                         break;
 
                                     default:
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                         break;
                                 }
                             }
                             else
                             {
                                 linePtr = oldLine;
-                                if (IsRP(reg2))
+                                if (Z8_IsRP(reg2))
                                 {
                                     // LD Rr,Rr => r8 Er
-                                    InstrBB(RegNum(reg1)*16 + 0x08, 0xE0 + (reg2 & 0x0F));
+                                    INSTR_BB(Z8_RegNum(reg1)*16 + 0x08, 0xE0 + (reg2 & 0x0F));
                                 }
                                 else
                                 {
                                     // LD Rr,reg => r8 rr
-                                    CheckZ8Reg(reg2);
-                                    InstrBB(RegNum(reg1)*16 + 0x08, reg2);
+                                    Z8_CheckReg(reg2);
+                                    INSTR_BB(Z8_RegNum(reg1)*16 + 0x08, reg2);
                                 }
                             }
                             break;
 
-                        case type_Ind:
+                        case RTYP_Ind:
                             // LD Rr,@reg
-                            reg2 = Eval();
-                            CheckZ8Reg(reg2);
-                            if (IsRP(reg2))
+                            reg2 = EXPR_Eval();
+                            Z8_CheckReg(reg2);
+                            if (Z8_IsRP(reg2))
                             {
                                 // LD Rr,@Rs => E3 ds
-                                InstrBB(0xE3, RegNum(reg1)*16 + (reg2 & 0x0F));
+                                INSTR_BB(0xE3, Z8_RegNum(reg1)*16 + (reg2 & 0x0F));
                             }
                             else
                             {
                                 // LD dst,@src => E5 ss dd
-                                InstrBBB(0xE5, reg2, 0xE0 + RegNum(reg1));
+                                INSTR_BBB(0xE5, reg2, 0xE0 + Z8_RegNum(reg1));
                             }
                             break;
 
@@ -399,71 +399,71 @@ int Z8_DoCPUOpcode(int typ, int parm)
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case type_Ir:
+                case RTYP_Ir:
                     // LD @Rr,
-                    Comma();
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    TOKEN_Comma();
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Imm:
+                        case RTYP_Imm:
                             // LD @Rr,#imm => E7 Er ii
-                            val = Eval();
-                            InstrBBB(0xE7, 0xE0 + RegNum(reg1), val);
+                            val = EXPR_Eval();
+                            INSTR_BBB(0xE7, 0xE0 + Z8_RegNum(reg1), val);
                             break;
 
                         case reg_None:
                             // LD @Rr,reg => F5 ss Er
-                            reg2 = Eval();
-                            CheckZ8Reg(reg2);
-                            InstrBBB(0xF5, reg2, 0xE0 + RegNum(reg1));
+                            reg2 = EXPR_Eval();
+                            Z8_CheckReg(reg2);
+                            INSTR_BBB(0xF5, reg2, 0xE0 + Z8_RegNum(reg1));
                             break;
 
-                        case type_Reg:
+                        case RTYP_Reg:
                             // LD @Rr,Rr => F3 ds
-                            InstrBB(0xF3, RegNum(reg1)*16 + RegNum(reg2));
+                            INSTR_BB(0xF3, Z8_RegNum(reg1)*16 + Z8_RegNum(reg2));
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 case reg_None:
                     // LD reg,
-                    reg1 = Eval();
-                    if (GetReg("(") == 0)
+                    reg1 = EXPR_Eval();
+                    if (REG_Get("(") == 0)
                     {
                         // LD ofs(
                         val = reg1;
-                        reg1 = Get_Z8_Reg();
-                        switch (RegType(reg1))
+                        reg1 = Z8_GetReg();
+                        switch (Z8_RegType(reg1))
                         {
-                            case type_Reg:
+                            case RTYP_Reg:
                                 // LD ofs(Rr),
-                                Expect(")");
-                                Comma();
-                                reg2 = Get_Z8_Reg();
-                                switch (RegType(reg2))
+                                TOKEN_Expect(")");
+                                TOKEN_Comma();
+                                reg2 = Z8_GetReg();
+                                switch (Z8_RegType(reg2))
                                 {
-                                    case type_Reg:
+                                    case RTYP_Reg:
                                         // LD ofs(Rr),Rr => D7 sd oo
-                                        InstrBBB(0xD7, RegNum(reg2)*16 + RegNum(reg1), val);
+                                        INSTR_BBB(0xD7, Z8_RegNum(reg2)*16 + Z8_RegNum(reg1), val);
                                         break;
 
                                     case reg_EOL:
                                         break;
 
                                     default:
-                                        IllegalOperand();
+                                        ASMX_IllegalOperand();
                                         break;
                                 }
                                 break;
@@ -472,101 +472,101 @@ int Z8_DoCPUOpcode(int typ, int parm)
                                 break;
 
                             default:
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
                         }
                     }
                     else
                     {
-                        isRP1 = IsRP(reg1);
-                        Comma();
-                        reg2 = Get_Z8_Reg();
-                        switch (RegType(reg2))
+                        isRP1 = Z8_IsRP(reg1);
+                        TOKEN_Comma();
+                        reg2 = Z8_GetReg();
+                        switch (Z8_RegType(reg2))
                         {
-                            case type_Reg:
+                            case RTYP_Reg:
                                 // LD reg,Rr => x9 rr
                                 // Note that in this form, registers Ex are allowed!
                                 if (reg1 < 0 || reg1 > 255)
                                 {
-                                    Error("Invalid register");
+                                    ASMX_Error("Invalid register");
                                 }
-                                InstrBB(RegNum(reg2)*16 + 0x09, reg1);
+                                INSTR_BB(Z8_RegNum(reg2)*16 + 0x09, reg1);
                                 break;
 
                             case reg_None:
                                 // LD dst,src
-                                reg2 = Eval();
+                                reg2 = EXPR_Eval();
 #if 0
-                                CheckZ8Reg(reg1);
+                                Z8_CheckReg(reg1);
 #else
                                 // It is possible that this form also allows registers Ex
                                 if (reg1 < 0 || reg1 > 255)
                                 {
-                                    Error("Invalid register");
+                                    ASMX_Error("Invalid register");
                                 }
 #endif
-                                CheckZ8Reg(reg2);
+                                Z8_CheckReg(reg2);
                                 if (isRP1)
                                 {
                                     // LD Rr,Rr => r8 rr
-                                    InstrBB(RegNum(reg1)*16 + 0x08, reg2);
+                                    INSTR_BB(Z8_RegNum(reg1)*16 + 0x08, reg2);
                                 }
-                                else if (IsRP(reg2))
+                                else if (Z8_IsRP(reg2))
                                 {
                                     // LD reg,Rr => x9 rr
-                                    InstrBB(reg2*16 + 0x09, reg1);
+                                    INSTR_BB(reg2*16 + 0x09, reg1);
                                 }
                                 else
                                 {
                                     // LD dst,src => E4 ss dd
-                                    InstrBBB(0xE4, reg2, reg1);
+                                    INSTR_BBB(0xE4, reg2, reg1);
                                 }
                                 break;
 
-                            case type_Ir:
+                            case RTYP_Ir:
                                 // LD dst,@Rs
-                                CheckZ8Reg(reg1);
+                                Z8_CheckReg(reg1);
                                 if (isRP1 )
                                 {
                                     // LD Rd,@Rs => E3 ds
-                                    InstrBB(0xE3, (reg1 & 0x0F)*16 + RegNum(reg2));
+                                    INSTR_BB(0xE3, (reg1 & 0x0F)*16 + Z8_RegNum(reg2));
                                 }
                                 else
                                 {
                                     // LD dst,@Rs => E5 Es dd
-                                    InstrBBB(0xE5, 0xE0 + RegNum(reg2), reg1);
+                                    INSTR_BBB(0xE5, 0xE0 + Z8_RegNum(reg2), reg1);
                                 }
                                 break;
 
-                            case type_Ind:
+                            case RTYP_Ind:
                                 // LD dst,@src
-                                reg2 = Eval();
-                                CheckZ8Reg(reg1);
-                                CheckZ8Reg(reg2);
-                                if (isRP1 && IsRP(reg2))
+                                reg2 = EXPR_Eval();
+                                Z8_CheckReg(reg1);
+                                Z8_CheckReg(reg2);
+                                if (isRP1 && Z8_IsRP(reg2))
                                 {
                                     // LD Rr,@Rr => E3 ds
-                                    InstrBB(0xE3, (reg1 & 0x0F)*16 + (reg2 & 0x0F));
+                                    INSTR_BB(0xE3, (reg1 & 0x0F)*16 + (reg2 & 0x0F));
                                 }
                                 else
                                 {
                                     // LD dst,@src => E5 ss dd
-                                    InstrBBB(0xE5, reg2, reg1);
+                                    INSTR_BBB(0xE5, reg2, reg1);
                                 }
                                 break;
 
-                            case type_Imm:
+                            case RTYP_Imm:
                                 // LD dst,#imm
-                                val = Eval();
+                                val = EXPR_Eval();
                                 if (isRP1)
                                 {
                                     // LD Rr,#imm => rC ii
-                                    InstrBB((reg1 & 0x0F)*16 + 0x0C, val);
+                                    INSTR_BB((reg1 & 0x0F)*16 + 0x0C, val);
                                 }
                                 else
                                 {
                                     // LD dst,#imm => E6 rr ii
-                                    InstrBBB(0xE6, reg1, val);
+                                    INSTR_BBB(0xE6, reg1, val);
                                 }
                                 break;
 
@@ -574,53 +574,53 @@ int Z8_DoCPUOpcode(int typ, int parm)
                                 break;
 
                             default:
-                                IllegalOperand();
+                                ASMX_IllegalOperand();
                                 break;
                         }
                     }
                     break;
 
-                case type_Ind:
+                case RTYP_Ind:
                     // LD @reg,
-                    reg1 = Eval();
-                    Comma();
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    reg1 = EXPR_Eval();
+                    TOKEN_Comma();
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Imm:
+                        case RTYP_Imm:
                             // LD @reg,#imm => E7 rr ii
-                            val = Eval();
-                            InstrBBB(0xE7, reg1, val);
+                            val = EXPR_Eval();
+                            INSTR_BBB(0xE7, reg1, val);
                             break;
 
-                        case type_Reg:
+                        case RTYP_Reg:
                             // LD @reg,Rs
-                            if (IsRP(reg1))
+                            if (Z8_IsRP(reg1))
                             {
                                 // LD @Rd,Rs => F3 ds
-                                InstrBB(0xF3, (reg1 & 0x0F)*16 + (reg2 & 0x0F));
+                                INSTR_BB(0xF3, (reg1 & 0x0F)*16 + (reg2 & 0x0F));
                             }
                             else
                             {
                                 // LD @reg,Rs => F5 Es dd
-                                InstrBBB(0xF5, reg2 | 0xE0, reg1);
+                                INSTR_BBB(0xF5, reg2 | 0xE0, reg1);
                             }
                             break;
 
                         case reg_None:
                             // LD @reg,reg
-                            isRP1 = IsRP(reg1);
-                            reg2 = Eval();
-                            CheckZ8Reg(reg2);
-                            if (isRP1 && IsRP(reg2))
+                            isRP1 = Z8_IsRP(reg1);
+                            reg2 = EXPR_Eval();
+                            Z8_CheckReg(reg2);
+                            if (isRP1 && Z8_IsRP(reg2))
                             {
                                 // LD @Rr,Rr => F3 ds
-                                InstrBB(0xF3, (reg1 & 0x0F)*16 + (reg2 & 0x0F));
+                                INSTR_BB(0xF3, (reg1 & 0x0F)*16 + (reg2 & 0x0F));
                             }
                             else
                             {
                                 // LD @reg,Rs => F5 ss dd
-                                InstrBBB(0xF5, reg2, reg1);
+                                INSTR_BBB(0xF5, reg2, reg1);
                             }
                             break;
 
@@ -628,7 +628,7 @@ int Z8_DoCPUOpcode(int typ, int parm)
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
@@ -637,208 +637,208 @@ int Z8_DoCPUOpcode(int typ, int parm)
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_JR:
+        case OP_JR:
             // JR - relative jump
             // JR [C,]rel => cB dd
-            reg1 = GetZ8Cond();
-            val = EvalBranch(2);
-            InstrBB(reg1*16 + 0x0B, val);
+            reg1 = Z8_GetCond();
+            val = EXPR_EvalBranch(2);
+            INSTR_BB(reg1*16 + 0x0B, val);
             break;
 
-        case o_JP:
+        case OP_JP:
             // JP - absolute or register jump
-            reg1 = GetZ8Cond();
-            reg2 = Get_Z8_Reg();
-            switch (RegType(reg2))
+            reg1 = Z8_GetCond();
+            reg2 = Z8_GetReg();
+            switch (Z8_RegType(reg2))
             {
                 case reg_None:
                     // JP C,aaaa => cD aaaa
-                    val = Eval();
-                    InstrBW(reg1*16 + 0x0D, val);
+                    val = EXPR_Eval();
+                    INSTR_BW(reg1*16 + 0x0D, val);
                     break;
 
-                case type_Ir:
+                case RTYP_Ir:
                     // JP @Rr => 30 Er
-                    if ((RegNum(reg2) & 0x01) != 0)
+                    if ((Z8_RegNum(reg2) & 0x01) != 0)
                     {
-                        Error("Register must be even");
+                        ASMX_Error("Register must be even");
                     }
                 // fall through
-                case type_Irr:
+                case RTYP_Irr:
                     // JP @RRr => 30 Er
-                    InstrBB(0x30, 0xE0 + RegNum(reg2));
+                    INSTR_BB(0x30, 0xE0 + Z8_RegNum(reg2));
                     break;
 
-                case type_Ind:
+                case RTYP_Ind:
                     // JP @rr => 30 rr
-                    reg2 = Eval();
-                    CheckZ8Reg(reg2);
+                    reg2 = EXPR_Eval();
+                    Z8_CheckReg(reg2);
                     if ((reg1 & 0x01) != 0)
                     {
-                        Error("Register must be even");
+                        ASMX_Error("Register must be even");
                     }
-                    InstrBB(0x30, reg2);
+                    INSTR_BB(0x30, reg2);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_DJNZ:
+        case OP_DJNZ:
             // DJNZ - decrement and jump if not zero
-            reg1 = Get_Z8_Reg();
-            switch (RegType(reg1))
+            reg1 = Z8_GetReg();
+            switch (Z8_RegType(reg1))
             {
-                case type_Reg:
+                case RTYP_Reg:
                     // DJNZ Rr,rel => rA dd
-                    Comma();
-                    val = EvalBranch(2);
-                    InstrBB(RegNum(reg1)*16 + 0x0A, val);
+                    TOKEN_Comma();
+                    val = EXPR_EvalBranch(2);
+                    INSTR_BB(Z8_RegNum(reg1)*16 + 0x0A, val);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_CALL:
+        case OP_CALL:
             // CALL - call a subroutine
-            reg1 = Get_Z8_Reg();
-            switch (RegType(reg1))
+            reg1 = Z8_GetReg();
+            switch (Z8_RegType(reg1))
             {
-                case type_Ir:
+                case RTYP_Ir:
                     // @Rr => D4 Er
-                    if ((RegNum(reg1) & 0x01) != 0)
+                    if ((Z8_RegNum(reg1) & 0x01) != 0)
                     {
-                        Error("Register must be even");
+                        ASMX_Error("Register must be even");
                     }
                 // fall through
-                case type_Irr:
+                case RTYP_Irr:
                     // @RRr => D4 Er
-                    InstrBB(0xD4, 0xE0 + RegNum(reg1));
+                    INSTR_BB(0xD4, 0xE0 + Z8_RegNum(reg1));
                     break;
 
-                case type_Ind:
+                case RTYP_Ind:
                     // CALL @reg => D4 rr
-                    reg1 = Eval();
-                    CheckZ8Reg(reg1);
-                    if ((RegNum(reg1) & 0x01) != 0)
+                    reg1 = EXPR_Eval();
+                    Z8_CheckReg(reg1);
+                    if ((Z8_RegNum(reg1) & 0x01) != 0)
                     {
-                        Error("Register must be even");
+                        ASMX_Error("Register must be even");
                     }
-                    InstrBB(0xD4, reg1);
+                    INSTR_BB(0xD4, reg1);
                     break;
 
                 case reg_None: // CALL aaaa => D6 aaaa
-                    val = Eval();
-                    InstrBW(0xD6, val);
+                    val = EXPR_Eval();
+                    INSTR_BW(0xD6, val);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_OneB:
+        case OP_OneB:
         // x0 x1 - single byte operand
-        case o_OneW:
+        case OP_OneW:
             // x0 x1 - single word operand, must be even register address
             // OP Rr => x0 Er
             // OP reg => x0 rr
             // OP @reg => x1 @rr
-            reg1 = Get_Z8_Reg();
-            switch (RegType(reg1))
+            reg1 = Z8_GetReg();
+            switch (Z8_RegType(reg1))
             {
-                case type_RReg:
+                case RTYP_RReg:
                     // RRr
-                    if (typ != o_OneW)
+                    if (typ != OP_OneW)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                     }
                     FALLTHROUGH;
-                case type_Reg:
+                case RTYP_Reg:
                     // Rr
-                    if (typ == o_OneW && (RegNum(reg1) & 0x01) != 0)
+                    if (typ == OP_OneW && (Z8_RegNum(reg1) & 0x01) != 0)
                     {
-                        Error("Register must be even");
+                        ASMX_Error("Register must be even");
                     }
                     if (parm == 0x20)
                     {
                         // special case for INC Rr => rE
-                        InstrB(RegNum(reg1)*16 + 0x0E);
+                        INSTR_B(Z8_RegNum(reg1)*16 + 0x0E);
                         break;
                     }
                     // OP Rr => x0 Er
-                    InstrBB(parm, 0xE0 + RegNum(reg1));
+                    INSTR_BB(parm, 0xE0 + Z8_RegNum(reg1));
                     break;
 
-                case type_Irr:
+                case RTYP_Irr:
                     // @RRr
-                    if (typ != o_OneW)
+                    if (typ != OP_OneW)
                     {
-                        IllegalOperand();
+                        ASMX_IllegalOperand();
                     }
                     FALLTHROUGH;
-                case type_Ir:
+                case RTYP_Ir:
                     // @Rr
-                    if (typ == o_OneW && (RegNum(reg1) & 0x01))
+                    if (typ == OP_OneW && (Z8_RegNum(reg1) & 0x01))
                     {
-                        Error("Register must be even");
+                        ASMX_Error("Register must be even");
                     }
                     // OP @Rr => x1 Er
-                    InstrBB(parm + 0x01, 0xE0 + RegNum(reg1));
+                    INSTR_BB(parm + 0x01, 0xE0 + Z8_RegNum(reg1));
                     break;
 
-                case type_Ind:
+                case RTYP_Ind:
                     // OP @reg => x1 rr
-                    reg1 = Eval();
-                    CheckZ8Reg(reg1);
-                    if (typ == o_OneW && (reg1 & 0x01) != 0)
+                    reg1 = EXPR_Eval();
+                    Z8_CheckReg(reg1);
+                    if (typ == OP_OneW && (reg1 & 0x01) != 0)
                     {
-                        Error("Register must be even");
+                        ASMX_Error("Register must be even");
                     }
-                    InstrBB(parm + 0x01, reg1);
+                    INSTR_BB(parm + 0x01, reg1);
                     break;
 
                 case reg_None:
                     // OP reg  => x0 rr
-                    reg1 = Eval();
-                    CheckZ8Reg(reg1);
-                    if (typ == o_OneW && (reg1 & 0x01) != 0)
+                    reg1 = EXPR_Eval();
+                    Z8_CheckReg(reg1);
+                    if (typ == OP_OneW && (reg1 & 0x01) != 0)
                     {
-                        Error("Register must be even");
+                        ASMX_Error("Register must be even");
                     }
-                    InstrBB(parm + 0x00, reg1);
+                    INSTR_BB(parm + 0x00, reg1);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_Two:
+        case OP_Two:
             // x2..x6 - two operand
             // OP Rd,Rs => x2 ds
             // OP Rd,@Rs => x3 ds
@@ -846,162 +846,162 @@ int Z8_DoCPUOpcode(int typ, int parm)
             // OP dst,@src => x5 src dst
             // OP reg,#imm => x6 rr ii
             // OP @reg,#imm => x7 rr ii
-            reg1 = Get_Z8_Reg();
-            switch (RegType(reg1))
+            reg1 = Z8_GetReg();
+            switch (Z8_RegType(reg1))
             {
-                case type_Reg:
+                case RTYP_Reg:
                     // OP Rr,
-                    Comma();
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    TOKEN_Comma();
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Reg:
+                        case RTYP_Reg:
                             // OP Rd,Rs => x2 ds
-                            InstrBB(parm + 0x02, RegNum(reg1)*16 + RegNum(reg2));
+                            INSTR_BB(parm + 0x02, Z8_RegNum(reg1)*16 + Z8_RegNum(reg2));
                             break;
 
-                        case type_Ir:
+                        case RTYP_Ir:
                             // OP Rd,@Rs => x3 ds
-                            InstrBB(parm + 0x03, RegNum(reg1)*16 + RegNum(reg2));
+                            INSTR_BB(parm + 0x03, Z8_RegNum(reg1)*16 + Z8_RegNum(reg2));
                             break;
 
                         case reg_None:
                             // OP Rd,reg => x4 ss Ed
-                            reg2 = Eval();
-                            CheckZ8Reg(reg2);
-                            InstrBBB(parm + 0x04, reg2, 0xE0 + RegNum(reg1));
+                            reg2 = EXPR_Eval();
+                            Z8_CheckReg(reg2);
+                            INSTR_BBB(parm + 0x04, reg2, 0xE0 + Z8_RegNum(reg1));
                             break;
 
-                        case type_Ind:
+                        case RTYP_Ind:
                             // OP Rd,@reg => x5 ss Ed
-                            reg2 = Eval();
-                            CheckZ8Reg(reg2);
-                            InstrBBB(parm + 0x05, reg2, 0xE0 + RegNum(reg1));
+                            reg2 = EXPR_Eval();
+                            Z8_CheckReg(reg2);
+                            INSTR_BBB(parm + 0x05, reg2, 0xE0 + Z8_RegNum(reg1));
                             break;
 
-                        case type_Imm:
+                        case RTYP_Imm:
                             // OP Rd,#imm => 06 Ed ii
-                            val = Eval();
-                            InstrBBB(parm + 0x06, 0xE0 + RegNum(reg1), val);
+                            val = EXPR_Eval();
+                            INSTR_BBB(parm + 0x06, 0xE0 + Z8_RegNum(reg1), val);
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case type_Ir:
+                case RTYP_Ir:
                     // OP @Rr,#imm
-                    Comma();
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    TOKEN_Comma();
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Imm:
+                        case RTYP_Imm:
                             // OP @Rr,#imm => 07 Er ii
-                            val = Eval();
-                            InstrBBB(parm + 0x07, 0xE0 + RegNum(reg1), val);
+                            val = EXPR_Eval();
+                            INSTR_BBB(parm + 0x07, 0xE0 + Z8_RegNum(reg1), val);
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
                 case reg_None:
                     // OP reg,
-                    reg1 = Eval();
-                    isRP1 = IsRP(reg1);
-                    Comma();
-                    CheckZ8Reg(reg1);
-                    InstrBB(parm, reg1);
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    reg1 = EXPR_Eval();
+                    isRP1 = Z8_IsRP(reg1);
+                    TOKEN_Comma();
+                    Z8_CheckReg(reg1);
+                    INSTR_BB(parm, reg1);
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Reg:
+                        case RTYP_Reg:
                             // OP dd,Rs => 04 Es dd
-                            InstrBBB(parm + 0x04, 0xE0 + RegNum(reg2), reg1);
+                            INSTR_BBB(parm + 0x04, 0xE0 + Z8_RegNum(reg2), reg1);
                             break;
 
                         case reg_None:
                             // OP dd,ss => 04 ss dd
-                            reg2 = Eval();
-                            CheckZ8Reg(reg2);
+                            reg2 = EXPR_Eval();
+                            Z8_CheckReg(reg2);
                             // OP dd,Rs
-                            if (isRP1 && IsRP(reg2))
+                            if (isRP1 && Z8_IsRP(reg2))
                             {
                                 // OP Rd,Rs => 02 ds
-                                InstrBB(parm + 0x02, (reg1 & 0x0F)*16 + (reg2 & 0x0F));
+                                INSTR_BB(parm + 0x02, (reg1 & 0x0F)*16 + (reg2 & 0x0F));
                             }
                             else
                             {
-                                InstrBBB(parm + 0x04, reg2, reg1);
+                                INSTR_BBB(parm + 0x04, reg2, reg1);
                             }
                             break;
 
-                        case type_Ir:
+                        case RTYP_Ir:
                             // OP dd,@Rs => 05 Es dd
-                            InstrBBB(parm + 0x05, 0xE0 + RegNum(reg2), reg1);
+                            INSTR_BBB(parm + 0x05, 0xE0 + Z8_RegNum(reg2), reg1);
                             break;
 
-                        case type_Ind:
+                        case RTYP_Ind:
                             // OP dd,@ss
-                            reg2 = Eval();
-                            CheckZ8Reg(reg2);
-                            if (isRP1 && IsRP(reg2))
+                            reg2 = EXPR_Eval();
+                            Z8_CheckReg(reg2);
+                            if (isRP1 && Z8_IsRP(reg2))
                             {
                                 // OP Rd,@Rs => 03 ds
-                                InstrBB(parm + 0x03, (reg1 & 0x0F)*16 + (reg2 & 0x0F));
+                                INSTR_BB(parm + 0x03, (reg1 & 0x0F)*16 + (reg2 & 0x0F));
                             }
                             else
                             {
                                 // OP dd,@ss => 05 ss dd
-                                InstrBBB(parm + 0x05, reg2, reg1);
+                                INSTR_BBB(parm + 0x05, reg2, reg1);
                             }
                             break;
 
-                        case type_Imm:
+                        case RTYP_Imm:
                             // OP reg,#imm => 06 rr ii
-                            CheckZ8Reg(reg1);
-                            val = Eval();
-                            InstrBBB(parm + 0x06, reg1, val);
+                            Z8_CheckReg(reg1);
+                            val = EXPR_Eval();
+                            INSTR_BBB(parm + 0x06, reg1, val);
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case type_Ind:
+                case RTYP_Ind:
                     // OP @reg,#imm
-                    reg1 = Eval();
-                    Comma();
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    reg1 = EXPR_Eval();
+                    TOKEN_Comma();
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Imm:
+                        case RTYP_Imm:
                             // OP @reg,#imm => 07 rr ii
-                            CheckZ8Reg(reg1);
-                            val = Eval();
-                            InstrBBB(parm + 0x07, reg1, val);
+                            Z8_CheckReg(reg1);
+                            val = EXPR_Eval();
+                            INSTR_BBB(parm + 0x07, reg1, val);
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
@@ -1010,53 +1010,53 @@ int Z8_DoCPUOpcode(int typ, int parm)
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_LDE_LDC:
+        case OP_LDE_LDC:
             // LDE and LDC instructions
-            reg1 = Get_Z8_Reg();
-            switch (RegType(reg1))
+            reg1 = Z8_GetReg();
+            switch (Z8_RegType(reg1))
             {
-                case type_Reg:
+                case RTYP_Reg:
                     // LDE/LDC Rr,@RRr
-                    Comma();
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    TOKEN_Comma();
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Irr:
+                        case RTYP_Irr:
                             // LDE/LDC Rr,@RRr => 82/C2 ds
-                            InstrBB(parm + 0x00, RegNum(reg1)*16 + RegNum(reg2));
+                            INSTR_BB(parm + 0x00, Z8_RegNum(reg1)*16 + Z8_RegNum(reg2));
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case type_Irr:
+                case RTYP_Irr:
                     // LDE/LDC @RRr,Rr
-                    Comma();
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    TOKEN_Comma();
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Reg:
+                        case RTYP_Reg:
                             // LDE/LDC @RRr,Rr => 92/D2 sd
                             // NOTE: some Zilog manuals show LDC as D2 ds
-                            InstrBB(parm + 0x10, RegNum(reg2)*16 + RegNum(reg1));
+                            INSTR_BB(parm + 0x10, Z8_RegNum(reg2)*16 + Z8_RegNum(reg1));
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
@@ -1065,53 +1065,53 @@ int Z8_DoCPUOpcode(int typ, int parm)
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_LDEI_LDCI:
+        case OP_LDEI_LDCI:
             // LDEI and LDCI instructions
-            reg1 = Get_Z8_Reg();
-            switch (RegType(reg1))
+            reg1 = Z8_GetReg();
+            switch (Z8_RegType(reg1))
             {
-                case type_Ir:
+                case RTYP_Ir:
                     // LDEI/LDCI @Rr,@RRr
-                    Comma();
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    TOKEN_Comma();
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Irr:
+                        case RTYP_Irr:
                             // LDEI/LDCI @Rr,@RRr => 83/C3 ds
-                            InstrBB(parm + 0x00, RegNum(reg1)*16 + RegNum(reg2));
+                            INSTR_BB(parm + 0x00, Z8_RegNum(reg1)*16 + Z8_RegNum(reg2));
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
 
-                case type_Irr:
+                case RTYP_Irr:
                     // LDEI/LDCI @RRr,@Rr
                     // NOTE: some Zilog manuals show LDCI as D3 ds
-                    Comma();
-                    reg2 = Get_Z8_Reg();
-                    switch (RegType(reg2))
+                    TOKEN_Comma();
+                    reg2 = Z8_GetReg();
+                    switch (Z8_RegType(reg2))
                     {
-                        case type_Ir:
+                        case RTYP_Ir:
                             // LDEI/LDCI @RRr,@Rr => 93/D3 sd
-                            InstrBB(parm + 0x10, RegNum(reg2)*16 + RegNum(reg1));
+                            INSTR_BB(parm + 0x10, Z8_RegNum(reg2)*16 + Z8_RegNum(reg1));
                             break;
 
                         case reg_EOL:
                             break;
 
                         default:
-                            IllegalOperand();
+                            ASMX_IllegalOperand();
                             break;
                     }
                     break;
@@ -1120,27 +1120,27 @@ int Z8_DoCPUOpcode(int typ, int parm)
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
 
-        case o_SRP:
+        case OP_SRP:
             // SRP instruction
-            reg1 = Get_Z8_Reg();
-            switch (RegType(reg1))
+            reg1 = Z8_GetReg();
+            switch (Z8_RegType(reg1))
             {
-                case type_Imm:
+                case RTYP_Imm:
                     // SRP #ii => 31 ii
-                    val = Eval();
-                    InstrBB(0x31, val);
+                    val = EXPR_Eval();
+                    INSTR_BB(0x31, val);
                     break;
 
                 case reg_EOL:
                     break;
 
                 default:
-                    IllegalOperand();
+                    ASMX_IllegalOperand();
                     break;
             }
             break;
@@ -1159,25 +1159,25 @@ int Z8_DoCPULabelOp(int typ, int parm, char *labl)
 
     switch (typ)
     {
-        case o_RP:
+        case OP_RP:
             // RP pseudo-op
             // This sets the expected value of the register pointer to
             // optimize Rxx addressing modes to Rn, or you can turn it OFF
 
             if (labl[0])
             {
-                Error("Label not allowed");
+                ASMX_Error("Label not allowed");
             }
 
-            if (GetReg("OFF") == 0)
+            if (REG_Get("OFF") == 0)
             {
                 // RP OFF to disable RP optimizations
                 rpReg = -1;
                 char *p = listLine + 2;
-                p = ListStr(p, "--");
+                p = LIST_Str(p, "--");
                 break;
             }
-            int val = Eval();
+            int val = EXPR_Eval();
             if (!errFlag)
             {
                 if ((val & 0xFF) == 0)
@@ -1186,7 +1186,7 @@ int Z8_DoCPULabelOp(int typ, int parm, char *labl)
                 }
                 if (val < 0 || val > 255 || (val > 0x0F && (val & 0x0F) != 0))
                 {
-                    Error("Operand out of range");
+                    ASMX_Error("Operand out of range");
                 }
                 else
                 {
@@ -1200,7 +1200,7 @@ int Z8_DoCPULabelOp(int typ, int parm, char *labl)
                     if (pass == 2)
                     {
                         char *p = listLine + 2;
-                        p = ListByte(p, val);
+                        p = LIST_Byte(p, val);
                     }
                 }
             }
@@ -1221,9 +1221,9 @@ void Z8_PassInit(void)
 }
 
 
-void AsmZ8Init(void)
+void Z8_AsmInit(void)
 {
-    void *p = AddAsm(versionName, &Z8_DoCPUOpcode, &Z8_DoCPULabelOp, &Z8_PassInit);
+    void *p = ASMX_AddAsm(versionName, &Z8_DoCPUOpcode, &Z8_DoCPULabelOp, &Z8_PassInit);
 
-    AddCPU(p, "Z8", 0, BIG_END, ADDR_16, LIST_24, 8, 0, Z8_opcdTab);
+    ASMX_AddCPU(p, "Z8", 0, END_BIG, ADDR_16, LIST_24, 8, 0, Z8_opcdTab);
 }
